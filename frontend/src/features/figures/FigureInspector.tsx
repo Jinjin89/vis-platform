@@ -75,7 +75,7 @@ function ChecksList({
   onSelect: (ids: string[]) => void;
 }) {
   return (
-    <ul className="figure-checks">
+    <ul className="composition-checks">
       {checks.map((check, index) => (
         <li key={`${check.code}-${index}`} data-severity={check.severity}>
           <span>{check.severity === "warning" ? "Check" : "Note"}</span>
@@ -129,9 +129,9 @@ function NumberField({
     else setText(shown);
   }
   return (
-    <label className="figure-field">
+    <label className="composition-field">
       <span>{label}</span>
-      <span className="figure-field-input">
+      <span className="composition-field-input">
         <input
           type="number"
           inputMode="decimal"
@@ -268,9 +268,9 @@ function PanelInspector({
     );
   }
   return (
-    <div className="figure-inspector" aria-label="Panel properties">
+    <div className="composition-inspector" aria-label="Panel properties">
       <header>
-        <span className="figure-kicker">
+        <span className="composition-kicker">
           Panel {resolved?.label ?? "(no label)"}
         </span>
         <h2>{panelTitle(document, panel)}</h2>
@@ -280,7 +280,7 @@ function PanelInspector({
         </small>
       </header>
       {update ? (
-        <div className="figure-update" role="status">
+        <div className="composition-update" role="status">
           <strong>A newer version of this plot is available.</strong>
           <p>Applying it keeps the panel’s width on the page.</p>
           <div>
@@ -319,7 +319,7 @@ function PanelInspector({
       ) : null}
       <fieldset disabled={busy}>
         <legend>Label</legend>
-        <label className="figure-field">
+        <label className="composition-field">
           <span>Custom label</span>
           <input
             key={`${panel.label ?? ""}-${resolved?.label ?? ""}`}
@@ -337,7 +337,7 @@ function PanelInspector({
         <small id={`label-help-${panel.id}`}>
           Leave empty to label panels in reading order.
         </small>
-        <label className="figure-check">
+        <label className="composition-check">
           <input
             type="checkbox"
             checked={panel.show_label}
@@ -353,7 +353,7 @@ function PanelInspector({
       </fieldset>
       <fieldset disabled={busy || panel.locked}>
         <legend>Position and size</legend>
-        <div className="figure-field-grid">
+        <div className="composition-field-grid">
           <NumberField
             label="X"
             unit="mm"
@@ -412,7 +412,7 @@ function PanelInspector({
       </fieldset>
       <fieldset disabled={busy}>
         <legend>Arrange</legend>
-        <label className="figure-check">
+        <label className="composition-check">
           <input
             type="checkbox"
             checked={panel.locked}
@@ -425,7 +425,7 @@ function PanelInspector({
           />
           Lock position
         </label>
-        <div className="figure-button-row">
+        <div className="composition-button-row">
           <button
             type="button"
             disabled={index === panels.length - 1}
@@ -459,7 +459,7 @@ function PanelInspector({
         </div>
         <button
           type="button"
-          className="figure-danger"
+          className="composition-danger"
           onClick={async () => {
             if (
               await onApply(
@@ -531,7 +531,7 @@ function RenderControls({
       >
         Render at panel size
       </button>
-      <div className="figure-field-grid">
+      <div className="composition-field-grid">
         <NumberField
           label="Render width"
           unit="mm"
@@ -613,9 +613,11 @@ function GroupInspector({
     );
   }
   return (
-    <div className="figure-inspector" aria-label="Selected panels">
+    <div className="composition-inspector" aria-label="Selected panels">
       <header>
-        <span className="figure-kicker">{panels.length} panels selected</span>
+        <span className="composition-kicker">
+          {panels.length} panels selected
+        </span>
         <h2>Arrange together</h2>
         {movable.length < panels.length ? (
           <small>Locked panels keep their positions.</small>
@@ -623,7 +625,7 @@ function GroupInspector({
       </header>
       <fieldset disabled={busy || movable.length < 2}>
         <legend>Align</legend>
-        <div className="figure-button-grid">
+        <div className="composition-button-grid">
           {alignments.map((item) => (
             <button
               type="button"
@@ -637,7 +639,7 @@ function GroupInspector({
       </fieldset>
       <fieldset disabled={busy || movable.length < 3}>
         <legend>Distribute</legend>
-        <div className="figure-button-row">
+        <div className="composition-button-row">
           <button
             type="button"
             onClick={() =>
@@ -670,7 +672,7 @@ function GroupInspector({
         <legend>Remove</legend>
         <button
           type="button"
-          className="figure-danger"
+          className="composition-danger"
           onClick={async () => {
             if (
               await onApply(
@@ -712,9 +714,9 @@ function PageInspector({
       "Changed label style",
     );
   return (
-    <div className="figure-inspector" aria-label="Page settings">
+    <div className="composition-inspector" aria-label="Page settings">
       <header>
-        <span className="figure-kicker">Page</span>
+        <span className="composition-kicker">Page</span>
         <h2>
           {page.width_mm} × {round(document.page_height_mm, 1)} mm
         </h2>
@@ -749,7 +751,7 @@ function PageInspector({
       </fieldset>
       <fieldset disabled={busy}>
         <legend>Size</legend>
-        <label className="figure-field">
+        <label className="composition-field">
           <span>Preset</span>
           <select
             aria-label="Page preset"
@@ -772,7 +774,7 @@ function PageInspector({
             </option>
           </select>
         </label>
-        <div className="figure-field-grid">
+        <div className="composition-field-grid">
           <NumberField
             label="Width"
             unit="mm"
@@ -804,7 +806,7 @@ function PageInspector({
             }
           />
         </div>
-        <label className="figure-check">
+        <label className="composition-check">
           <input
             type="checkbox"
             checked={page.height_mode === "auto"}
@@ -825,8 +827,8 @@ function PageInspector({
       </fieldset>
       <fieldset disabled={busy}>
         <legend>Panel labels</legend>
-        <div className="figure-field-grid">
-          <label className="figure-field">
+        <div className="composition-field-grid">
+          <label className="composition-field">
             <span>Letters</span>
             <select
               aria-label="Label letters"
@@ -850,7 +852,7 @@ function PageInspector({
             max={24}
             onCommit={(size_pt) => void setLabels({ size_pt })}
           />
-          <label className="figure-field">
+          <label className="composition-field">
             <span>Font</span>
             <select
               aria-label="Label font"
@@ -870,7 +872,7 @@ function PageInspector({
             </select>
           </label>
         </div>
-        <label className="figure-check">
+        <label className="composition-check">
           <input
             type="checkbox"
             checked={labels.bold}

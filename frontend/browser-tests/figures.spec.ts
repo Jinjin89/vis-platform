@@ -103,7 +103,7 @@ test("compose, arrange, label, and export a figure", async ({ page }) => {
   expect(document.content.panels[0]!.x_mm).toBeCloseTo(start + 1);
 
   // Custom label and legend text.
-  await first.click();
+  await first.dblclick();
   const properties = page.getByLabel("Panel properties");
   await properties.getByRole("textbox", { name: "Custom label" }).fill("a");
   await properties.getByRole("textbox", { name: "Custom label" }).blur();
@@ -141,7 +141,7 @@ test("history restores an earlier arrangement", async ({ page }) => {
     .click();
   await addPlot(page, /distribution/i);
   const sheet = page.getByRole("region", { name: "Figure page" });
-  await sheet.getByRole("button", { name: /^Panel A:/ }).click();
+  await sheet.getByRole("button", { name: /^Panel A:/ }).dblclick();
   await page.getByRole("button", { name: "Remove panel" }).click();
   await expect(page.getByText("Your page is empty.")).toBeVisible();
   await page.getByRole("button", { name: "History" }).click();
@@ -164,7 +164,7 @@ test("tidy rows and render plots at their printed size", async ({ page }) => {
   await addPlot(page, /relationship/i);
   const sheet = page.getByRole("region", { name: "Figure page" });
   // Scale the second panel down so the rows are uneven before tidying.
-  await sheet.getByRole("button", { name: /^Panel B:/ }).click();
+  await sheet.getByRole("button", { name: /^Panel B:/ }).dblclick();
   const scale = page.getByLabel("Panel properties").getByLabel("Scale");
   await scale.fill("25");
   await scale.press("Enter");
@@ -191,4 +191,58 @@ test("tidy rows and render plots at their printed size", async ({ page }) => {
   expect(frameA.height_mm).toBeCloseTo(frameB.height_mm, 0);
   expect(frameA.x_mm + frameA.width_mm + 4).toBeCloseTo(frameB.x_mm, 0);
   await expect(sheet.getByText("Rendering at panel size…")).toHaveCount(0);
+});
+
+test("the assistant asks, arranges, and writes the legend", async ({
+  page,
+}) => {
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await demoPlot(page, project, "Make a violin distribution of expression");
+  await demoPlot(page, project, "Make a scatter relationship plot");
+  await demoPlot(page, project, "Make a boxplot comparing treatment groups");
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  await page
+    .getByRole("dialog", { name: "New figure" })
+    .getByRole("button", { name: "Create figure" })
+    .click();
+  for (const name of [/distribution/i, /relationship/i, /distribution/i])
+    await addPlot(page, name);
+  const assistant = page.getByLabel("Figure assistant");
+  const composer = assistant.getByRole("textbox", {
+    name: "Message the figure assistant",
+  });
+  await composer.fill("Which panel should lead? Then arrange the figure.");
+  await assistant.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    assistant.getByText("Which panel should lead the figure?"),
+  ).toBeVisible();
+  await assistant.getByRole("radio", { name: /relationship/i }).check();
+  await assistant.getByRole("button", { name: "Continue" }).click();
+  await expect
+    .poll(async () => (await current(page, project)).messages.at(-1)?.status, {
+      timeout: 20000,
+    })
+    .toBe("completed");
+  await expect(assistant.getByText("Arranged the panels.")).toBeVisible();
+  let document = await current(page, project);
+  const lead = document.content.panels.find(
+    (panel) =>
+      panel.content.type === "plot" &&
+      document.figures[panel.content.version_id]?.title?.match(/relationship/i),
+  )!;
+  // The chosen panel leads the figure at full printable width.
+  expect(document.panels[lead.id]!.label).toBe("A");
+  expect(document.panels[lead.id]!.frame.width_mm).toBeCloseTo(200, 0);
+  expect(document.jobs.every((job) => job.status === "completed")).toBe(true);
+
+  await composer.fill("Write the legend");
+  await assistant.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(assistant.getByText("Wrote the legend.")).toBeVisible();
+  document = await current(page, project);
+  expect(Object.keys(document.content.legend.entries)).toHaveLength(3);
+  await page.getByRole("tab", { name: "Legend" }).click();
+  await expect(page.getByLabel("Legend preview")).toContainText(
+    "Overview of the study results.",
+  );
 });

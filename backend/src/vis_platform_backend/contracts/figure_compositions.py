@@ -7,6 +7,7 @@ from pydantic import Field
 
 from .common import Identifier, StrictModel
 from .figure_composition_content import FigureCompositionContent
+from .figure_messages import FigureMessage
 from .plot_runs import PlotResultSummary
 from .reference_images import ReferenceImage
 
@@ -86,6 +87,9 @@ class FigureCompositionDocument(FigureCompositionSummary):
     )
     jobs: list[FigureRenderJob] = Field(
         default_factory=list, description="Recent renders of plots at their panel sizes."
+    )
+    messages: list[FigureMessage] = Field(
+        default_factory=list, description="The figure assistant conversation, oldest first."
     )
 
 

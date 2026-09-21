@@ -265,8 +265,21 @@ export type ReportText = z.infer<typeof reportTextSchema>;
 export type ReportEdit = z.infer<typeof reportEditSchema>;
 export type ReportGenerateRequest =
   components["schemas"]["ReportGenerateRequest"];
-export const reportEditActive = (edit: ReportEdit) =>
+export const reportEditActive = (edit: Pick<ReportEdit, "status">) =>
   ["running", "awaiting_input", "awaiting_approval"].includes(edit.status);
+/** The parts of a plotting request that its status card shows and answers. */
+export type PlotRequestProgress = Pick<
+  ReportEdit,
+  | "kind"
+  | "status"
+  | "error"
+  | "prompt"
+  | "block_id"
+  | "assistant"
+  | "assistant_state"
+  | "run"
+  | "run_state"
+>;
 
 export const legacyReportContentSchema = z
   .object({

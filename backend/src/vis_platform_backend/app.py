@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 
 from vis_platform_backend.agents.data_agent import DataAgent, LlmDataAgent
 from vis_platform_backend.agents.deepseek_intent import DeepSeekIntentAgent
+from vis_platform_backend.agents.figure_planner import FigurePlanner, LlmFigurePlanner
 from vis_platform_backend.agents.figure_size import FigureSizeAgent
 from vis_platform_backend.agents.intent import IntentAgent
 from vis_platform_backend.agents.r_repair import LlmRRepairAgent, RRepairAgent
@@ -35,6 +36,7 @@ from vis_platform_backend.services.assistant_turns import (
 from vis_platform_backend.services.figure_arrangement import FigureArrangementService
 from vis_platform_backend.services.figure_compositions import FigureCompositionService
 from vis_platform_backend.services.figure_exports import FigureExporter
+from vis_platform_backend.services.figure_messages import FigureMessageRuntime
 from vis_platform_backend.services.plot_runs import (
     DeterministicPlotRunCoordinator,
     InvalidTransitionError,
@@ -55,6 +57,7 @@ def create_app(
     figure_size_agent: FigureSizeAgent | None = None,
     report_planner: ReportPlanner | None = None,
     r_repair_agent: RRepairAgent | None = None,
+    figure_planner: FigurePlanner | None = None,
 ) -> FastAPI:
     resolved_settings = settings or Settings.from_environment()
     resolved_intent_agent = intent_agent or DeepSeekIntentAgent(resolved_settings.llm)
@@ -143,7 +146,18 @@ def create_app(
         figure_arrangement = FigureArrangementService(figure_compositions, coordinator)
         app.state.figure_arrangement = figure_arrangement
         figure_arrangement.recover()
+        figure_messages = FigureMessageRuntime(
+            figure_compositions,
+            figure_arrangement,
+            assistant_turn_service,
+            coordinator,
+            dataset_service,
+            figure_planner or LlmFigurePlanner(resolved_settings.llm),
+        )
+        app.state.figure_messages = figure_messages
+        figure_messages.recover()
         yield
+        await figure_messages.shutdown()
         await figure_arrangement.shutdown()
         composition_store.close()
         await report_messages.shutdown()

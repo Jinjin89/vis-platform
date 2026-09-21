@@ -24,7 +24,7 @@ remain importable. See [the report guide](../docs/REPORT_UI.md).
 
 ## Figure interface
 
-Open `/figure` or choose **Figure** in the header to compose saved plots and images into a publication figure. `features/figures/` holds the page canvas (dragging, snapping, scaling, keyboard nudges), the inspector, the legend editor, and dialogs; `figureGeometry.ts` holds the pure layout helpers. Edits are sent as figure operations, and labels, bounds, and page height come from the backend. See [the figure guide](../docs/FIGURE_UI.md).
+Open `/figure` or choose **Figure** in the header to compose saved plots and images into a publication figure. `features/figures/` holds the page canvas (dragging, snapping, scaling, keyboard nudges), the inspector, the legend editor, and dialogs; `figureGeometry.ts` holds the pure layout helpers. Edits are sent as figure operations, and labels, bounds, and page height come from the backend. `FigureAssistantPanel` shows the figure conversation and reuses the report status card for plot-agent questions and approvals. See [the figure guide](../docs/FIGURE_UI.md).
 
 ## Canvas interface
 

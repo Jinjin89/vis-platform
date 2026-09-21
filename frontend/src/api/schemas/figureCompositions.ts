@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { components } from "../generated/schema";
-import { plotResultSchema } from "./plotRun";
+import { plannerQuestionsSchema } from "./planner";
+import {
+  assistantTurnAcceptedSchema,
+  assistantTurnSnapshotSchema,
+  plotResultSchema,
+  plotRunAcceptedSchema,
+  plotRunSnapshotSchema,
+} from "./plotRun";
 import { referenceImageSchema } from "./referenceImages";
 
 const identifier = z.string().min(1).max(160);
@@ -129,6 +136,57 @@ const jobSchema = z
     created_at: z.string(),
   })
   .strict();
+const messageStatus = z.enum([
+  "running",
+  "awaiting_input",
+  "awaiting_approval",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+const messageSchema = z
+  .object({
+    message_id: z.string(),
+    prompt: z.string(),
+    selection: z
+      .object({ panel_ids: z.array(z.string()).default([]) })
+      .strict()
+      .nullable()
+      .default(null),
+    status: messageStatus,
+    phase: z
+      .enum([
+        "planning",
+        "editing",
+        "plotting",
+        "arranging",
+        "reviewing",
+        "finished",
+      ])
+      .default("planning"),
+    response_text: z.string().nullable().default(null),
+    error: z.string().nullable().default(null),
+    question: plannerQuestionsSchema.nullable().default(null),
+    active_step: z
+      .object({
+        kind: z.literal("figure"),
+        panel_id: z.string(),
+        block_id: z.string().nullable().default(null),
+        prompt: z.string(),
+        status: messageStatus,
+        error: z.string().nullable().default(null),
+        assistant: assistantTurnAcceptedSchema.nullable().default(null),
+        assistant_state: assistantTurnSnapshotSchema.nullable().default(null),
+        run: plotRunAcceptedSchema.nullable().default(null),
+        run_state: plotRunSnapshotSchema.nullable().default(null),
+      })
+      .strict()
+      .nullable()
+      .default(null),
+    completed_actions: z.array(z.string()).default([]),
+    created_at: z.string(),
+  })
+  .strict();
 const summarySchema = z
   .object({
     composition_id: z.string(),
@@ -160,6 +218,7 @@ export const figureDocumentSchema = summarySchema
     updates: z.record(z.string(), z.string()).default({}),
     checks: z.array(checkSchema).default([]),
     jobs: z.array(jobSchema).default([]),
+    messages: z.array(messageSchema).default([]),
   })
   .strict() satisfies z.ZodType<
   components["schemas"]["FigureCompositionDocument"]
@@ -197,6 +256,7 @@ export type PanelLabelStyle = z.infer<typeof panelLabelStyleSchema>;
 export type PanelFrame = z.infer<typeof frameSchema>;
 export type FigureCheck = z.infer<typeof checkSchema>;
 export type FigureRenderJob = z.infer<typeof jobSchema>;
+export type FigureMessage = z.infer<typeof messageSchema>;
 export type FigureArrangement =
   components["schemas"]["ArrangeRequest"]["arrangement"];
 export type PanelGeometry = Pick<FigurePanel, "x_mm" | "y_mm" | "scale">;

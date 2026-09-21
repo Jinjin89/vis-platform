@@ -234,6 +234,15 @@ class FigureCompositionRepository:
                 job_ids.append(job_id)
         return job_ids
 
+    def operation_applied(self, composition_id: str, request_id: str) -> bool:
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT 1 FROM figure_composition_operations "
+                "WHERE composition_id = ? AND request_id = ?",
+                (composition_id, request_id),
+            ).fetchone()
+        return row is not None
+
     def job(self, job_id: str) -> dict[str, Any]:
         with self.lock:
             row = self.connection.execute(

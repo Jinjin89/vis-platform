@@ -103,7 +103,7 @@ export function AddPlotDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const figures = useQuery({
-    queryKey: ["figure-plot-library", projectId, offset],
+    queryKey: ["composition-plot-library", projectId, offset],
     queryFn: () => listReportFigures(projectId, offset),
   });
   return (
@@ -276,7 +276,7 @@ export function FigureHistoryDialog({
   const [error, setError] = useState<string | null>(null);
   const history = useQuery({
     queryKey: [
-      "figure-history",
+      "composition-history",
       document.composition_id,
       document.revision,
       offset,
@@ -383,7 +383,7 @@ export function FigurePreviewDialog({
 }) {
   return (
     <ReportDialog title="Export preview" onClose={onClose} wide>
-      <div className="report-dialog-form figure-preview">
+      <div className="report-dialog-form composition-preview">
         <p>
           The exported page, rendered by the server exactly as SVG, PDF, PNG,
           and TIFF files will be.

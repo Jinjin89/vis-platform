@@ -1,6 +1,6 @@
 # Figure composer design
 
-Status: agreed design; Phases 1–3 (backend foundation, editor, fitting and checks) implemented
+Status: agreed design; Phases 1–4 implemented (backend foundation, editor, fitting and checks, figure agent)
 Last updated: 2026-09-21
 
 The fifth interface, **Figure**, combines saved plots and uploaded images into one
@@ -170,37 +170,57 @@ and image is checked against the project.
 ## 6. Figure agent (Phase 4)
 
 The figure conversation uses its own planner, separate from the report planner.
-The planner decides what the figure should contain and how it is organized. Code
-computes exact geometry.
+The planner decides what the figure should contain and how it is organised. Code
+computes the geometry, and the shared plot agent makes every plot.
 
 ~~~text
-message → figure planner → steps
-  plot     → shared plot agent (create or refine a panel's plot)
-  arrange  → layout solver → exact positions and scales
-  fit      → render plots at their assigned sizes (no model call)
-  check    → bounds, overlap, minimum font, empty space, label order
-             → issues return to the planner (at most two rounds)
-→ one new figure revision
+message → figure planner → reply | question | steps
+  edit     → figure operations (title, page, labels, legend, locking, removal, …)
+  add      → place a saved plot version or uploaded image as a new panel
+  plot     → shared plot agent: create a plot for a new panel, or refine a panel's plot
+  arrange  → layout solver → exact geometry, then renders at panel size
+  review   → remaining warnings return to the planner (at most two rounds)
+→ one or more figure revisions, each recorded in history
 ~~~
 
-- **Arrangement.** The planner returns a nested tree of rows and columns rather
-  than coordinates. Each leaf names a panel with an optional relative weight and
-  aspect preference. For example: a square UMAP beside a column of two small
-  plots, above a wide heatmap next to a survival curve. Unlike a fixed grid, rows
-  can hold different numbers of panels, groups can nest, and weights express
-  importance.
-- **Solver.** Panels in a row share a height and panels in a column share a width.
-  The solver respects each panel's natural aspect ratio or its permitted range, and
-  distributes remaining space by weight. With automatic height, the page height
-  follows the content.
-- **User control.** Locked panels, and panels the user positioned by hand, keep
-  their geometry unless the user asks the agent to rearrange them. Direct requests
-  such as "put C to the right of B" can become direct geometry operations.
-- **New plots.** Plots created for a figure receive their target size and the
-  figure's font size in the plot request.
-- **Rules.** Agent instructions describe composition principles: reading order,
-  visual weight, alignment, consistent type, and whitespace. They do not encode
-  layouts for specific plot types.
+- **Planner context:**
+  - the page, label style, and minimum text size
+  - each panel's label, frame, natural size, plot title, description, data
+    summary, whether it can be re-rendered, and its legend entry
+  - the current checks, and saved plots not yet in the figure
+  - project datasets, the recent conversation, and the selected panels as a hint
+- **Plot steps:**
+  - They start an assistant turn with project data discovery (`data_scope: auto`),
+    so questions, approvals, and data selection work exactly as in Workspace.
+  - An intended printed size is passed in the request text; the plot agent's size
+    step honours explicit dimensions.
+  - Refining an image panel passes the image as a reference.
+  - A finished plot replaces its panel's content, keeping the panel's width, or
+    becomes a new panel placed below the existing content. An arrange step then
+    decides the final layout.
+- **Arrangement:** the planner returns a nested tree of rows and columns rather
+  than coordinates (section 7). Each leaf names a panel with an optional preferred
+  aspect for rendered plots. Unlike a fixed grid, rows can hold different numbers
+  of panels, groups can nest, and area follows importance.
+- **Review:** after steps that add, plot, or arrange, any remaining warning checks
+  go back to the planner with `review: true`. It can add fixing steps or accept
+  the figure, for at most two rounds. Edits alone are not reviewed, because they
+  are precise user instructions.
+- **Questions:** the planner asks only consequential questions, and answers
+  resume the same message. Questions and approvals from the shared plot agent
+  appear in the message's `active_step` and are answered through the existing
+  assistant-turn and plot-run endpoints.
+- **Reliability:**
+  - Every step uses a stable request key, so a step that committed before a
+    server restart is not applied twice.
+  - Messages resume after a restart, except those waiting for a planner answer.
+  - Cancelling stops the planner and any running plot.
+- **Rules:** agent instructions describe composition principles: reading order,
+  visual weight, shapes chosen from content, alignment, printed text size, and
+  whitespace. They do not encode layouts for specific plot types.
+
+API: `POST .../messages` (`FigureMessageRequest`, 202), `POST .../messages/{id}/answer`,
+and `POST .../messages/{id}/cancel`. The document lists messages under `messages`.
 
 ## 7. Fitting plots to panels and checks (Phase 3)
 
@@ -280,18 +300,17 @@ documented in [FIGURE_UI.md](FIGURE_UI.md).
 
 ## 9. Phases
 
-1. **Backend foundation:**
-   - content contract and storage
-   - operations, revisions, and API
+1. **Backend foundation (done):**
+   - content contract, storage, operations, revisions, and API
    - page composition and export
    - the 1 in minimum plot size
-2. **Frontend editor:**
-   - route, library, page editor, and inspector
-   - figure tray, history, and exports
-3. **Fitting and checks:** the layout solver, fitting plots to panels, and
-   checks shown in the editor.
-4. **Figure agent:** the planner, plot steps through the shared plot agent,
-   arrangement, and the check loop.
+2. **Frontend editor (done):**
+   - library, page editor, inspector, and legend
+   - history and exports
+3. **Fitting and checks (done):** the layout solver, arranging, rendering plots at
+   panel size, and checks.
+4. **Figure agent (done):** the planner, plot steps through the shared plot agent,
+   additions, arrangement, review rounds, questions, and the Assistant tab.
 5. **Later:**
    - visual review of the composed page
    - axis alignment between neighbouring panels

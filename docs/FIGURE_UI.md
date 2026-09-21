@@ -4,6 +4,31 @@ Choose **Figure** in the header to compose saved plots and images into a
 publication figure. The design, contract, and remaining phases are described in
 [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).
 
+## Figure assistant
+
+The **Assistant** tab beside the page plans the figure from one message, for
+example "Put the UMAP first, then the two violin plots side by side", "Add a
+survival curve for the treated group", or "Write the legend".
+
+- **What it does:**
+  - arranges panels as nested rows and columns, then renders plots at their new
+    sizes
+  - creates or refines plots with the same plotting agent used by Workspace,
+    including its data selection, questions, and approvals
+  - adds saved plots or images, and edits labels, page settings, and the legend
+- **Selected panels:** they are sent as a hint ("About panel A"), and a panel
+  named in the message takes precedence.
+- **Questions:** the assistant asks only when a choice matters, and answers
+  continue the same request. A plotting step's questions and approvals appear
+  in the conversation.
+- **Checks:** after arranging or plotting, the assistant reviews the remaining
+  layout warnings, for up to two rounds.
+- **Safety:** every change is a figure revision, so **History** can restore
+  anything the assistant did. **Stop** cancels a running request.
+
+Clicking a panel keeps the conversation open. Double-click a panel, or choose the
+**Panel** tab, to edit its properties.
+
 ## Creating a figure
 
 1. Choose **+ New figure**, enter a title, and pick a page: A4 page, A4 width with
@@ -104,11 +129,14 @@ re-run analyses.
   operations.
 - Browser tests create plots, compose a double-column figure, drag and nudge
   panels, relabel a panel, write its legend, export a PDF, reopen the figure
-  from the library, restore a revision from history, and tidy rows while
-  rendering plots at their printed size.
+  from the library, restore a revision from history, tidy rows while rendering
+  plots at their printed size, and use the assistant to answer a question,
+  arrange the figure, and write its legend.
 - Backend tests cover the contract, geometry, labels, operations, revisions,
   conflicts, project isolation, update notices, and all export formats. They
   also cover the arrangement solver (shared row heights, nested groups, page
   limits), tidying around locked panels, every check, text measurement,
   rendering at panel size without changing the current version, and discarding
-  renders for panels that changed.
+  renders for panels that changed. They also cover the assistant's replies and
+  questions, ordered steps, plot steps through the shared plot agent, review
+  rounds, failures, cancellation, and project isolation.

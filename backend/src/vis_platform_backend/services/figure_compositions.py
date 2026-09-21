@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from vis_platform_backend.contracts.figure_composition_content import (
@@ -20,6 +21,7 @@ from vis_platform_backend.contracts.figure_compositions import (
     ResolvedPanel,
     SaveFigureComposition,
 )
+from vis_platform_backend.contracts.figure_messages import FigureMessage
 from vis_platform_backend.contracts.figures import FigureExportFormat
 from vis_platform_backend.contracts.plot_runs import PlotResultSummary
 from vis_platform_backend.contracts.reference_images import ReferenceImage
@@ -73,6 +75,8 @@ class FigureCompositionService:
         )
         # Immutable versions have fixed text sizes, so measurements are kept per version.
         self._text_sizes: dict[str, tuple[float, bool]] = {}
+        # The assistant runtime supplies the conversation when it is connected.
+        self.conversation: Callable[[str, str], list[FigureMessage]] = lambda _p, _c: []
 
     def check_project(self, project_id: str) -> None:
         if not self.repository.project_exists(project_id):
@@ -84,7 +88,7 @@ class FigureCompositionService:
             raise DataError("The figure version was not found in this project.", "NOT_FOUND", 404)
         return PlotResultSummary.model_validate(record)
 
-    def _natural_plot_size(self, figure: PlotResultSummary) -> tuple[float, float]:
+    def natural_size(self, figure: PlotResultSummary) -> tuple[float, float]:
         size = figure.figure_size or self.exporter.plot_svg(figure)[1]
         return plot_natural_size(size.width, size.height)
 
@@ -105,7 +109,7 @@ class FigureCompositionService:
                 version_id = panel.content.version_id
                 if version_id not in figures:
                     figures[version_id] = self.figure(project_id, version_id)
-                natural_sizes[panel.id] = self._natural_plot_size(figures[version_id])
+                natural_sizes[panel.id] = self.natural_size(figures[version_id])
             else:
                 image_id = panel.content.image_id
                 if image_id not in images:
@@ -192,6 +196,7 @@ class FigureCompositionService:
             updates=updates,
             checks=checks,
             jobs=jobs,
+            messages=self.conversation(project_id, composition_id),
         )
 
     def list_compositions(self, project_id: str, offset: int) -> FigureCompositionList:

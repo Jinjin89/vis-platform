@@ -15,6 +15,8 @@ const api = vi.hoisted(() => ({
   applyFigureOperations: vi.fn(),
   arrangeFigure: vi.fn(),
   renderFigurePanels: vi.fn(),
+  sendFigureMessage: vi.fn(),
+  answerFigureMessage: vi.fn(),
 }));
 vi.mock("../src/api/figureCompositions", async (original) => ({
   ...(await original<typeof import("../src/api/figureCompositions")>()),
@@ -140,8 +142,10 @@ afterEach(() => {
 });
 
 test("shows panels with their labels and page settings", async () => {
+  const user = userEvent.setup();
   renderEditor();
   const page = await screen.findByRole("region", { name: "Figure page" });
+  await user.click(screen.getByRole("tab", { name: "Page" }));
   expect(
     within(page).getByRole("button", { name: "Panel A: Cell clusters" }),
   ).toBeInTheDocument();
@@ -191,6 +195,7 @@ test("the inspector applies a newer version while keeping the panel width", asyn
   await user.click(
     await screen.findByRole("button", { name: "Panel B: Expression by group" }),
   );
+  await user.click(screen.getByRole("tab", { name: "Panel" }));
   await user.click(screen.getByRole("button", { name: "Apply update" }));
   expect(sentOperations()).toEqual([
     {
@@ -215,6 +220,7 @@ test("custom labels and removal use panel operations", async () => {
   await user.click(
     await screen.findByRole("button", { name: "Panel A: Cell clusters" }),
   );
+  await user.click(screen.getByRole("tab", { name: "Panel" }));
   const label = screen.getByRole("textbox", { name: "Custom label" });
   await user.type(label, "i");
   await user.tab();
@@ -231,6 +237,7 @@ test("custom labels and removal use panel operations", async () => {
 test("checks select their panels and plots render at their panel size", async () => {
   const user = userEvent.setup();
   renderEditor();
+  await user.click(await screen.findByRole("tab", { name: "Page" }));
   const check = await screen.findByRole("button", {
     name: /smallest text in Panel A/,
   });
@@ -264,5 +271,79 @@ test("tidying rows can also render plots", async () => {
     1,
     expect.any(String),
     expect.objectContaining({ render: true }),
+  );
+});
+
+test("the assistant sends the selection as a hint and answers questions", async () => {
+  const user = userEvent.setup();
+  api.sendFigureMessage.mockImplementation(async () => makeDocument());
+  renderEditor();
+  await user.click(
+    await screen.findByRole("button", { name: "Panel A: Cell clusters" }),
+  );
+  expect(screen.getByText(/About panel A/)).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("textbox", { name: "Message the figure assistant" }),
+    "Make this panel lead the figure{Enter}",
+  );
+  expect(api.sendFigureMessage).toHaveBeenCalledWith("project-1", "figure-1", {
+    request_id: expect.any(String),
+    message: "Make this panel lead the figure",
+    selection: { panel_ids: ["umap"] },
+  });
+});
+
+test("assistant questions and progress are shown in the conversation", async () => {
+  const user = userEvent.setup();
+  const waiting = {
+    ...makeDocument(),
+    messages: [
+      {
+        message_id: "m1",
+        prompt: "Arrange the figure",
+        selection: null,
+        status: "awaiting_input",
+        phase: "planning",
+        response_text: "One choice first.",
+        error: null,
+        question: {
+          interaction_id: "i1",
+          questions: [
+            {
+              question_id: "lead",
+              header: "Lead",
+              prompt: "Which panel should lead?",
+              reason: "It gets a full row.",
+              selection: "single",
+              allow_free_text: false,
+              choices: [
+                { choice_id: "umap", label: "Cell clusters" },
+                { choice_id: "violin", label: "Expression by group" },
+              ],
+            },
+          ],
+        },
+        active_step: null,
+        completed_actions: [],
+        created_at: "2026-09-21T00:00:00Z",
+      },
+    ],
+  };
+  api.getFigure.mockResolvedValue(waiting);
+  api.answerFigureMessage.mockImplementation(async () => makeDocument());
+  renderEditor();
+  expect(
+    await screen.findByText("Which panel should lead?"),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("radio", { name: /Cell clusters/ }));
+  await user.click(
+    screen.getByRole("button", { name: /Continue|Submit|Answer/ }),
+  );
+  expect(api.answerFigureMessage).toHaveBeenCalledWith(
+    "project-1",
+    "figure-1",
+    "m1",
+    "i1",
+    [{ question_id: "lead", choice_ids: ["umap"], free_text: null }],
   );
 });

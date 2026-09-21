@@ -12,6 +12,7 @@ import {
   listFigures,
   renderFigurePanels,
   saveFigure,
+  sendFigureMessage,
 } from "../../api/figureCompositions";
 import {
   figureContentSchema,
@@ -31,6 +32,7 @@ import {
   NewFigureDialog,
   figureExportUrl,
 } from "./FigureDialogs";
+import { FigureAssistantPanel } from "./FigureAssistantPanel";
 import { FigureInspector, type RenderSizes } from "./FigureInspector";
 import { FigureLegendEditor } from "./FigureLegendEditor";
 import { FigurePageCanvas, panelTitle } from "./FigurePageCanvas";
@@ -99,7 +101,7 @@ function FigureLibrary({ projectId }: { projectId: string }) {
     }
   }
   return (
-    <section className="figure-library">
+    <section className="composition-library">
       <input
         ref={imported}
         type="file"
@@ -122,9 +124,9 @@ function FigureLibrary({ projectId }: { projectId: string }) {
           }
         }}
       />
-      <div className="figure-library-heading">
+      <div className="composition-library-heading">
         <div>
-          <span className="figure-kicker">Publication figures</span>
+          <span className="composition-kicker">Publication figures</span>
           <h1>Compose your figures.</h1>
           <p>
             Arrange saved plots and images into multi-panel figures on an A4 or
@@ -137,7 +139,7 @@ function FigureLibrary({ projectId }: { projectId: string }) {
           </button>
           <button
             type="button"
-            className="figure-primary"
+            className="composition-primary"
             onClick={() => {
               setError(null);
               setCreating(true);
@@ -152,15 +154,15 @@ function FigureLibrary({ projectId }: { projectId: string }) {
           {error}
         </p>
       ) : null}
-      <div className="figure-grid">
+      <div className="composition-grid">
         {list.data?.compositions.map((item) => (
           <button
             type="button"
             key={item.composition_id}
-            className="figure-card"
+            className="composition-card"
             onClick={() => setParams({ id: item.composition_id })}
           >
-            <span className="figure-card-cover">
+            <span className="composition-card-cover">
               <img src={figureExportUrl(item, "svg")} alt="" loading="lazy" />
             </span>
             <strong>{item.title}</strong>
@@ -172,7 +174,7 @@ function FigureLibrary({ projectId }: { projectId: string }) {
         {list.data && !list.data.compositions.length ? (
           <button
             type="button"
-            className="figure-card figure-start-card"
+            className="composition-card composition-start-card"
             onClick={() => setCreating(true)}
           >
             <span>+</span>
@@ -244,7 +246,9 @@ function FigureEditor({
   const queryClient = useQueryClient();
   const [, setParams] = useSearchParams();
   const [selected, setSelected] = useState<string[]>([]);
-  const [tab, setTab] = useState<"inspect" | "legend">("inspect");
+  const [tab, setTab] = useState<"assistant" | "inspect" | "legend">(
+    "assistant",
+  );
   const [dialog, setDialog] = useState<
     "plot" | "image" | "history" | "preview" | null
   >(null);
@@ -261,7 +265,12 @@ function FigureEditor({
     queryKey: ["figure", projectId, figureId],
     queryFn: () => getFigure(projectId, figureId),
     refetchInterval: (current) =>
-      current.state.data?.jobs.some((job) => job.status === "running")
+      current.state.data?.jobs.some((job) => job.status === "running") ||
+      current.state.data?.messages.some((message) =>
+        ["running", "awaiting_input", "awaiting_approval"].includes(
+          message.status,
+        ),
+      )
         ? 1000
         : false,
   });
@@ -430,17 +439,17 @@ function FigureEditor({
       !dismissed.includes(job.job_id),
   );
   return (
-    <section className="figure-workspace">
-      <header className="figure-toolbar">
+    <section className="composition-workspace">
+      <header className="composition-toolbar">
         <button
           type="button"
-          className="figure-back"
+          className="composition-back"
           onClick={() => setParams({})}
         >
           Figures <span>/</span>
         </button>
         <input
-          className="figure-title"
+          className="composition-title"
           key={document.title}
           defaultValue={document.title}
           aria-label="Figure title"
@@ -451,10 +460,10 @@ function FigureEditor({
               void apply([{ op: "set_title", title }], "Renamed figure");
           }}
         />
-        <span className="figure-save-state" role="status">
+        <span className="composition-save-state" role="status">
           {busy ? "Saving…" : `Saved · revision ${document.revision}`}
         </span>
-        <div className="figure-toolbar-actions">
+        <div className="composition-toolbar-actions">
           <button
             type="button"
             disabled={busy}
@@ -469,7 +478,7 @@ function FigureEditor({
           >
             + Image
           </button>
-          <details className="figure-export">
+          <details className="composition-export">
             <summary>Arrange</summary>
             <div role="menu" aria-label="Arrange panels">
               <button
@@ -496,7 +505,7 @@ function FigureEditor({
           <button type="button" onClick={() => setDialog("preview")}>
             Preview
           </button>
-          <details className="figure-export">
+          <details className="composition-export">
             <summary>{exporting ? "Exporting…" : "Export"}</summary>
             <div role="menu" aria-label="Export figure">
               {EXPORTS.map((item) => (
@@ -523,7 +532,7 @@ function FigureEditor({
         </div>
       </header>
       {error ? (
-        <div className="figure-error" role="alert">
+        <div className="composition-error" role="alert">
           {error}
           <button type="button" onClick={() => setError(null)}>
             Dismiss
@@ -531,7 +540,7 @@ function FigureEditor({
         </div>
       ) : null}
       {failures.map((job) => (
-        <div className="figure-error" role="alert" key={job.job_id}>
+        <div className="composition-error" role="alert" key={job.job_id}>
           {job.error ?? "A plot could not be rendered at its panel size."}
           <button
             type="button"
@@ -542,23 +551,23 @@ function FigureEditor({
         </div>
       ))}
       {updates ? (
-        <p className="figure-notice" role="status">
+        <p className="composition-notice" role="status">
           {updates === 1
             ? "A newer version of one plot is available."
             : `Newer versions of ${updates} plots are available.`}{" "}
           Select a panel marked “Update available” to review it.
         </p>
       ) : null}
-      <div className="figure-editor">
-        <div className="figure-canvas-area">
+      <div className="composition-editor">
+        <div className="composition-canvas-area">
           {document.content.panels.length ? null : (
-            <div className="figure-empty">
+            <div className="composition-empty">
               <strong>Your page is empty.</strong>
               <p>Add saved plots or images to start composing.</p>
               <div>
                 <button
                   type="button"
-                  className="figure-primary"
+                  className="composition-primary"
                   onClick={() => setDialog("plot")}
                 >
                   Add a saved plot
@@ -575,7 +584,8 @@ function FigureEditor({
             busy={busy}
             onSelect={(ids) => {
               setSelected(ids);
-              if (ids.length) setTab("inspect");
+              // The assistant keeps its conversation open and uses the selection as a hint.
+              if (ids.length && tab === "legend") setTab("inspect");
             }}
             onCommit={(changes, summary) =>
               apply([{ op: "set_panel_geometry", panels: changes }], summary)
@@ -584,15 +594,27 @@ function FigureEditor({
             onMenu={(event, panelId) =>
               setMenu({ x: event.clientX, y: event.clientY, panelId })
             }
+            onOpen={(panelId) => {
+              setSelected([panelId]);
+              setTab("inspect");
+            }}
           />
-          <p className="figure-hint">
-            Drag to move · drag the corner to scale · Shift-click to select
-            several · arrow keys nudge 0.5 mm (Shift: 5 mm) · hold Alt to skip
-            snapping
+          <p className="composition-hint">
+            Double-click a panel for its properties · drag to move · drag the
+            corner to scale · Shift-click to select several · arrow keys nudge
+            0.5 mm (Shift: 5 mm) · hold Alt to skip snapping
           </p>
         </div>
-        <aside className="figure-sidebar" aria-label="Figure details">
-          <div className="figure-tabs" role="tablist">
+        <aside className="composition-sidebar" aria-label="Figure details">
+          <div className="composition-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "assistant"}
+              onClick={() => setTab("assistant")}
+            >
+              Assistant
+            </button>
             <button
               type="button"
               role="tab"
@@ -610,7 +632,18 @@ function FigureEditor({
               Legend
             </button>
           </div>
-          {tab === "inspect" ? (
+          {tab === "assistant" ? (
+            <FigureAssistantPanel
+              document={document}
+              selected={selected}
+              onSend={(input) =>
+                execute(() => sendFigureMessage(projectId, figureId, input))
+              }
+              onShow={show}
+              onClearSelection={() => setSelected([])}
+              refresh={() => query.refetch()}
+            />
+          ) : tab === "inspect" ? (
             <FigureInspector
               document={document}
               selected={selected}
@@ -630,7 +663,7 @@ function FigureEditor({
       </div>
       {menu && menuPanel ? (
         <div
-          className="figure-menu"
+          className="composition-menu"
           role="menu"
           aria-label={`Actions for ${panelTitle(document, menuPanel)}`}
           style={{ left: menu.x, top: menu.y }}

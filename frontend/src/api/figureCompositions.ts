@@ -1,3 +1,4 @@
+import type { PlannerAnswer } from "./schemas/planner";
 import {
   EXPORT_MEDIA_TYPES,
   downloadAttachment,
@@ -102,6 +103,48 @@ export const renderFigurePanels = (
       method: "POST",
       body: JSON.stringify({ request_id: requestId, panels }),
     },
+  );
+export const sendFigureMessage = (
+  projectId: string,
+  compositionId: string,
+  input: {
+    request_id: string;
+    message: string;
+    selection?: { panel_ids: string[] };
+  },
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/messages`,
+    figureDocumentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+export const answerFigureMessage = (
+  projectId: string,
+  compositionId: string,
+  messageId: string,
+  interactionId: string,
+  answers: PlannerAnswer[],
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/messages/${encodeURIComponent(messageId)}/answer`,
+    figureDocumentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ interaction_id: interactionId, answers }),
+    },
+  );
+export const cancelFigureMessage = (
+  projectId: string,
+  compositionId: string,
+  messageId: string,
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/messages/${encodeURIComponent(messageId)}/cancel`,
+    figureDocumentSchema,
+    { method: "POST" },
   );
 export const listFigureHistory = (
   projectId: string,

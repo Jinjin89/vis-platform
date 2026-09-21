@@ -913,6 +913,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Figure Message */
+        post: operations["send_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages/{message_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer Figure Message */
+        post: operations["answer_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages/{message_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Figure Message */
+        post: operations["cancel_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
         parameters: {
             query?: never;
@@ -1868,6 +1919,11 @@ export interface components {
              * @description Recent renders of plots at their panel sizes.
              */
             jobs?: components["schemas"]["FigureRenderJob"][];
+            /**
+             * Messages
+             * @description The figure assistant conversation, oldest first.
+             */
+            messages?: components["schemas"]["FigureMessage"][];
         };
         /** FigureCompositionHistory */
         FigureCompositionHistory: {
@@ -1945,6 +2001,53 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** FigureMessage */
+        FigureMessage: {
+            /** Message Id */
+            message_id: string;
+            /** Prompt */
+            prompt: string;
+            selection?: components["schemas"]["FigureSelection"] | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "awaiting_input" | "awaiting_approval" | "completed" | "failed" | "cancelled";
+            /**
+             * Phase
+             * @default planning
+             * @enum {string}
+             */
+            phase: "planning" | "editing" | "plotting" | "arranging" | "reviewing" | "finished";
+            /** Response Text */
+            response_text?: string | null;
+            /** Error */
+            error?: string | null;
+            question?: components["schemas"]["PlannerQuestions"] | null;
+            active_step?: components["schemas"]["FigurePlotStatus"] | null;
+            /** Completed Actions */
+            completed_actions?: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** FigureMessageAnswer */
+        FigureMessageAnswer: {
+            /** Interaction Id */
+            interaction_id: string;
+            /** Answers */
+            answers: components["schemas"]["ClarificationAnswer"][];
+        };
+        /** FigureMessageRequest */
+        FigureMessageRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Message */
+            message: string;
+            selection?: components["schemas"]["FigureSelection"] | null;
+        };
         /** FigureOperationsRequest */
         FigureOperationsRequest: {
             /** Request Id */
@@ -2014,6 +2117,38 @@ export interface components {
              */
             locked: boolean;
         };
+        /**
+         * FigurePlotStatus
+         * @description The plot step in progress; questions and approvals come from the shared plot agent.
+         */
+        FigurePlotStatus: {
+            /**
+             * Kind
+             * @default figure
+             * @constant
+             */
+            kind: "figure";
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Block Id
+             * @description The refined panel, if any.
+             */
+            block_id?: string | null;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "awaiting_input" | "awaiting_approval" | "completed" | "failed" | "cancelled";
+            /** Error */
+            error?: string | null;
+            assistant?: components["schemas"]["AssistantTurnAccepted"] | null;
+            assistant_state?: components["schemas"]["AssistantTurnSnapshot"] | null;
+            run?: components["schemas"]["PlotRunAccepted"] | null;
+            run_state?: components["schemas"]["PlotRunSnapshot"] | null;
+        };
         /** FigureRenderJob */
         FigureRenderJob: {
             /** Job Id */
@@ -2036,6 +2171,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** FigureSelection */
+        FigureSelection: {
+            /** Panel Ids */
+            panel_ids?: string[];
         };
         /** FigureSize */
         FigureSize: {
@@ -6666,6 +6806,166 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    send_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FigureMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    answer_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FigureMessageAnswer"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    cancel_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

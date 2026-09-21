@@ -55,6 +55,7 @@ export function FigurePageCanvas({
   onCommit,
   onRemove,
   onMenu,
+  onOpen,
 }: {
   document: FigureDocument;
   selected: string[];
@@ -66,6 +67,7 @@ export function FigurePageCanvas({
   ) => Promise<boolean>;
   onRemove: (ids: string[]) => void;
   onMenu: (event: React.MouseEvent<HTMLElement>, panelId: string) => void;
+  onOpen: (panelId: string) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ width: 900, height: 700 });
@@ -367,8 +369,8 @@ export function FigurePageCanvas({
       (_, i) => i * rulerStep,
     );
   return (
-    <div className="figure-canvas">
-      <div className="figure-zoom" role="group" aria-label="Zoom">
+    <div className="composition-canvas">
+      <div className="composition-zoom" role="group" aria-label="Zoom">
         <button
           type="button"
           aria-label="Zoom out"
@@ -392,19 +394,25 @@ export function FigurePageCanvas({
           +
         </button>
       </div>
-      <div className="figure-stage" ref={container}>
+      <div className="composition-stage" ref={container}>
         <div
-          className="figure-sheet"
+          className="composition-sheet"
           style={{ width: toPx(page.width_mm), height: toPx(pageHeight) }}
         >
-          <div className="figure-ruler figure-ruler-x" aria-hidden="true">
+          <div
+            className="composition-ruler composition-ruler-x"
+            aria-hidden="true"
+          >
             {ticks(page.width_mm).map((mm) => (
               <span key={mm} style={{ left: toPx(mm) }}>
                 {mm}
               </span>
             ))}
           </div>
-          <div className="figure-ruler figure-ruler-y" aria-hidden="true">
+          <div
+            className="composition-ruler composition-ruler-y"
+            aria-hidden="true"
+          >
             {ticks(pageHeight).map((mm) => (
               <span key={mm} style={{ top: toPx(mm) }}>
                 {mm}
@@ -412,7 +420,7 @@ export function FigurePageCanvas({
             ))}
           </div>
           <div
-            className="figure-page"
+            className="composition-page"
             role="region"
             aria-label="Figure page"
             data-height-mode={page.height_mode}
@@ -422,7 +430,7 @@ export function FigurePageCanvas({
             }}
           >
             <div
-              className="figure-margin"
+              className="composition-margin"
               aria-hidden="true"
               style={{ inset: toPx(page.margin_mm) }}
             />
@@ -436,7 +444,7 @@ export function FigurePageCanvas({
               return (
                 <div
                   key={panel.id}
-                  className="figure-panel"
+                  className="composition-panel"
                   role="button"
                   tabIndex={0}
                   aria-pressed={isSelected}
@@ -451,6 +459,7 @@ export function FigurePageCanvas({
                   }}
                   onPointerDown={(event) => startMove(event, panel)}
                   onKeyDown={(event) => keyOnPanel(event, panel)}
+                  onDoubleClick={() => onOpen(panel.id)}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     if (!isSelected) onSelect([panel.id]);
@@ -460,11 +469,11 @@ export function FigurePageCanvas({
                   {source ? (
                     <img src={source} alt={title} draggable={false} />
                   ) : (
-                    <span className="figure-panel-missing">{title}</span>
+                    <span className="composition-panel-missing">{title}</span>
                   )}
                   {label ? (
                     <span
-                      className="figure-panel-label"
+                      className="composition-panel-label"
                       style={{
                         fontSize: `${labelSize}px`,
                         fontWeight: labels.bold ? 700 : 400,
@@ -475,21 +484,23 @@ export function FigurePageCanvas({
                     </span>
                   ) : null}
                   {document.updates[panel.id] ? (
-                    <span className="figure-panel-badge">Update available</span>
+                    <span className="composition-panel-badge">
+                      Update available
+                    </span>
                   ) : null}
                   {rendering.has(panel.id) ? (
-                    <span className="figure-panel-rendering" role="status">
+                    <span className="composition-panel-rendering" role="status">
                       Rendering at panel size…
                     </span>
                   ) : null}
                   {panel.locked ? (
-                    <span className="figure-panel-lock" aria-hidden="true">
+                    <span className="composition-panel-lock" aria-hidden="true">
                       Locked
                     </span>
                   ) : null}
                   {isSelected && selected.length === 1 && !panel.locked ? (
                     <span
-                      className="figure-resize-handle"
+                      className="composition-resize-handle"
                       role="slider"
                       tabIndex={0}
                       aria-label={`Resize panel ${label ?? title}`}
@@ -506,13 +517,13 @@ export function FigurePageCanvas({
             })}
             {guides?.x != null ? (
               <div
-                className="figure-guide figure-guide-x"
+                className="composition-guide composition-guide-x"
                 style={{ left: toPx(guides.x) }}
               />
             ) : null}
             {guides?.y != null ? (
               <div
-                className="figure-guide figure-guide-y"
+                className="composition-guide composition-guide-y"
                 style={{ top: toPx(guides.y) }}
               />
             ) : null}

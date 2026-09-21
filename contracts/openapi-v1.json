@@ -4189,6 +4189,257 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Send Figure Message",
+        "operationId": "send_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FigureMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages/{message_id}/answer": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Answer Figure Message",
+        "operationId": "answer_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__answer_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FigureMessageAnswer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/messages/{message_id}/cancel": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Cancel Figure Message",
+        "operationId": "cancel_figure_message_api_v1_projects__project_id__figure_compositions__composition_id__messages__message_id__cancel_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          },
+          {
+            "name": "message_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Message Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
       "get": {
         "tags": [
@@ -6752,6 +7003,14 @@
             "type": "array",
             "title": "Jobs",
             "description": "Recent renders of plots at their panel sizes."
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/FigureMessage"
+            },
+            "type": "array",
+            "title": "Messages",
+            "description": "The figure assistant conversation, oldest first."
           }
         },
         "additionalProperties": false,
@@ -6928,6 +7187,173 @@
         "additionalProperties": false,
         "type": "object",
         "title": "FigureLegend"
+      },
+      "FigureMessage": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigureSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "awaiting_input",
+              "awaiting_approval",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "editing",
+              "plotting",
+              "arranging",
+              "reviewing",
+              "finished"
+            ],
+            "title": "Phase",
+            "default": "planning"
+          },
+          "response_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Text"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlannerQuestions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active_step": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigurePlotStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_actions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Completed Actions"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "message_id",
+          "prompt",
+          "status",
+          "created_at"
+        ],
+        "title": "FigureMessage"
+      },
+      "FigureMessageAnswer": {
+        "properties": {
+          "interaction_id": {
+            "type": "string",
+            "title": "Interaction Id"
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/ClarificationAnswer"
+            },
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 1,
+            "title": "Answers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "interaction_id",
+          "answers"
+        ],
+        "title": "FigureMessageAnswer"
+      },
+      "FigureMessageRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "selection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigureSelection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "message"
+        ],
+        "title": "FigureMessageRequest"
       },
       "FigureOperationsRequest": {
         "properties": {
@@ -7138,6 +7564,108 @@
         ],
         "title": "FigurePanel"
       },
+      "FigurePlotStatus": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "figure",
+            "title": "Kind",
+            "default": "figure"
+          },
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "block_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Block Id",
+            "description": "The refined panel, if any."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "awaiting_input",
+              "awaiting_approval",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "assistant": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssistantTurnAccepted"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "assistant_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssistantTurnSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlotRunAccepted"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlotRunSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id",
+          "prompt",
+          "status"
+        ],
+        "title": "FigurePlotStatus",
+        "description": "The plot step in progress; questions and approvals come from the shared plot agent."
+      },
       "FigureRenderJob": {
         "properties": {
           "job_id": {
@@ -7194,6 +7722,23 @@
           "created_at"
         ],
         "title": "FigureRenderJob"
+      },
+      "FigureSelection": {
+        "properties": {
+          "panel_ids": {
+            "items": {
+              "type": "string",
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Panel Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FigureSelection"
       },
       "FigureSize": {
         "properties": {

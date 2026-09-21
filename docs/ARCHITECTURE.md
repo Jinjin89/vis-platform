@@ -600,4 +600,7 @@ report newer ones as available updates. A layout solver turns row/column arrange
 into geometry, and plots can be re-rendered at their panel size through the existing
 parameter update. These placement renders never become a plot's current version.
 Non-blocking checks report margins, overlaps, small text, image resolution, label
-order, and unused space. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).
+order, and unused space. A separate figure planner turns messages into edits,
+additions, plot steps through the shared assistant and plot pipeline, and
+arrangement trees. It reviews remaining warnings for at most two rounds. See
+[FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).

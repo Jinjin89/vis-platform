@@ -5,7 +5,10 @@ import {
   decideApproval,
 } from "../../api/client";
 import { plannerQuestionsSchema } from "../../api/schemas/planner";
-import { reportEditActive, type ReportEdit } from "../../api/schemas/reports";
+import {
+  reportEditActive,
+  type PlotRequestProgress,
+} from "../../api/schemas/reports";
 import { PlannerQuestionCard } from "../plot-run/PlannerQuestionCard";
 
 export function ReportEditStatus({
@@ -16,7 +19,7 @@ export function ReportEditStatus({
   onRetry,
   showPrompt = true,
 }: {
-  edit: ReportEdit;
+  edit: PlotRequestProgress;
   projectId: string;
   refresh: () => Promise<unknown>;
   onCancel: () => Promise<unknown>;

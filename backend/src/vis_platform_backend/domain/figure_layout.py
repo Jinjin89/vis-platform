@@ -118,3 +118,25 @@ def rows_arrangement(rows: list[list[FigurePanel]]) -> ArrangementNode:
         panels: list[ArrangementNode] = [ArrangedPanel(panel_id=panel.id) for panel in row]
         groups.append(panels[0] if len(panels) == 1 else ArrangedGroup(type="row", children=panels))
     return groups[0] if len(groups) == 1 else ArrangedGroup(type="column", children=groups)
+
+
+def append_below(
+    frames: Mapping[str, PanelFrame],
+    natural: tuple[float, float],
+    *,
+    page_width: float,
+    page_height: float,
+    margin: float,
+    gutter: float,
+) -> tuple[float, float, float]:
+    """A new panel's provisional place: below the content, at most half the printable width.
+
+    Returns x, y, and scale. An arrangement normally follows and decides the final layout.
+    """
+    width, height = natural
+    top = max((f.y_mm + f.height_mm + gutter for f in frames.values()), default=margin)
+    room = page_height - margin - top
+    if room < MIN_PANEL_MM:
+        top, room = margin, page_height - 2 * margin
+    scale = min(1.0, (page_width - 2 * margin - gutter) / 2 / width, room / height)
+    return margin, top, max(0.05, int(scale * 1000) / 1000)

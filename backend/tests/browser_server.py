@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 import uvicorn
+from figure_plans import BrowserFigurePlanner
 from report_plans import BrowserReportPlanner
 from test_datasets import ProfileOnlyAgent, research_plan
 from transcriptomic_plans import transcriptomic_plan
@@ -212,6 +213,7 @@ if __name__ == "__main__":
                 data_agent=BrowserDataAgent(),
                 figure_size_agent=BrowserFigureSizeAgent(),
                 report_planner=BrowserReportPlanner(),
+                figure_planner=BrowserFigurePlanner(),
             ),
             host="127.0.0.1",
             port=18188,

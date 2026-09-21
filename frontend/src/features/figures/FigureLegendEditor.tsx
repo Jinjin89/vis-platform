@@ -58,9 +58,12 @@ export function FigureLegendEditor({
   }
   const panels = orderedPanels(document);
   return (
-    <div className="figure-inspector figure-legend" aria-label="Figure legend">
+    <div
+      className="composition-inspector composition-legend"
+      aria-label="Figure legend"
+    >
       <header>
-        <span className="figure-kicker">Legend</span>
+        <span className="composition-kicker">Legend</span>
         <h2>Manuscript text</h2>
         <small>
           The legend is exported as text. Entries follow their panels when
@@ -68,7 +71,7 @@ export function FigureLegendEditor({
         </small>
       </header>
       <fieldset disabled={busy}>
-        <label className="figure-field figure-field-stacked">
+        <label className="composition-field composition-field-stacked">
           <span>Figure summary</span>
           <textarea
             key={legend.title}
@@ -82,7 +85,10 @@ export function FigureLegendEditor({
         {panels.map((panel) => {
           const label = document.panels[panel.id]?.label;
           return (
-            <label key={panel.id} className="figure-field figure-field-stacked">
+            <label
+              key={panel.id}
+              className="composition-field composition-field-stacked"
+            >
               <span>
                 {label ? `(${label}) ` : ""}
                 {panelTitle(document, panel)}
@@ -108,7 +114,10 @@ export function FigureLegendEditor({
         })}
         {!panels.length ? <p>Add panels to describe them here.</p> : null}
       </fieldset>
-      <section className="figure-legend-preview" aria-label="Legend preview">
+      <section
+        className="composition-legend-preview"
+        aria-label="Legend preview"
+      >
         <p>{legendText(document)}</p>
         <button
           type="button"

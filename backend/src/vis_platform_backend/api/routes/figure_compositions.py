@@ -14,9 +14,14 @@ from vis_platform_backend.contracts.figure_compositions import (
     FigureCompositionList,
     SaveFigureComposition,
 )
+from vis_platform_backend.contracts.figure_messages import (
+    FigureMessageAnswer,
+    FigureMessageRequest,
+)
 from vis_platform_backend.contracts.figures import FigureExportFormat
 from vis_platform_backend.services.figure_arrangement import FigureArrangementService
 from vis_platform_backend.services.figure_compositions import FigureCompositionService
+from vis_platform_backend.services.figure_messages import FigureMessageRuntime
 
 router = APIRouter(
     prefix="/projects/{project_id}/figure-compositions",
@@ -37,6 +42,13 @@ def get_arrangement(request: Request) -> FigureArrangementService:
 
 
 Arrangement = Annotated[FigureArrangementService, Depends(get_arrangement)]
+
+
+def get_messages(request: Request) -> FigureMessageRuntime:
+    return cast(FigureMessageRuntime, request.app.state.figure_messages)
+
+
+Messages = Annotated[FigureMessageRuntime, Depends(get_messages)]
 
 
 @router.get("")
@@ -86,6 +98,31 @@ async def render_composition_panels(
     project_id: str, composition_id: str, request: RenderRequest, service: Arrangement
 ) -> FigureCompositionDocument:
     return service.render(project_id, composition_id, request)
+
+
+@router.post("/{composition_id}/messages", status_code=202)
+async def send_figure_message(
+    project_id: str, composition_id: str, request: FigureMessageRequest, service: Messages
+) -> FigureCompositionDocument:
+    return service.submit(project_id, composition_id, request)
+
+
+@router.post("/{composition_id}/messages/{message_id}/answer", status_code=202)
+async def answer_figure_message(
+    project_id: str,
+    composition_id: str,
+    message_id: str,
+    request: FigureMessageAnswer,
+    service: Messages,
+) -> FigureCompositionDocument:
+    return service.answer(project_id, composition_id, message_id, request)
+
+
+@router.post("/{composition_id}/messages/{message_id}/cancel")
+async def cancel_figure_message(
+    project_id: str, composition_id: str, message_id: str, service: Messages
+) -> FigureCompositionDocument:
+    return await service.cancel(project_id, composition_id, message_id)
 
 
 @router.get("/{composition_id}/history")

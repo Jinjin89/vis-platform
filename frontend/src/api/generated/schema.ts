@@ -879,6 +879,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/arrange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Arrange Composition */
+        post: operations["arrange_composition_api_v1_projects__project_id__figure_compositions__composition_id__arrange_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/renders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render Composition Panels */
+        post: operations["render_composition_panels_api_v1_projects__project_id__figure_compositions__composition_id__renders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
         parameters: {
             query?: never;
@@ -1111,6 +1145,59 @@ export interface components {
              */
             schema_version: "1.0";
             decision: components["schemas"]["ApprovalDecision"];
+        };
+        /** ArrangeRequest */
+        ArrangeRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Base Revision */
+            base_revision: number;
+            /**
+             * Arrangement
+             * @description Omit to tidy the current rows: panels keep their reading-order rows and fill the printable width.
+             */
+            arrangement?: (components["schemas"]["ArrangedPanel"] | components["schemas"]["ArrangedGroup"]) | null;
+            /**
+             * Gutter Mm
+             * @default 4
+             */
+            gutter_mm: number;
+            /**
+             * Render
+             * @description Render arranged plots at their assigned sizes, so text prints at true size.
+             * @default false
+             */
+            render: boolean;
+            /**
+             * Summary
+             * @default Arranged panels
+             */
+            summary: string;
+        };
+        /** ArrangedGroup */
+        ArrangedGroup: {
+            /**
+             * @description A row shares one height across its children; a column shares one width. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            type: "column" | "row";
+            /** Children */
+            children: (components["schemas"]["ArrangedPanel"] | components["schemas"]["ArrangedGroup"])[];
+        };
+        /** ArrangedPanel */
+        ArrangedPanel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "panel";
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Aspect
+             * @description Preferred width / height when the plot is rendered at its panel size. Scaled content always keeps its natural proportions.
+             */
+            aspect?: number | null;
         };
         /** ArtifactReference */
         ArtifactReference: {
@@ -1672,6 +1759,23 @@ export interface components {
              */
             reasoning_content_exposed: false;
         };
+        /** FigureCheck */
+        FigureCheck: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "outside_margin" | "overlap" | "small_text" | "low_resolution" | "label_order" | "unused_space";
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "warning" | "info";
+            /** Message */
+            message: string;
+            /** Panel Ids */
+            panel_ids?: string[];
+        };
         /** FigureCompositionContent */
         FigureCompositionContent: {
             /**
@@ -1690,6 +1794,12 @@ export interface components {
              */
             panels?: components["schemas"]["FigurePanel"][];
             legend?: components["schemas"]["FigureLegend"];
+            /**
+             * Min Font Pt
+             * @description Text smaller than this on the printed page is reported by the checks.
+             * @default 5
+             */
+            min_font_pt: number;
         };
         /** FigureCompositionDocument */
         FigureCompositionDocument: {
@@ -1748,6 +1858,16 @@ export interface components {
             updates?: {
                 [key: string]: string;
             };
+            /**
+             * Checks
+             * @description Layout and print problems; none of them block saving.
+             */
+            checks?: components["schemas"]["FigureCheck"][];
+            /**
+             * Jobs
+             * @description Recent renders of plots at their panel sizes.
+             */
+            jobs?: components["schemas"]["FigureRenderJob"][];
         };
         /** FigureCompositionHistory */
         FigureCompositionHistory: {
@@ -1832,7 +1952,7 @@ export interface components {
             /** Base Revision */
             base_revision: number;
             /** Operations */
-            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["MovePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
+            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["SetMinimumFont"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["MovePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
             /**
              * Summary
              * @default Edited figure
@@ -1893,6 +2013,29 @@ export interface components {
              * @default false
              */
             locked: boolean;
+        };
+        /** FigureRenderJob */
+        FigureRenderJob: {
+            /** Job Id */
+            job_id: string;
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "completed" | "failed" | "discarded";
+            /** Width Mm */
+            width_mm: number;
+            /** Height Mm */
+            height_mm: number;
+            /** Error */
+            error?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** FigureSize */
         FigureSize: {
@@ -2387,6 +2530,13 @@ export interface components {
              */
             font_family: string;
         };
+        /** PanelRenderSize */
+        PanelRenderSize: {
+            /** Width Mm */
+            width_mm: number;
+            /** Height Mm */
+            height_mm: number;
+        };
         /** ParameterUpdateRequest */
         ParameterUpdateRequest: {
             /**
@@ -2506,6 +2656,11 @@ export interface components {
             type: "plot";
             /** Version Id */
             version_id: string;
+            /**
+             * Source Version Id
+             * @description The version this panel's rendering was sized from. Update checks compare against it.
+             */
+            source_version_id?: string | null;
             /**
              * Ignored Version Id
              * @description A newer version of this plot that the user chose not to apply.
@@ -2973,6 +3128,15 @@ export interface components {
             unit?: string | null;
             /** Input Mode */
             input_mode?: ("slider" | "number") | null;
+        };
+        /** RenderRequest */
+        RenderRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Panels */
+            panels: {
+                [key: string]: components["schemas"]["PanelRenderSize"];
+            };
         };
         /** RenderTextControl */
         RenderTextControl: {
@@ -3592,6 +3756,16 @@ export interface components {
              */
             op: "set_legend";
             legend: components["schemas"]["FigureLegend"];
+        };
+        /** SetMinimumFont */
+        SetMinimumFont: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_min_font";
+            /** Min Font Pt */
+            min_font_pt: number;
         };
         /** SetPanelGeometry */
         SetPanelGeometry: {
@@ -6384,6 +6558,114 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    arrange_composition_api_v1_projects__project_id__figure_compositions__composition_id__arrange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArrangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    render_composition_panels_api_v1_projects__project_id__figure_compositions__composition_id__renders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenderRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -32,6 +32,7 @@ from vis_platform_backend.services.assistant_turns import (
     AssistantTurnService,
     DeveloperTraceAccessError,
 )
+from vis_platform_backend.services.figure_arrangement import FigureArrangementService
 from vis_platform_backend.services.figure_compositions import FigureCompositionService
 from vis_platform_backend.services.figure_exports import FigureExporter
 from vis_platform_backend.services.plot_runs import (
@@ -135,10 +136,15 @@ def create_app(
         report_messages.recover()
         # Created after the report store, which owns the shared figure selection table.
         composition_store = FigureCompositionRepository(resolved_settings.database_path)
-        app.state.figure_compositions = FigureCompositionService(
+        figure_compositions = FigureCompositionService(
             composition_store, repository, reference_images, figure_exporter
         )
+        app.state.figure_compositions = figure_compositions
+        figure_arrangement = FigureArrangementService(figure_compositions, coordinator)
+        app.state.figure_arrangement = figure_arrangement
+        figure_arrangement.recover()
         yield
+        await figure_arrangement.shutdown()
         composition_store.close()
         await report_messages.shutdown()
         await report_service.shutdown()

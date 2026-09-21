@@ -210,11 +210,13 @@ def test_operations_edit_an_isolated_copy():
         {"op": "remove_panel", "panel_id": "a"},
         {"op": "set_panel_geometry", "panels": {"b": {"x_mm": 1, "y_mm": 2, "scale": 0.5}}},
         {"op": "set_title", "title": "Figure 2"},
+        {"op": "set_min_font", "min_font_pt": 6},
     )
     assert [item.id for item in changed.panels] == ["c", "b"]
     assert (changed.panels[1].x_mm, changed.panels[1].y_mm, changed.panels[1].scale) == (1, 2, 0.5)
     assert changed.legend.entries == {"b": "Second"}
     assert changed.title == "Figure 2"
+    assert changed.min_font_pt == 6
     assert [item.id for item in original.panels] == ["a", "b"]
     reordered = apply(
         {"op": "move_panel", "panel_id": "a"},

@@ -56,8 +56,11 @@ export function presetId(page: FigurePage): string {
   );
 }
 
-export const round = (value: number, step = 0.1) =>
-  Math.round(value / step) * step;
+/** Round to a step without binary floating-point residue (27.9, not 27.900000000000002). */
+export function round(value: number, step = 0.1): number {
+  const decimals = Math.max(0, Math.ceil(-Math.log10(step)));
+  return Number((Math.round(value / step) * step).toFixed(decimals));
+}
 
 export function plotNaturalSize(figure: PlotResult | undefined): Size | null {
   const size = figure?.figure_size;

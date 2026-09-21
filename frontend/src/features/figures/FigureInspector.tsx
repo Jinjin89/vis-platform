@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type {
+  FigureCheck,
   FigureDocument,
   FigureOperation,
   FigurePage,
   FigurePanel,
   PanelLabelStyle,
 } from "../../api/schemas/figureCompositions";
+import type { PlotResult } from "../../api/schemas/plotRun";
 import {
   PAGE_PRESETS,
   align,
@@ -22,6 +24,73 @@ type Apply = (
   operations: FigureOperation[],
   summary: string,
 ) => Promise<boolean>;
+export type RenderSizes = Record<
+  string,
+  { width_mm: number; height_mm: number }
+>;
+type Render = (panels: RenderSizes) => Promise<boolean>;
+
+/** Plots rendered in figures must be at least 1 inch on each side. */
+const MIN_RENDER_MM = 25.4;
+
+export function canRender(figure: PlotResult | undefined): boolean {
+  const controls = new Set(figure?.controls?.map((control) => control.id));
+  return (
+    !!figure?.parameter_updates_available &&
+    controls.has("figure_width") &&
+    controls.has("figure_height")
+  );
+}
+
+function renderablePanels(document: FigureDocument, panels: FigurePanel[]) {
+  return panels.filter((panel) => {
+    const frame = document.panels[panel.id]?.frame;
+    return (
+      panel.content.type === "plot" &&
+      canRender(document.figures[panel.content.version_id]) &&
+      !!frame &&
+      frame.width_mm >= MIN_RENDER_MM &&
+      frame.height_mm >= MIN_RENDER_MM
+    );
+  });
+}
+
+function atPanelSize(document: FigureDocument, panels: FigurePanel[]) {
+  return Object.fromEntries(
+    panels.map((panel) => {
+      const frame = document.panels[panel.id]!.frame;
+      return [
+        panel.id,
+        { width_mm: frame.width_mm, height_mm: frame.height_mm },
+      ];
+    }),
+  );
+}
+
+function ChecksList({
+  checks,
+  onSelect,
+}: {
+  checks: FigureCheck[];
+  onSelect: (ids: string[]) => void;
+}) {
+  return (
+    <ul className="figure-checks">
+      {checks.map((check, index) => (
+        <li key={`${check.code}-${index}`} data-severity={check.severity}>
+          <span>{check.severity === "warning" ? "Check" : "Note"}</span>
+          {check.panel_ids.length ? (
+            <button type="button" onClick={() => onSelect(check.panel_ids)}>
+              {check.message}
+            </button>
+          ) : (
+            <p>{check.message}</p>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function NumberField({
   label,
@@ -88,12 +157,14 @@ export function FigureInspector({
   selected,
   busy,
   onApply,
+  onRender,
   onSelect,
 }: {
   document: FigureDocument;
   selected: string[];
   busy: boolean;
   onApply: Apply;
+  onRender: Render;
   onSelect: (ids: string[]) => void;
 }) {
   const panels = document.content.panels.filter((panel) =>
@@ -107,6 +178,7 @@ export function FigureInspector({
         panel={panels[0]!}
         busy={busy}
         onApply={onApply}
+        onRender={onRender}
         onSelect={onSelect}
       />
     );
@@ -117,10 +189,18 @@ export function FigureInspector({
         panels={panels}
         busy={busy}
         onApply={onApply}
+        onRender={onRender}
         onSelect={onSelect}
       />
     );
-  return <PageInspector document={document} busy={busy} onApply={onApply} />;
+  return (
+    <PageInspector
+      document={document}
+      busy={busy}
+      onApply={onApply}
+      onSelect={onSelect}
+    />
+  );
 }
 
 function PanelInspector({
@@ -128,14 +208,19 @@ function PanelInspector({
   panel,
   busy,
   onApply,
+  onRender,
   onSelect,
 }: {
   document: FigureDocument;
   panel: FigurePanel;
   busy: boolean;
   onApply: Apply;
+  onRender: Render;
   onSelect: (ids: string[]) => void;
 }) {
+  const checks = document.checks.filter((check) =>
+    check.panel_ids.includes(panel.id),
+  );
   const resolved = document.panels[panel.id];
   const natural = naturalSize(document, panel.id);
   const page = document.content.page;
@@ -169,7 +254,12 @@ function PanelInspector({
     const width = resolved?.frame.width_mm ?? natural.width * panel.scale;
     void replace(
       {
-        content: { type: "plot", version_id: update, ignored_version_id: null },
+        content: {
+          type: "plot",
+          version_id: update,
+          source_version_id: null,
+          ignored_version_id: null,
+        },
         scale: next
           ? clampScale(panel, next, page, width / next.width)
           : panel.scale,
@@ -214,6 +304,18 @@ function PanelInspector({
             </button>
           </div>
         </div>
+      ) : null}
+      {checks.length ? (
+        <ChecksList checks={checks} onSelect={onSelect} />
+      ) : null}
+      {panel.content.type === "plot" ? (
+        <RenderControls
+          key={`${panel.id}-${resolved?.frame.width_mm}-${resolved?.frame.height_mm}`}
+          document={document}
+          panel={panel}
+          busy={busy}
+          onRender={onRender}
+        />
       ) : null}
       <fieldset disabled={busy}>
         <legend>Label</legend>
@@ -375,6 +477,93 @@ function PanelInspector({
   );
 }
 
+function RenderControls({
+  document,
+  panel,
+  busy,
+  onRender,
+}: {
+  document: FigureDocument;
+  panel: FigurePanel;
+  busy: boolean;
+  onRender: Render;
+}) {
+  const frame = document.panels[panel.id]!.frame;
+  const [size, setSize] = useState({
+    width_mm: round(frame.width_mm, 0.1),
+    height_mm: round(frame.height_mm, 0.1),
+  });
+  const running = document.jobs.some(
+    (job) => job.panel_id === panel.id && job.status === "running",
+  );
+  const figure =
+    panel.content.type === "plot"
+      ? document.figures[panel.content.version_id]
+      : undefined;
+  if (!canRender(figure))
+    return (
+      <fieldset>
+        <legend>Print size</legend>
+        <small>
+          This plot has no size controls, so it can only be scaled on the page.
+        </small>
+      </fieldset>
+    );
+  const page = document.content.page;
+  const fits =
+    panel.x_mm + size.width_mm <= page.width_mm + 0.01 &&
+    panel.y_mm + size.height_mm <= page.height_mm + 0.01;
+  return (
+    <fieldset disabled={busy || running}>
+      <legend>Print size</legend>
+      <small>
+        {Math.abs(panel.scale - 1) < 0.001
+          ? "Shown at the size it was rendered."
+          : `Scaled to ${Math.round(panel.scale * 100)}% of its rendered size.`}{" "}
+        Rendering at the printed size keeps text and lines as designed.
+      </small>
+      <button
+        type="button"
+        disabled={
+          frame.width_mm < MIN_RENDER_MM || frame.height_mm < MIN_RENDER_MM
+        }
+        onClick={() => void onRender(atPanelSize(document, [panel]))}
+      >
+        Render at panel size
+      </button>
+      <div className="figure-field-grid">
+        <NumberField
+          label="Render width"
+          unit="mm"
+          value={size.width_mm}
+          min={MIN_RENDER_MM}
+          max={page.width_mm}
+          onCommit={(width_mm) => setSize({ ...size, width_mm })}
+        />
+        <NumberField
+          label="Render height"
+          unit="mm"
+          value={size.height_mm}
+          min={MIN_RENDER_MM}
+          max={page.height_mm}
+          onCommit={(height_mm) => setSize({ ...size, height_mm })}
+        />
+      </div>
+      <button
+        type="button"
+        disabled={!fits}
+        onClick={() => void onRender({ [panel.id]: size })}
+      >
+        Render at this shape
+      </button>
+      {!fits ? <small>That size would extend beyond the page.</small> : null}
+      {running ? (
+        <small role="status">Rendering the plot at its new size…</small>
+      ) : null}
+    </fieldset>
+  );
+}
+
 const alignments: { value: Alignment; label: string }[] = [
   { value: "left", label: "Align left" },
   { value: "center", label: "Align centres" },
@@ -389,14 +578,17 @@ function GroupInspector({
   panels,
   busy,
   onApply,
+  onRender,
   onSelect,
 }: {
   document: FigureDocument;
   panels: FigurePanel[];
   busy: boolean;
   onApply: Apply;
+  onRender: Render;
   onSelect: (ids: string[]) => void;
 }) {
+  const renderable = renderablePanels(document, panels);
   const movable = panels.filter((panel) => !panel.locked);
   const frames = Object.fromEntries(
     movable.map((panel) => [panel.id, document.panels[panel.id]!.frame]),
@@ -464,6 +656,16 @@ function GroupInspector({
           </button>
         </div>
       </fieldset>
+      <fieldset disabled={busy || !renderable.length}>
+        <legend>Print size</legend>
+        <button
+          type="button"
+          onClick={() => void onRender(atPanelSize(document, renderable))}
+        >
+          Render {renderable.length}{" "}
+          {renderable.length === 1 ? "plot" : "plots"} at panel size
+        </button>
+      </fieldset>
       <fieldset disabled={busy}>
         <legend>Remove</legend>
         <button
@@ -493,10 +695,12 @@ function PageInspector({
   document,
   busy,
   onApply,
+  onSelect,
 }: {
   document: FigureDocument;
   busy: boolean;
   onApply: Apply;
+  onSelect: (ids: string[]) => void;
 }) {
   const { page, labels } = document.content;
   const preset = presetId(page);
@@ -521,6 +725,28 @@ function PageInspector({
           Select a panel to edit it.
         </small>
       </header>
+      <fieldset disabled={busy}>
+        <legend>Checks</legend>
+        {document.checks.length ? (
+          <ChecksList checks={document.checks} onSelect={onSelect} />
+        ) : (
+          <small>No layout or print problems found.</small>
+        )}
+        <NumberField
+          label="Smallest printed text"
+          unit="pt"
+          step={0.5}
+          value={document.content.min_font_pt}
+          min={4}
+          max={12}
+          onCommit={(min_font_pt) =>
+            void onApply(
+              [{ op: "set_min_font", min_font_pt }],
+              "Changed the smallest text size",
+            )
+          }
+        />
+      </fieldset>
       <fieldset disabled={busy}>
         <legend>Size</legend>
         <label className="figure-field">

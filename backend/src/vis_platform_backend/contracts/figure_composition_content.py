@@ -46,6 +46,12 @@ class PanelLabelStyle(StrictModel):
 class PlotPanelContent(StrictModel):
     type: Literal["plot"] = "plot"
     version_id: Identifier
+    source_version_id: Identifier | None = Field(
+        default=None,
+        description=(
+            "The version this panel's rendering was sized from. Update checks compare against it."
+        ),
+    )
     ignored_version_id: Identifier | None = Field(
         default=None, description="A newer version of this plot that the user chose not to apply."
     )
@@ -100,6 +106,13 @@ class FigureCompositionContent(StrictModel):
         description="Drawing order: later panels are drawn on top.",
     )
     legend: FigureLegend = Field(default_factory=FigureLegend)
+    min_font_pt: float = Field(
+        default=5,
+        ge=4,
+        le=12,
+        allow_inf_nan=False,
+        description="Text smaller than this on the printed page is reported by the checks.",
+    )
 
     @model_validator(mode="after")
     def consistent_references(self) -> FigureCompositionContent:

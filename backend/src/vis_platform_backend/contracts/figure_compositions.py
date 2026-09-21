@@ -36,6 +36,30 @@ class ResolvedPanel(StrictModel):
     natural_height_mm: float
 
 
+class FigureCheck(StrictModel):
+    code: Literal[
+        "outside_margin",
+        "overlap",
+        "small_text",
+        "low_resolution",
+        "label_order",
+        "unused_space",
+    ]
+    severity: Literal["warning", "info"]
+    message: str
+    panel_ids: list[str] = Field(default_factory=list)
+
+
+class FigureRenderJob(StrictModel):
+    job_id: str
+    panel_id: str
+    status: Literal["running", "completed", "failed", "discarded"]
+    width_mm: float
+    height_mm: float
+    error: str | None = None
+    created_at: datetime
+
+
 class FigureCompositionSummary(StrictModel):
     composition_id: str
     project_id: str
@@ -56,6 +80,12 @@ class FigureCompositionDocument(FigureCompositionSummary):
     images: dict[str, ReferenceImage]
     updates: dict[str, str] = Field(
         default_factory=dict, description="Newer plot versions available, keyed by panel ID."
+    )
+    checks: list[FigureCheck] = Field(
+        default_factory=list, description="Layout and print problems; none of them block saving."
+    )
+    jobs: list[FigureRenderJob] = Field(
+        default_factory=list, description="Recent renders of plots at their panel sizes."
     )
 
 

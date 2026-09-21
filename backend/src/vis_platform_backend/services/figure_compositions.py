@@ -15,6 +15,7 @@ from vis_platform_backend.contracts.figure_compositions import (
     FigureCompositionDocument,
     FigureCompositionHistory,
     FigureCompositionList,
+    FigureRenderJob,
     PanelFrame,
     ResolvedPanel,
     SaveFigureComposition,
@@ -23,6 +24,7 @@ from vis_platform_backend.contracts.figures import FigureExportFormat
 from vis_platform_backend.contracts.plot_runs import PlotResultSummary
 from vis_platform_backend.contracts.reference_images import ReferenceImage
 from vis_platform_backend.data.errors import DataError
+from vis_platform_backend.domain.figure_checks import figure_checks
 from vis_platform_backend.domain.figure_compositions import (
     MM_PER_INCH,
     check_bounds,
@@ -41,6 +43,7 @@ from vis_platform_backend.services.figure_exports import (
     FigureExporter,
     download_name,
 )
+from vis_platform_backend.services.figure_svg import smallest_text_pt
 from vis_platform_backend.services.reference_images import ReferenceImageService
 
 
@@ -68,6 +71,8 @@ class FigureCompositionService:
             images,
             exporter,
         )
+        # Immutable versions have fixed text sizes, so measurements are kept per version.
+        self._text_sizes: dict[str, tuple[float, bool]] = {}
 
     def check_project(self, project_id: str) -> None:
         if not self.repository.project_exists(project_id):
@@ -82,6 +87,12 @@ class FigureCompositionService:
     def _natural_plot_size(self, figure: PlotResultSummary) -> tuple[float, float]:
         size = figure.figure_size or self.exporter.plot_svg(figure)[1]
         return plot_natural_size(size.width, size.height)
+
+    def smallest_text(self, figure: PlotResultSummary) -> tuple[float, bool]:
+        if figure.version_id not in self._text_sizes:
+            root, size = self.exporter.plot_svg(figure)
+            self._text_sizes[figure.version_id] = smallest_text_pt(root, size.width)
+        return self._text_sizes[figure.version_id]
 
     def resolve(self, project_id: str, content: FigureCompositionContent) -> ResolvedComposition:
         """Check every reference against the project and derive the geometry the page uses."""
@@ -131,10 +142,33 @@ class FigureCompositionService:
         updates: dict[str, str] = {}
         for panel_id, plot in plot_panels:
             newest = latest.get(figures[plot.version_id].plot_id)
-            if newest and newest not in (plot.version_id, plot.ignored_version_id):
+            known = (plot.version_id, plot.source_version_id, plot.ignored_version_id)
+            if newest and newest not in known:
                 updates[panel_id] = newest
                 if newest not in figures:
                     figures[newest] = self.figure(project_id, newest)
+        checks = figure_checks(
+            content,
+            resolved.frames,
+            resolved.labels,
+            resolved.page_height_mm,
+            {
+                panel_id: self.smallest_text(resolved.figures[plot.version_id])
+                for panel_id, plot in plot_panels
+            },
+        )
+        jobs = [
+            FigureRenderJob(
+                job_id=job["job_id"],
+                panel_id=job["state"]["panel_id"],
+                status=job["status"],
+                width_mm=job["state"]["width_mm"],
+                height_mm=job["state"]["height_mm"],
+                error=job["state"].get("error"),
+                created_at=job["created_at"],
+            )
+            for job in self.store.jobs(composition_id)
+        ]
         return FigureCompositionDocument(
             composition_id=composition_id,
             project_id=project_id,
@@ -156,6 +190,8 @@ class FigureCompositionService:
             figures=figures,
             images=resolved.images,
             updates=updates,
+            checks=checks,
+            jobs=jobs,
         )
 
     def list_compositions(self, project_id: str, offset: int) -> FigureCompositionList:

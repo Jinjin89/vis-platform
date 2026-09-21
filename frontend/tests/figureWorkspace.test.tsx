@@ -13,11 +13,12 @@ import { FigureWorkspace } from "../src/features/figures/FigureWorkspace";
 const api = vi.hoisted(() => ({
   getFigure: vi.fn(),
   applyFigureOperations: vi.fn(),
+  arrangeFigure: vi.fn(),
+  renderFigurePanels: vi.fn(),
 }));
 vi.mock("../src/api/figureCompositions", async (original) => ({
   ...(await original<typeof import("../src/api/figureCompositions")>()),
-  getFigure: api.getFigure,
-  applyFigureOperations: api.applyFigureOperations,
+  ...api,
 }));
 
 const preview = (id: string) => ({
@@ -36,6 +37,18 @@ const figure = (id: string, title: string) => ({
   figure_size: { width: 4, height: 3, unit: "in" },
   title,
   validation: { status: "demo_only", warnings: [] },
+  parameter_updates_available: true,
+  controls: ["width", "height"].map((dimension) => ({
+    id: `figure_${dimension}`,
+    type: "number",
+    label: `Figure ${dimension}`,
+    group: "figure_size",
+    value: 4,
+    minimum: 1,
+    maximum: 30,
+    step: 0.01,
+    unit: "in",
+  })),
 });
 
 function makeDocument(revision = 1): FigureDocument {
@@ -87,6 +100,14 @@ function makeDocument(revision = 1): FigureDocument {
     },
     images: {},
     updates: { violin: "version-c" },
+    checks: [
+      {
+        code: "small_text",
+        severity: "warning",
+        message: "The smallest text in Panel A prints at 3.1 pt, below 5 pt.",
+        panel_ids: ["umap"],
+      },
+    ],
   });
 }
 
@@ -110,6 +131,8 @@ function sentOperations(): FigureOperation[] {
 beforeEach(() => {
   api.getFigure.mockResolvedValue(makeDocument());
   api.applyFigureOperations.mockImplementation(async () => makeDocument(2));
+  api.arrangeFigure.mockImplementation(async () => makeDocument(2));
+  api.renderFigurePanels.mockImplementation(async () => makeDocument(1));
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -177,6 +200,7 @@ test("the inspector applies a newer version while keeping the panel width", asyn
         content: {
           type: "plot",
           version_id: "version-c",
+          source_version_id: null,
           ignored_version_id: null,
         },
         scale: 0.5,
@@ -202,4 +226,43 @@ test("custom labels and removal use panel operations", async () => {
   ]);
   await user.click(screen.getByRole("button", { name: "Remove panel" }));
   expect(sentOperations()).toEqual([{ op: "remove_panel", panel_id: "umap" }]);
+});
+
+test("checks select their panels and plots render at their panel size", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+  const check = await screen.findByRole("button", {
+    name: /smallest text in Panel A/,
+  });
+  await user.click(check);
+  expect(
+    screen.getByRole("button", { name: "Panel A: Cell clusters" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await user.click(
+    screen.getByRole("button", { name: "Render at panel size" }),
+  );
+  expect(api.renderFigurePanels).toHaveBeenCalledWith(
+    "project-1",
+    "figure-1",
+    expect.any(String),
+    { umap: { width_mm: 101.6, height_mm: 76.2 } },
+  );
+});
+
+test("tidying rows can also render plots", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+  await user.click(await screen.findByText("Arrange"));
+  await user.click(
+    screen.getByRole("menuitem", {
+      name: "Tidy rows and render plots at size",
+    }),
+  );
+  expect(api.arrangeFigure).toHaveBeenCalledWith(
+    "project-1",
+    "figure-1",
+    1,
+    expect.any(String),
+    expect.objectContaining({ render: true }),
+  );
 });

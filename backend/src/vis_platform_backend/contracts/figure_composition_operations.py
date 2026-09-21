@@ -30,6 +30,11 @@ class SetLabelStyle(StrictModel):
     labels: PanelLabelStyle
 
 
+class SetMinimumFont(StrictModel):
+    op: Literal["set_min_font"]
+    min_font_pt: float = Field(ge=4, le=12, allow_inf_nan=False)
+
+
 class AddPanel(StrictModel):
     op: Literal["add_panel"]
     panel: FigurePanel
@@ -76,6 +81,7 @@ FigureOperation = Annotated[
     SetFigureTitle
     | SetFigurePage
     | SetLabelStyle
+    | SetMinimumFont
     | AddPanel
     | ReplacePanel
     | MovePanel

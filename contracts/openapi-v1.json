@@ -4027,6 +4027,168 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/arrange": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Arrange Composition",
+        "operationId": "arrange_composition_api_v1_projects__project_id__figure_compositions__composition_id__arrange_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArrangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/renders": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Render Composition Panels",
+        "operationId": "render_composition_panels_api_v1_projects__project_id__figure_compositions__composition_id__renders_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
       "get": {
         "tags": [
@@ -4736,6 +4898,155 @@
           "decision"
         ],
         "title": "ApprovalDecisionRequest"
+      },
+      "ArrangeRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Revision"
+          },
+          "arrangement": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ArrangedPanel"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ArrangedGroup"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "column": "#/components/schemas/ArrangedGroup",
+                    "panel": "#/components/schemas/ArrangedPanel",
+                    "row": "#/components/schemas/ArrangedGroup"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrangement",
+            "description": "Omit to tidy the current rows: panels keep their reading-order rows and fill the printable width."
+          },
+          "gutter_mm": {
+            "type": "number",
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Gutter Mm",
+            "default": 4
+          },
+          "render": {
+            "type": "boolean",
+            "title": "Render",
+            "description": "Render arranged plots at their assigned sizes, so text prints at true size.",
+            "default": false
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Summary",
+            "default": "Arranged panels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "base_revision"
+        ],
+        "title": "ArrangeRequest"
+      },
+      "ArrangedGroup": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "row",
+              "column"
+            ],
+            "title": "Type",
+            "description": "A row shares one height across its children; a column shares one width."
+          },
+          "children": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ArrangedPanel"
+                },
+                {
+                  "$ref": "#/components/schemas/ArrangedGroup"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "column": "#/components/schemas/ArrangedGroup",
+                  "panel": "#/components/schemas/ArrangedPanel",
+                  "row": "#/components/schemas/ArrangedGroup"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Children"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "children"
+        ],
+        "title": "ArrangedGroup"
+      },
+      "ArrangedPanel": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "panel",
+            "title": "Type",
+            "default": "panel"
+          },
+          "panel_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Panel Id"
+          },
+          "aspect": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMaximum": 10.0,
+                "exclusiveMinimum": 0.1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aspect",
+            "description": "Preferred width / height when the plot is rendered at its panel size. Scaled content always keeps its natural proportions."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id"
+        ],
+        "title": "ArrangedPanel"
       },
       "ArtifactReference": {
         "properties": {
@@ -6261,6 +6572,49 @@
         ],
         "title": "DeveloperTraceResponse"
       },
+      "FigureCheck": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "outside_margin",
+              "overlap",
+              "small_text",
+              "low_resolution",
+              "label_order",
+              "unused_space"
+            ],
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "info"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "panel_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Panel Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "FigureCheck"
+      },
       "FigureCompositionContent": {
         "properties": {
           "schema_version": {
@@ -6292,6 +6646,14 @@
           },
           "legend": {
             "$ref": "#/components/schemas/FigureLegend"
+          },
+          "min_font_pt": {
+            "type": "number",
+            "maximum": 12.0,
+            "minimum": 4.0,
+            "title": "Min Font Pt",
+            "description": "Text smaller than this on the printed page is reported by the checks.",
+            "default": 5
           }
         },
         "additionalProperties": false,
@@ -6374,6 +6736,22 @@
             "type": "object",
             "title": "Updates",
             "description": "Newer plot versions available, keyed by panel ID."
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/FigureCheck"
+            },
+            "type": "array",
+            "title": "Checks",
+            "description": "Layout and print problems; none of them block saving."
+          },
+          "jobs": {
+            "items": {
+              "$ref": "#/components/schemas/FigureRenderJob"
+            },
+            "type": "array",
+            "title": "Jobs",
+            "description": "Recent renders of plots at their panel sizes."
           }
         },
         "additionalProperties": false,
@@ -6577,6 +6955,9 @@
                   "$ref": "#/components/schemas/SetLabelStyle"
                 },
                 {
+                  "$ref": "#/components/schemas/SetMinimumFont"
+                },
+                {
                   "$ref": "#/components/schemas/AddPanel"
                 },
                 {
@@ -6604,6 +6985,7 @@
                   "replace_panel": "#/components/schemas/ReplacePanel",
                   "set_label_style": "#/components/schemas/SetLabelStyle",
                   "set_legend": "#/components/schemas/SetLegend",
+                  "set_min_font": "#/components/schemas/SetMinimumFont",
                   "set_page": "#/components/schemas/SetFigurePage",
                   "set_panel_geometry": "#/components/schemas/SetPanelGeometry",
                   "set_title": "#/components/schemas/SetFigureTitle"
@@ -6755,6 +7137,63 @@
           "y_mm"
         ],
         "title": "FigurePanel"
+      },
+      "FigureRenderJob": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "failed",
+              "discarded"
+            ],
+            "title": "Status"
+          },
+          "width_mm": {
+            "type": "number",
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "title": "Height Mm"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "job_id",
+          "panel_id",
+          "status",
+          "width_mm",
+          "height_mm",
+          "created_at"
+        ],
+        "title": "FigureRenderJob"
       },
       "FigureSize": {
         "properties": {
@@ -8385,6 +8824,29 @@
         "type": "object",
         "title": "PanelLabelStyle"
       },
+      "PanelRenderSize": {
+        "properties": {
+          "width_mm": {
+            "type": "number",
+            "maximum": 762.0,
+            "minimum": 25.4,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "maximum": 762.0,
+            "minimum": 25.4,
+            "title": "Height Mm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width_mm",
+          "height_mm"
+        ],
+        "title": "PanelRenderSize"
+      },
       "ParameterUpdateRequest": {
         "properties": {
           "schema_version": {
@@ -8683,6 +9145,20 @@
             "maxLength": 160,
             "minLength": 1,
             "title": "Version Id"
+          },
+          "source_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Version Id",
+            "description": "The version this panel's rendering was sized from. Update checks compare against it."
           },
           "ignored_version_id": {
             "anyOf": [
@@ -9917,6 +10393,36 @@
           "step"
         ],
         "title": "RenderNumberControl"
+      },
+      "RenderRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "panels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PanelRenderSize"
+            },
+            "propertyNames": {
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 40,
+            "minProperties": 1,
+            "title": "Panels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "panels"
+        ],
+        "title": "RenderRequest"
       },
       "RenderTextControl": {
         "properties": {
@@ -11724,6 +12230,28 @@
           "legend"
         ],
         "title": "SetLegend"
+      },
+      "SetMinimumFont": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_min_font",
+            "title": "Op"
+          },
+          "min_font_pt": {
+            "type": "number",
+            "maximum": 12.0,
+            "minimum": 4.0,
+            "title": "Min Font Pt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "min_font_pt"
+        ],
+        "title": "SetMinimumFont"
       },
       "SetPanelGeometry": {
         "properties": {

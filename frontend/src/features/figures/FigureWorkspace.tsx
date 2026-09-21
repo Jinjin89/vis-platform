@@ -4,11 +4,13 @@ import { useSearchParams } from "react-router";
 import { createMutationId, type FigureExportFormat } from "../../api/client";
 import {
   applyFigureOperations,
+  arrangeFigure,
   createFigure,
   downloadFigure,
   exportFigureContent,
   getFigure,
   listFigures,
+  renderFigurePanels,
   saveFigure,
 } from "../../api/figureCompositions";
 import {
@@ -29,7 +31,7 @@ import {
   NewFigureDialog,
   figureExportUrl,
 } from "./FigureDialogs";
-import { FigureInspector } from "./FigureInspector";
+import { FigureInspector, type RenderSizes } from "./FigureInspector";
 import { FigureLegendEditor } from "./FigureLegendEditor";
 import { FigurePageCanvas, panelTitle } from "./FigurePageCanvas";
 import {
@@ -258,8 +260,14 @@ function FigureEditor({
   const query = useQuery({
     queryKey: ["figure", projectId, figureId],
     queryFn: () => getFigure(projectId, figureId),
+    refetchInterval: (current) =>
+      current.state.data?.jobs.some((job) => job.status === "running")
+        ? 1000
+        : false,
   });
   const document = query.data;
+  const [openedAt] = useState(() => Date.now());
+  const [dismissed, setDismissed] = useState<string[]>([]);
   useEffect(() => {
     if (!menu) return;
     const close = () => setMenu(null);
@@ -332,6 +340,7 @@ function FigureEditor({
       {
         type: "plot",
         version_id: figure.version_id,
+        source_version_id: null,
         ignored_version_id: null,
       },
       plotNaturalSize(figure) ?? FALLBACK_PLOT_SIZE,
@@ -343,6 +352,27 @@ function FigureEditor({
       imageNaturalSize(image),
       "Added image panel",
     );
+  const render = (panels: RenderSizes) =>
+    execute(() =>
+      renderFigurePanels(projectId, figureId, createMutationId(), panels),
+    );
+  const tidy = (renderPlots: boolean) =>
+    document
+      ? execute(() =>
+          arrangeFigure(
+            projectId,
+            figureId,
+            document.revision,
+            createMutationId(),
+            {
+              render: renderPlots,
+              summary: renderPlots
+                ? "Tidied rows and rendered plots at their sizes"
+                : "Tidied rows",
+            },
+          ),
+        )
+      : Promise.resolve(false);
   const remove = (ids: string[]) =>
     void apply(
       ids.map((id) => ({ op: "remove_panel" as const, panel_id: id })),
@@ -392,6 +422,13 @@ function FigureEditor({
     (panel) => panel.id === menu?.panelId,
   );
   const updates = Object.keys(document.updates).length;
+  // Render problems from this session stay visible until dismissed.
+  const failures = document.jobs.filter(
+    (job) =>
+      (job.status === "failed" || job.status === "discarded") &&
+      Date.parse(job.created_at) >= openedAt - 1000 &&
+      !dismissed.includes(job.job_id),
+  );
   return (
     <section className="figure-workspace">
       <header className="figure-toolbar">
@@ -432,6 +469,27 @@ function FigureEditor({
           >
             + Image
           </button>
+          <details className="figure-export">
+            <summary>Arrange</summary>
+            <div role="menu" aria-label="Arrange panels">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy || !document.content.panels.length}
+                onClick={() => void tidy(false)}
+              >
+                Tidy rows
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy || !document.content.panels.length}
+                onClick={() => void tidy(true)}
+              >
+                Tidy rows and render plots at size
+              </button>
+            </div>
+          </details>
           <button type="button" onClick={() => setDialog("history")}>
             History
           </button>
@@ -472,6 +530,17 @@ function FigureEditor({
           </button>
         </div>
       ) : null}
+      {failures.map((job) => (
+        <div className="figure-error" role="alert" key={job.job_id}>
+          {job.error ?? "A plot could not be rendered at its panel size."}
+          <button
+            type="button"
+            onClick={() => setDismissed([...dismissed, job.job_id])}
+          >
+            Dismiss
+          </button>
+        </div>
+      ))}
       {updates ? (
         <p className="figure-notice" role="status">
           {updates === 1
@@ -547,6 +616,7 @@ function FigureEditor({
               selected={selected}
               busy={busy}
               onApply={apply}
+              onRender={render}
               onSelect={setSelected}
             />
           ) : (

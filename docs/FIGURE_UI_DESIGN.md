@@ -1,6 +1,6 @@
 # Figure composer design
 
-Status: agreed design; Phases 1 (backend foundation) and 2 (editor) implemented
+Status: agreed design; Phases 1–3 (backend foundation, editor, fitting and checks) implemented
 Last updated: 2026-09-21
 
 The fifth interface, **Figure**, combines saved plots and uploaded images into one
@@ -113,6 +113,7 @@ Operations are applied atomically, up to 50 per request:
 | `set_title` | Rename the figure. |
 | `set_page` | Change page size, height mode, or margin. |
 | `set_label_style` | Change label case, size, weight, or font. |
+| `set_min_font` | Change the smallest printed text size the checks accept. |
 | `add_panel` | Add a panel at an optional drawing-order position. |
 | `replace_panel` | Replace a panel's content, label, position, scale, or lock state. |
 | `move_panel` | Change a panel's drawing order. |
@@ -201,22 +202,58 @@ message → figure planner → steps
   visual weight, alignment, consistent type, and whitespace. They do not encode
   layouts for specific plot types.
 
-## 7. Fitting plots to panels (Phase 3)
+## 7. Fitting plots to panels and checks (Phase 3)
 
-Rendering a plot at its panel size uses the existing `figure_width` and
-`figure_height` parameter update. This involves no model call and reuses the saved
-analysis. The resulting version replaces the panel's version and records the
-version it was derived from, so update checks compare against the source. Fitting
-never publishes a shared figure selection. Phase 3 also decides whether these
-versions should move a plot's current version in Workspace.
+### Rendering at panel size
 
-Checks report, without blocking:
+`POST .../renders` renders one or more plot panels at a size in millimetres. It
+uses the existing `figure_width` and `figure_height` parameter update, so there is
+no model call and the saved analysis is reused. Only versions whose renderer
+accepts those controls can be rendered; other content is scaled.
 
-- panels outside margins
-- unintended overlap
-- effective font size below the figure minimum
-- large empty areas
-- labels out of reading order
+- Each panel render is a job that follows its plot run. When the run completes,
+  the panel's `version_id` becomes the new version, `source_version_id` records
+  the version it was sized from, and its scale becomes 1, so the panel keeps its
+  frame.
+- If the panel changed while the render ran, the result is not applied and the
+  job is marked `discarded`.
+- Sizes are rounded down to the control's 0.01 in step. Plots render at 1 in or
+  more; `arrange` renders smaller panels larger and scales them down.
+- **Placement versions do not become the plot's current version.** Workspace,
+  the saved-plot library, and update checks in other documents are unaffected.
+  The version still appears in the plot's history, marked "Render at figure panel
+  size".
+- Update checks compare the newest version against both the panel's version and
+  its `source_version_id`.
+- Demonstration drawings use a fixed canvas, so their text scales with the render
+  size. R drawings keep their point sizes, so rendering at the printed size keeps
+  their text as designed.
+
+### Arranging
+
+`POST .../arrange` accepts an arrangement tree (section 6) or none. Without a
+tree, the current reading-order rows are tidied: each row shares a height and
+fills the printable width.
+
+- Locked panels keep their positions and cannot appear in the tree. The
+  arrangement starts below them.
+- The result is one `set_panel_geometry` revision.
+- With `render: true`, plots are then rendered at their assigned frames, and a
+  leaf's `aspect` sets the shape of a rendered plot. Scaled content keeps its
+  natural proportions.
+
+### Checks
+
+Every document response lists checks. They never block saving.
+
+| Check | Severity | Rule |
+| --- | --- | --- |
+| `outside_margin` | warning | A panel extends into the page margin. |
+| `overlap` | warning | Two panels partly overlap. A panel entirely inside another is an inset and is not reported. |
+| `small_text` | warning | A plot's smallest text, multiplied by its scale, is below `min_font_pt` (default 5 pt). Sizes are measured from SVG text elements. Drawings that draw text as outlines, such as R's SVG device, are assumed to have 8 pt smallest text, and the message says "about". |
+| `low_resolution` | warning | An image is enlarged beyond its 300 dpi placement. |
+| `label_order` | info | Custom labels do not follow the reading order. |
+| `unused_space` | info | Panels cover less than half of the printable area. |
 
 ## 8. Frontend (Phase 2)
 

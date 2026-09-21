@@ -596,5 +596,8 @@ versions and uploaded images on a publication page. Panels store millimetre
 positions and a scale over each content's natural size; the backend resolves
 geometry, reading-order labels, and page height, and composes exports from the
 saved drawings without re-execution. Panels stay pinned to their versions and
-report newer ones as available updates. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md)
-for the contract, API, and the planned editor and figure agent.
+report newer ones as available updates. A layout solver turns row/column arrangements
+into geometry, and plots can be re-rendered at their panel size through the existing
+parameter update. These placement renders never become a plot's current version.
+Non-blocking checks report margins, overlaps, small text, image resolution, label
+order, and unused space. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).

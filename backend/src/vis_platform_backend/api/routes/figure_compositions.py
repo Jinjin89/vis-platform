@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse
 
 from vis_platform_backend.contracts.common import ApiErrorEnvelope
+from vis_platform_backend.contracts.figure_arrangement import ArrangeRequest, RenderRequest
 from vis_platform_backend.contracts.figure_composition_content import FigureCompositionContent
 from vis_platform_backend.contracts.figure_composition_operations import FigureOperationsRequest
 from vis_platform_backend.contracts.figure_compositions import (
@@ -14,6 +15,7 @@ from vis_platform_backend.contracts.figure_compositions import (
     SaveFigureComposition,
 )
 from vis_platform_backend.contracts.figures import FigureExportFormat
+from vis_platform_backend.services.figure_arrangement import FigureArrangementService
 from vis_platform_backend.services.figure_compositions import FigureCompositionService
 
 router = APIRouter(
@@ -28,6 +30,13 @@ def get_service(request: Request) -> FigureCompositionService:
 
 
 Compositions = Annotated[FigureCompositionService, Depends(get_service)]
+
+
+def get_arrangement(request: Request) -> FigureArrangementService:
+    return cast(FigureArrangementService, request.app.state.figure_arrangement)
+
+
+Arrangement = Annotated[FigureArrangementService, Depends(get_arrangement)]
 
 
 @router.get("")
@@ -63,6 +72,20 @@ def apply_composition_operations(
     project_id: str, composition_id: str, request: FigureOperationsRequest, service: Compositions
 ) -> FigureCompositionDocument:
     return service.operations(project_id, composition_id, request)
+
+
+@router.post("/{composition_id}/arrange")
+async def arrange_composition(
+    project_id: str, composition_id: str, request: ArrangeRequest, service: Arrangement
+) -> FigureCompositionDocument:
+    return service.arrange(project_id, composition_id, request)
+
+
+@router.post("/{composition_id}/renders", status_code=202)
+async def render_composition_panels(
+    project_id: str, composition_id: str, request: RenderRequest, service: Arrangement
+) -> FigureCompositionDocument:
+    return service.render(project_id, composition_id, request)
 
 
 @router.get("/{composition_id}/history")

@@ -24,6 +24,7 @@ from vis_platform_backend.contracts.figure_composition_operations import (
     SetFigureTitle,
     SetLabelStyle,
     SetLegend,
+    SetMinimumFont,
     SetPanelGeometry,
 )
 from vis_platform_backend.contracts.figure_compositions import PanelFrame
@@ -54,6 +55,8 @@ def apply_figure_operations(
             result["page"] = operation.page.model_dump(mode="json")
         elif isinstance(operation, SetLabelStyle):
             result["labels"] = operation.labels.model_dump(mode="json")
+        elif isinstance(operation, SetMinimumFont):
+            result["min_font_pt"] = operation.min_font_pt
         elif isinstance(operation, AddPanel):
             index = (
                 _panel_index(panels, operation.before_id) if operation.before_id else len(panels)
@@ -136,10 +139,10 @@ def page_height(content: FigureCompositionContent, frames: Mapping[str, PanelFra
     return round(min(page.height_mm, max(MIN_PAGE_HEIGHT_MM, bottom + page.margin_mm)), 3)
 
 
-def reading_order(
+def reading_rows(
     panels: Sequence[FigurePanel], frames: Mapping[str, PanelFrame]
-) -> list[FigurePanel]:
-    """Group panels into rows, then read each row from left to right.
+) -> list[list[FigurePanel]]:
+    """Group panels into rows, each read from left to right.
 
     A panel joins the current row when it starts above the middle of the row's shortest panel.
     """
@@ -154,7 +157,13 @@ def reading_order(
                 row.append(panel)
                 continue
         rows.append([panel])
-    return [panel for row in rows for panel in sorted(row, key=lambda item: frames[item.id].x_mm)]
+    return [sorted(row, key=lambda item: frames[item.id].x_mm) for row in rows]
+
+
+def reading_order(
+    panels: Sequence[FigurePanel], frames: Mapping[str, PanelFrame]
+) -> list[FigurePanel]:
+    return [panel for row in reading_rows(panels, frames) for panel in row]
 
 
 def _letters(style: PanelLabelStyle) -> Iterator[str]:

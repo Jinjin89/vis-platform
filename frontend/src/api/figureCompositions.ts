@@ -9,6 +9,7 @@ import {
   figureDocumentSchema,
   figureHistorySchema,
   figureListSchema,
+  type FigureArrangement,
   type FigureContent,
   type FigureOperation,
 } from "./schemas/figureCompositions";
@@ -61,6 +62,45 @@ export const applyFigureOperations = (
         operations,
         summary,
       }),
+    },
+  );
+export const arrangeFigure = (
+  projectId: string,
+  compositionId: string,
+  baseRevision: number,
+  requestId: string,
+  options: {
+    arrangement?: FigureArrangement;
+    render?: boolean;
+    summary: string;
+  },
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/arrange`,
+    figureDocumentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        request_id: requestId,
+        base_revision: baseRevision,
+        arrangement: options.arrangement ?? null,
+        render: options.render ?? false,
+        summary: options.summary,
+      }),
+    },
+  );
+export const renderFigurePanels = (
+  projectId: string,
+  compositionId: string,
+  requestId: string,
+  panels: Record<string, { width_mm: number; height_mm: number }>,
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/renders`,
+    figureDocumentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({ request_id: requestId, panels }),
     },
   );
 export const listFigureHistory = (

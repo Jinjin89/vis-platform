@@ -35,6 +35,7 @@ export const panelContentSchema = z.discriminatedUnion("type", [
     .object({
       type: z.literal("plot"),
       version_id: identifier,
+      source_version_id: identifier.nullable().default(null),
       ignored_version_id: identifier.nullable().default(null),
     })
     .strict(),
@@ -77,6 +78,7 @@ export const figureContentSchema = z
     }),
     panels: z.array(figurePanelSchema).max(40).default([]),
     legend: figureLegendSchema.default({ title: "", entries: {} }),
+    min_font_pt: z.number().finite().min(4).max(12).default(5),
   })
   .strict()
   .refine(
@@ -99,6 +101,32 @@ const frameSchema = z
     y_mm: z.number(),
     width_mm: z.number(),
     height_mm: z.number(),
+  })
+  .strict();
+const checkSchema = z
+  .object({
+    code: z.enum([
+      "outside_margin",
+      "overlap",
+      "small_text",
+      "low_resolution",
+      "label_order",
+      "unused_space",
+    ]),
+    severity: z.enum(["warning", "info"]),
+    message: z.string(),
+    panel_ids: z.array(z.string()).default([]),
+  })
+  .strict();
+const jobSchema = z
+  .object({
+    job_id: z.string(),
+    panel_id: z.string(),
+    status: z.enum(["running", "completed", "failed", "discarded"]),
+    width_mm: z.number(),
+    height_mm: z.number(),
+    error: z.string().nullable().default(null),
+    created_at: z.string(),
   })
   .strict();
 const summarySchema = z
@@ -130,6 +158,8 @@ export const figureDocumentSchema = summarySchema
     figures: z.record(z.string(), plotResultSchema),
     images: z.record(z.string(), referenceImageSchema),
     updates: z.record(z.string(), z.string()).default({}),
+    checks: z.array(checkSchema).default([]),
+    jobs: z.array(jobSchema).default([]),
   })
   .strict() satisfies z.ZodType<
   components["schemas"]["FigureCompositionDocument"]
@@ -165,6 +195,10 @@ export type FigurePanel = z.infer<typeof figurePanelSchema>;
 export type FigureLegend = z.infer<typeof figureLegendSchema>;
 export type PanelLabelStyle = z.infer<typeof panelLabelStyleSchema>;
 export type PanelFrame = z.infer<typeof frameSchema>;
+export type FigureCheck = z.infer<typeof checkSchema>;
+export type FigureRenderJob = z.infer<typeof jobSchema>;
+export type FigureArrangement =
+  components["schemas"]["ArrangeRequest"]["arrangement"];
 export type PanelGeometry = Pick<FigurePanel, "x_mm" | "y_mm" | "scale">;
 export type FigureOperation =
   components["schemas"]["FigureOperationsRequest"]["operations"][number];

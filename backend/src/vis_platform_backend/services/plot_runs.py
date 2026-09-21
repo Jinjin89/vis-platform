@@ -97,7 +97,12 @@ class PlotRunCoordinator(Protocol):
     def get_run(self, run_id: str) -> PlotRunSnapshot: ...
 
     def update_parameters(
-        self, plot_id: str, request: ParameterUpdateRequest, *, idempotency_key: str | None = None
+        self,
+        plot_id: str,
+        request: ParameterUpdateRequest,
+        *,
+        idempotency_key: str | None = None,
+        placement: bool = False,
     ) -> PlotRunAccepted: ...
 
     def restore_version(
@@ -269,8 +274,14 @@ class DeterministicPlotRunCoordinator:
         return self._get_record(run_id)
 
     def update_parameters(
-        self, plot_id: str, request: ParameterUpdateRequest, *, idempotency_key: str | None = None
+        self,
+        plot_id: str,
+        request: ParameterUpdateRequest,
+        *,
+        idempotency_key: str | None = None,
+        placement: bool = False,
     ) -> PlotRunAccepted:
+        """A placement render sizes a version for one figure panel without making it current."""
         base = self._version_record(request.project_id, plot_id, request.base_version_id)
         result = PlotResultSummary.model_validate(base["result"])
         spec = base["interaction"].get("render_spec")
@@ -288,9 +299,11 @@ class DeterministicPlotRunCoordinator:
         labels = [control.label for control in result.controls if control.id in request.changes]
         child = dict(base["request"])
         child["base_version_id"] = request.base_version_id
-        child["request"] = {**child["request"], "text": "Adjust " + ", ".join(labels)}
+        text = "Render at figure panel size" if placement else "Adjust " + ", ".join(labels)
+        child["request"] = {**child["request"], "text": text}
         child["render_spec"] = {**spec, "parameters": values}
         child["operation"] = "parameters"
+        child["placement"] = placement
         return self._enqueue_run(child, idempotency_key=idempotency_key)
 
     def restore_version(
@@ -578,6 +591,7 @@ class DeterministicPlotRunCoordinator:
                 artifact_media_type=result.preview.media_type,
                 artifact_filename=prepared_result.artifact_path.name,
                 artifact_storage_path=prepared_result.artifact_path,
+                make_current=not record["request"].get("placement", False),
             )
             self._public_activity(
                 run_id,
@@ -821,6 +835,7 @@ class DeterministicPlotRunCoordinator:
             artifact_media_type=result.preview.media_type,
             artifact_filename=path.name,
             artifact_storage_path=path,
+            make_current=not request.get("placement", False),
         )
         self._append_event(
             run_id,

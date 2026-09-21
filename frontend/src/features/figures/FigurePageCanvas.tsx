@@ -350,6 +350,16 @@ export function FigurePageCanvas({
   }
 
   const labelSize = labels.size_pt * MM_PER_POINT * px;
+  const rendering = new Set(
+    document.jobs
+      .filter((job) => job.status === "running")
+      .map((job) => job.panel_id),
+  );
+  const flagged = new Set(
+    document.checks
+      .filter((check) => check.severity === "warning")
+      .flatMap((check) => check.panel_ids),
+  );
   const rulerStep = px * 10 >= 32 ? 10 : 50;
   const ticks = (length: number) =>
     Array.from(
@@ -432,6 +442,7 @@ export function FigurePageCanvas({
                   aria-pressed={isSelected}
                   aria-label={`Panel ${label ?? "without label"}: ${title}`}
                   data-locked={panel.locked}
+                  data-warning={flagged.has(panel.id)}
                   style={{
                     left: toPx(frame.x_mm),
                     top: toPx(frame.y_mm),
@@ -465,6 +476,11 @@ export function FigurePageCanvas({
                   ) : null}
                   {document.updates[panel.id] ? (
                     <span className="figure-panel-badge">Update available</span>
+                  ) : null}
+                  {rendering.has(panel.id) ? (
+                    <span className="figure-panel-rendering" role="status">
+                      Rendering at panel size…
+                    </span>
                   ) : null}
                   {panel.locked ? (
                     <span className="figure-panel-lock" aria-hidden="true">

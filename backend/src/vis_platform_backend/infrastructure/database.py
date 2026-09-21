@@ -301,7 +301,9 @@ class Repository:
         artifact_media_type: str,
         artifact_filename: str,
         artifact_storage_path: Path,
+        make_current: bool = True,
     ) -> None:
+        """Save a version; placement renders for figure panels leave the current version as is."""
         timestamp = utc_now().isoformat()
         with self._lock, self._connection:
             self._connection.execute(
@@ -334,10 +336,11 @@ class Repository:
                 """,
                 (version_id, plot_id, run_id, parent_version_id, timestamp),
             )
-            self._connection.execute(
-                "UPDATE plots SET current_version_id = ? WHERE plot_id = ?",
-                (version_id, plot_id),
-            )
+            if make_current:
+                self._connection.execute(
+                    "UPDATE plots SET current_version_id = ? WHERE plot_id = ?",
+                    (version_id, plot_id),
+                )
             self._connection.execute(
                 """
                 UPDATE plot_runs

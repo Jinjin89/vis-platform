@@ -149,3 +149,46 @@ test("history restores an earlier arrangement", async ({ page }) => {
   await expect(sheet.getByRole("button", { name: /^Panel A:/ })).toBeVisible();
   expect((await current(page, project)).revision).toBe(4);
 });
+
+test("tidy rows and render plots at their printed size", async ({ page }) => {
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await demoPlot(page, project, "Make a violin distribution of expression");
+  await demoPlot(page, project, "Make a scatter relationship plot");
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  await page
+    .getByRole("dialog", { name: "New figure" })
+    .getByRole("button", { name: "Create figure" })
+    .click();
+  await addPlot(page, /distribution/i);
+  await addPlot(page, /relationship/i);
+  const sheet = page.getByRole("region", { name: "Figure page" });
+  // Scale the second panel down so the rows are uneven before tidying.
+  await sheet.getByRole("button", { name: /^Panel B:/ }).click();
+  const scale = page.getByLabel("Panel properties").getByLabel("Scale");
+  await scale.fill("25");
+  await scale.press("Enter");
+  await expect
+    .poll(async () => (await current(page, project)).revision)
+    .toBe(4);
+  await page.locator("summary", { hasText: "Arrange" }).click();
+  await page
+    .getByRole("menuitem", { name: "Tidy rows and render plots at size" })
+    .click();
+  await expect
+    .poll(
+      async () =>
+        (await current(page, project)).jobs.map((job) => job.status).join(),
+      { timeout: 20000 },
+    )
+    .toBe("completed,completed");
+  const document = await current(page, project);
+  const [a, b] = document.content.panels;
+  expect(a!.scale).toBe(1);
+  expect(b!.scale).toBe(1);
+  const frameA = document.panels[a!.id]!.frame;
+  const frameB = document.panels[b!.id]!.frame;
+  expect(frameA.height_mm).toBeCloseTo(frameB.height_mm, 0);
+  expect(frameA.x_mm + frameA.width_mm + 4).toBeCloseTo(frameB.x_mm, 0);
+  await expect(sheet.getByText("Rendering at panel size…")).toHaveCount(0);
+});

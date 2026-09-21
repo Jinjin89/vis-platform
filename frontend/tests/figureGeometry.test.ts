@@ -13,6 +13,7 @@ import {
   imageNaturalSize,
   placeNewPanel,
   presetId,
+  round,
   snapFrame,
   snapTargets,
 } from "../src/features/figures/figureGeometry";
@@ -154,6 +155,12 @@ describe("figure geometry", () => {
       natural,
     );
     expect(below).toMatchObject({ x_mm: 5, y_mm: 76 });
+  });
+  it("rounds to steps without floating-point residue", () => {
+    expect(round(27.9)).toBe(27.9);
+    expect(String(round(27.9000000001))).toBe("27.9");
+    expect(round(0.41584, 0.001)).toBe(0.416);
+    expect(round(12.5, 0.5)).toBe(12.5);
   });
   it("places uploaded images at print resolution", () => {
     expect(imageNaturalSize({ width: 600, height: 300 })).toEqual({

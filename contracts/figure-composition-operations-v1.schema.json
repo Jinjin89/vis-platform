@@ -326,6 +326,21 @@
           "title": "Version Id",
           "type": "string"
         },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The version this panel's rendering was sized from. Update checks compare against it.",
+          "title": "Source Version Id"
+        },
         "ignored_version_id": {
           "anyOf": [
             {
@@ -468,6 +483,28 @@
       "title": "SetLegend",
       "type": "object"
     },
+    "SetMinimumFont": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_min_font",
+          "title": "Op",
+          "type": "string"
+        },
+        "min_font_pt": {
+          "maximum": 12,
+          "minimum": 4,
+          "title": "Min Font Pt",
+          "type": "number"
+        }
+      },
+      "required": [
+        "op",
+        "min_font_pt"
+      ],
+      "title": "SetMinimumFont",
+      "type": "object"
+    },
     "SetPanelGeometry": {
       "additionalProperties": false,
       "properties": {
@@ -521,6 +558,7 @@
             "replace_panel": "#/$defs/ReplacePanel",
             "set_label_style": "#/$defs/SetLabelStyle",
             "set_legend": "#/$defs/SetLegend",
+            "set_min_font": "#/$defs/SetMinimumFont",
             "set_page": "#/$defs/SetFigurePage",
             "set_panel_geometry": "#/$defs/SetPanelGeometry",
             "set_title": "#/$defs/SetFigureTitle"
@@ -536,6 +574,9 @@
           },
           {
             "$ref": "#/$defs/SetLabelStyle"
+          },
+          {
+            "$ref": "#/$defs/SetMinimumFont"
           },
           {
             "$ref": "#/$defs/AddPanel"

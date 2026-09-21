@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from collections.abc import Callable
 from pathlib import Path
@@ -52,6 +53,15 @@ class FigureCompositionRepository:
                 request_json TEXT NOT NULL,
                 result_revision INTEGER NOT NULL,
                 PRIMARY KEY(composition_id, request_id)
+            );
+            CREATE TABLE IF NOT EXISTS figure_composition_jobs (
+                job_id TEXT PRIMARY KEY,
+                composition_id TEXT NOT NULL REFERENCES figure_compositions(composition_id),
+                request_key TEXT NOT NULL,
+                status TEXT NOT NULL,
+                state_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(composition_id, request_key)
             );
         """)
 
@@ -171,6 +181,100 @@ class FigureCompositionRepository:
                 "INSERT INTO figure_composition_operations VALUES (?, ?, ?, ?)",
                 (composition_id, request.request_id, encoded, record["revision"] + 1),
             )
+
+    def change(
+        self,
+        project_id: str,
+        composition_id: str,
+        update: Callable[[FigureCompositionContent], FigureCompositionContent | None],
+        summary: str,
+        validate: Validator,
+    ) -> bool:
+        """Apply a background change to the latest revision; ``update`` returns None to skip."""
+        with self.lock, self.connection:
+            self.connection.execute("BEGIN IMMEDIATE")
+            record = self.get(project_id, composition_id)
+            updated = update(record["content"])
+            if updated is None:
+                return False
+            validate(updated)
+            self._commit(record, updated, summary)
+            return True
+
+    def create_jobs(
+        self, composition_id: str, request_id: str, states: list[dict[str, Any]]
+    ) -> list[str]:
+        """Record one render per panel; repeating a request returns its original jobs."""
+        job_ids = []
+        with self.lock, self.connection:
+            self.connection.execute("BEGIN IMMEDIATE")
+            for state in states:
+                key = f"{request_id}:{state['panel_id']}"
+                previous = self.connection.execute(
+                    "SELECT job_id, state_json FROM figure_composition_jobs "
+                    "WHERE composition_id = ? AND request_key = ?",
+                    (composition_id, key),
+                ).fetchone()
+                if previous:
+                    saved = json.loads(previous["state_json"])
+                    if (saved["width_mm"], saved["height_mm"]) != (
+                        state["width_mm"],
+                        state["height_mm"],
+                    ):
+                        raise DataError(
+                            "This render key was used for another size.", "CONFLICT", 409
+                        )
+                    job_ids.append(str(previous["job_id"]))
+                    continue
+                job_id = "figure_job_" + uuid4().hex
+                self.connection.execute(
+                    "INSERT INTO figure_composition_jobs VALUES (?, ?, ?, 'running', ?, ?)",
+                    (job_id, composition_id, key, json.dumps(state), utc_now().isoformat()),
+                )
+                job_ids.append(job_id)
+        return job_ids
+
+    def job(self, job_id: str) -> dict[str, Any]:
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT * FROM figure_composition_jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
+        if row is None:
+            raise DataError("The render was not found.", "NOT_FOUND", 404)
+        return self._job_record(row)
+
+    def update_job(self, job_id: str, status: str, changes: dict[str, Any]) -> None:
+        with self.lock, self.connection:
+            row = self.connection.execute(
+                "SELECT state_json FROM figure_composition_jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
+            state = {**json.loads(row["state_json"]), **changes}
+            self.connection.execute(
+                "UPDATE figure_composition_jobs SET status = ?, state_json = ? WHERE job_id = ?",
+                (status, json.dumps(state), job_id),
+            )
+
+    def jobs(self, composition_id: str, limit: int = 20) -> list[dict[str, Any]]:
+        with self.lock:
+            rows = self.connection.execute(
+                "SELECT * FROM figure_composition_jobs WHERE composition_id = ? "
+                "ORDER BY created_at DESC, rowid DESC LIMIT ?",
+                (composition_id, limit),
+            ).fetchall()
+        return [self._job_record(row) for row in rows]
+
+    def running_jobs(self) -> list[dict[str, Any]]:
+        with self.lock:
+            rows = self.connection.execute(
+                "SELECT * FROM figure_composition_jobs WHERE status = 'running'"
+            ).fetchall()
+        return [self._job_record(row) for row in rows]
+
+    @staticmethod
+    def _job_record(row: sqlite3.Row) -> dict[str, Any]:
+        record = dict(row)
+        record["state"] = json.loads(record.pop("state_json"))
+        return record
 
     def history(self, composition_id: str, offset: int) -> tuple[list[dict[str, Any]], int]:
         with self.lock:

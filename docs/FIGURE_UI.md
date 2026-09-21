@@ -36,6 +36,35 @@ project. Its plot versions and images must belong to that project.
 - Zoom with − / + at the bottom right. The percentage button fits the page to
   the window; at 100% a millimetre on the page is a physical millimetre.
 
+## Tidying and printed size
+
+- **Arrange → Tidy rows** keeps the current rows and gives the panels in each row
+  one height, filling the printable width with 4 mm gutters. Locked panels stay
+  where they are, and tidied rows start below them.
+- **Arrange → Tidy rows and render plots at size** also re-renders each plot at
+  its new frame, so text and lines print at their designed size.
+- A plot panel's **Print size** section renders it at its current panel size, or
+  at a new width and height to change its shape. Only plots with size controls can
+  be rendered; images and other plots are scaled. A rendering overlay shows while
+  it runs. The finished render replaces the panel at scale 100% and does not
+  change the plot's current version in Workspace. If you change the panel before
+  the render finishes, the result is discarded and a notice explains why.
+
+## Checks
+
+The Page tab lists layout and print checks, and the Panel tab lists the checks
+for the selected panel. Clicking a check selects its panels, and panels with
+warnings have a dashed outline.
+
+- **Warnings:** panels that extend into the margin, panels that partly overlap
+  (an inset fully inside another panel is fine), text that prints below the
+  smallest size set on the Page tab (5 pt by default), and images enlarged beyond
+  300 dpi.
+- **Notes:** custom labels out of reading order, and pages that are mostly empty.
+
+Plots whose text is drawn as outlines, as R's SVG device does, are estimated
+from an assumed 8 pt smallest text.
+
 ## Panel, page, and legend settings
 
 - **Panel tab (with a panel selected):**
@@ -75,6 +104,11 @@ re-run analyses.
   operations.
 - Browser tests create plots, compose a double-column figure, drag and nudge
   panels, relabel a panel, write its legend, export a PDF, reopen the figure
-  from the library, and restore a revision from history.
+  from the library, restore a revision from history, and tidy rows while
+  rendering plots at their printed size.
 - Backend tests cover the contract, geometry, labels, operations, revisions,
-  conflicts, project isolation, update notices, and all export formats.
+  conflicts, project isolation, update notices, and all export formats. They
+  also cover the arrangement solver (shared row heights, nested groups, page
+  limits), tidying around locked panels, every check, text measurement,
+  rendering at panel size without changing the current version, and discarding
+  renders for panels that changed.

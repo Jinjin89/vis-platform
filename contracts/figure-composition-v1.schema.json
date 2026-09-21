@@ -225,6 +225,21 @@
           "title": "Version Id",
           "type": "string"
         },
+        "source_version_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The version this panel's rendering was sized from. Update checks compare against it.",
+          "title": "Source Version Id"
+        },
         "ignored_version_id": {
           "anyOf": [
             {
@@ -279,6 +294,14 @@
     },
     "legend": {
       "$ref": "#/$defs/FigureLegend"
+    },
+    "min_font_pt": {
+      "default": 5,
+      "description": "Text smaller than this on the printed page is reported by the checks.",
+      "maximum": 12,
+      "minimum": 4,
+      "title": "Min Font Pt",
+      "type": "number"
     }
   },
   "required": [

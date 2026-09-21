@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import Field
 
 from .common import Identifier, StrictModel
+from .datasets import Dataset
 from .figure_composition_content import FigureCompositionContent
 from .figure_messages import FigureMessage
 from .plot_runs import PlotResultSummary
@@ -45,6 +46,7 @@ class FigureCheck(StrictModel):
         "low_resolution",
         "label_order",
         "unused_space",
+        "empty_slot",
     ]
     severity: Literal["warning", "info"]
     message: str
@@ -79,6 +81,9 @@ class FigureCompositionDocument(FigureCompositionSummary):
         description="Plot versions used by panels or offered as updates, keyed by version ID."
     )
     images: dict[str, ReferenceImage]
+    datasets: list[Dataset] = Field(
+        default_factory=list, description="The figure's datasets, in content order."
+    )
     updates: dict[str, str] = Field(
         default_factory=dict, description="Newer plot versions available, keyed by panel ID."
     )

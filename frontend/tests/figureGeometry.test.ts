@@ -13,6 +13,7 @@ import {
   imageNaturalSize,
   newPanelId,
   placeNewPanel,
+  placeNewSlot,
   presetId,
   round,
   snapFrame,
@@ -156,6 +157,28 @@ describe("figure geometry", () => {
       natural,
     );
     expect(below).toMatchObject({ x_mm: 5, y_mm: 76 });
+  });
+  it("shrinks a new slot into the space left on the page", () => {
+    expect(placeNewSlot(document([]))).toEqual({
+      x_mm: 5,
+      y_mm: 5,
+      scale: 1,
+      width: 90,
+      height: 67,
+    });
+    // Only 66 mm remain below these panels on a 297 mm page.
+    const full = document([
+      { id: "a", frame: frame(5, 5, 200, 142) },
+      { id: "b", frame: frame(5, 151, 98, 71) },
+      { id: "c", frame: frame(107, 151, 98, 71) },
+    ]);
+    expect(placeNewSlot(full)).toEqual({
+      x_mm: 5,
+      y_mm: 226,
+      scale: 1,
+      width: 90,
+      height: 66,
+    });
   });
   it("numbers new panels without repeating an ID", () => {
     expect(newPanelId(document([]))).toBe("panel-1");

@@ -1,12 +1,13 @@
 # Figure composer design
 
-Status: agreed design; Phases 1–4 implemented (backend foundation, editor, fitting and checks, figure agent)
+Status: agreed design; Phases 1–5 implemented (backend foundation, editor, fitting and checks, figure agent, building from data)
 Last updated: 2026-09-21
 
-The fifth interface, **Figure**, combines saved plots and uploaded images into one
-publication figure: typically a full A4 page, or an A4-width panel whose height
-follows its content. Panels are created and refined by the existing shared plot
-agent. A figure agent plans the composition, and the user can adjust the result
+The fifth interface, **Figure**, builds one publication figure: typically a full A4
+page, or an A4-width panel whose height follows its content. Like Report and Slides,
+it stands on its own: a figure can start from data and a description, from saved
+plots and uploaded images, or from both. Panels are created and refined by the
+existing shared plot agent. A figure agent plans the composition, and the user can adjust the result
 directly, like moving and resizing objects in an illustration editor. Every change,
 by agent or by hand, is a validated edit of one versioned JSON document.
 
@@ -18,6 +19,8 @@ by agent or by hand, is a validated edit of one versioned JSON document.
 | Plot updates | Panels are pinned to an immutable plot version. When a newer version of that plot exists, the panel reports an available update. The user can apply or ignore it. Figure edits never publish shared figure selections. |
 | Minimum plot size | `FigureSize` accepts 1–30 in in every interface, so small panels render at their true size. |
 | Page presets | A4 full page (210 × 297 mm), A4 width with automatic height, journal widths of 89, 120, and 183 mm with automatic height, and custom. Presets are frontend choices; the backend validates page dimensions. |
+| Starting point | A figure is standalone. It has its own datasets and can be built from data and a description, without saved plots. |
+| Build flow | Slots first. The assistant lays out the whole page as labelled slots, then fills them one at a time with the shared plot agent, each at its slot size. A slot that fails stays on the page with its error and can be retried. |
 
 A figure and a slide deck have different content. A figure has a page, panels
 labelled A, B, C, and a legend with one entry per panel. A slide deck has ordered
@@ -298,7 +301,89 @@ geometry. While a drag is in progress it previews positions locally; the saved
 revision's labels, bounds, and page height always come from the backend. Usage is
 documented in [FIGURE_UI.md](FIGURE_UI.md).
 
-## 9. Phases
+## 9. Building a figure from data (Phase 5)
+
+A figure can be built from a description of what it should show. The assistant
+designs the whole page first, then creates the plots one at a time, so the layout
+is visible from the start and each plot is made at the size it will print.
+
+### Contract additions
+
+- **`datasets`:** `[{ "dataset_id": "..." }]`, the figure's data, changed with the
+  `set_datasets` operation. Plots created in the figure use exactly these datasets
+  (`data_scope: selected`). With none selected, the plot agent discovers project
+  data (`data_scope: auto`). Refining an existing plot uses that plot's own inputs.
+- **Slots:** panel content `{ "type": "slot", "prompt": "...", "width_mm": 90,
+  "height_mm": 60 }` is a planned panel: a size and a description of the plot it
+  will hold. Its natural size is `width_mm × height_mm`, and `scale` applies as for
+  any panel. Slots are labelled, arranged, checked, and given legend entries like
+  other panels, so the composition is complete before any plot exists.
+
+~~~json
+{
+  "id": "response",
+  "content": {
+    "type": "slot",
+    "prompt": "Tumour volume over time by treatment group, mean ± SEM.",
+    "width_mm": 120, "height_mm": 70
+  },
+  "x_mm": 5, "y_mm": 80, "scale": 1
+}
+~~~
+
+### Building
+
+~~~text
+"Figure 2: treatment response in the tumour study"
+→ planner: slots step
+    slots: one prompt and preferred aspect per new panel
+    arrangement: a row/column tree over the new slots and any existing panels
+→ slots are added, then arranged by the layout solver (each a figure revision)
+→ fill queue, in reading order, one slot at a time:
+    shared plot agent (figure datasets, slot size in the request)
+    → the plot replaces the slot, fitted inside the slot's frame
+    → a plot that can be re-rendered and differs from the slot's size is rendered
+      at the slot size (section 7)
+    → a failure leaves the slot with its error, and the queue continues
+→ review round for layout warnings; legend steps where requested
+~~~
+
+- **Slots step:** `{kind: "slots", slots: [{panel_id, prompt, aspect}], arrangement,
+  summary}`. The arrangement must include every new slot. Saved plots that already
+  show what is needed are placed with `add` steps instead of being made again.
+- **Plot steps on a slot** fill that slot at its size. Plot steps on a plot panel
+  refine it, as before.
+- **Filling without planning:** `FigureMessageRequest.fill` lists slots to fill
+  directly from their prompts. The editor uses it for **Create plot** and **Retry**.
+  Each listed panel must be a slot with a description.
+- **Progress:** `FigureMessage.panels` lists each queued slot as `waiting`,
+  `plotting`, `completed`, or `failed`, with the failure message. Questions and
+  approvals from the plot agent appear in `active_step` as before.
+- **Review:** rounds address layout warnings only. Slots that are still empty are
+  left to the user, who can edit the description and retry.
+
+### Editing slots
+
+- **+ Slot** adds an empty slot. The inspector edits its description and size, and
+  **Create plot** fills it.
+- A slot has no content proportions yet, so dragging its resize handle changes its
+  width and height independently.
+- On the page, a slot shows its label, description, and status.
+
+### Checks and export
+
+- `empty_slot` (warning): a slot has no plot yet.
+- Exports leave empty slots out.
+
+### Creating a figure
+
+- The **New figure** dialog asks for the title, page, data, and an optional
+  description of the figure. With a description, the assistant starts building
+  immediately.
+- An empty page offers four starts: describe the figure to the assistant, add a
+  slot, add a saved plot, or add an image.
+
+## 10. Phases
 
 1. **Backend foundation (done):**
    - content contract, storage, operations, revisions, and API
@@ -311,7 +396,9 @@ documented in [FIGURE_UI.md](FIGURE_UI.md).
    panel size, and checks.
 4. **Figure agent (done):** the planner, plot steps through the shared plot agent,
    additions, arrangement, review rounds, questions, and the Assistant tab.
-5. **Later:**
+5. **Building from data (done):** figure datasets, slots, the fill queue, and
+   creating a figure from a description.
+6. **Later:**
    - visual review of the composed page
    - axis alignment between neighbouring panels
    - consistent fonts across panels

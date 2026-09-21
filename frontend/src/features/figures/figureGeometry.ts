@@ -13,6 +13,8 @@ export const PX_PER_MM = 96 / MM_PER_INCH;
 const IMAGE_DPI = 300;
 const GUTTER_MM = 4;
 const MIN_SCALE = 0.05;
+/** New slots smaller than this are not useful; the page is treated as full. */
+const MIN_SLOT_MM = 20;
 
 export type Size = { width: number; height: number };
 export type Guides = { x: number | null; y: number | null };
@@ -286,12 +288,50 @@ function overlaps(a: PanelFrame, b: PanelFrame): boolean {
   );
 }
 
+/** A new empty slot: at most half the printable width, at 4:3, so another fits beside it. */
+function newSlotSize(page: FigurePage): Size {
+  const printable = page.width_mm - 2 * page.margin_mm;
+  const width = Math.floor(Math.min(90, (printable - GUTTER_MM) / 2));
+  return { width, height: Math.floor(width * 0.75) };
+}
+
+/** A slot dragged by its corner: free proportions, at least 5 mm, and inside the page. */
+export function reshapeSlot(
+  frame: PanelFrame,
+  right: number,
+  bottom: number,
+  page: FigurePage,
+): Size {
+  return {
+    width: round(
+      Math.min(page.width_mm - frame.x_mm, Math.max(5, right - frame.x_mm)),
+    ),
+    height: round(
+      Math.min(page.height_mm - frame.y_mm, Math.max(5, bottom - frame.y_mm)),
+    ),
+  };
+}
+
 /** The first unused `panel-N`; bounded, so it cannot loop on a repeated value. */
 export function newPanelId(document: FigureDocument): string {
   const used = new Set(document.content.panels.map((panel) => panel.id));
   let number = 1;
   while (used.has(`panel-${number}`)) number += 1;
   return `panel-${number}`;
+}
+
+/** Candidate top-left corners in reading order: the margin, and beside or below each panel. */
+function openSpots(document: FigureDocument) {
+  const margin = document.content.page.margin_mm;
+  const frames = Object.values(document.panels).map((panel) => panel.frame);
+  const spots = [
+    { x_mm: margin, y_mm: margin },
+    ...frames.flatMap((f) => [
+      { x_mm: f.x_mm + f.width_mm + GUTTER_MM, y_mm: f.y_mm },
+      { x_mm: margin, y_mm: f.y_mm + f.height_mm + GUTTER_MM },
+    ]),
+  ].sort((a, b) => a.y_mm - b.y_mm || a.x_mm - b.x_mm);
+  return { frames, spots };
 }
 
 /**
@@ -305,7 +345,6 @@ export function placeNewPanel(
   const page = document.content.page;
   const margin = page.margin_mm;
   const printable = page.width_mm - 2 * margin;
-  const frames = Object.values(document.panels).map((panel) => panel.frame);
   // Round down so two half-width panels always fit side by side.
   const scale = Math.max(
     MIN_SCALE,
@@ -319,14 +358,8 @@ export function placeNewPanel(
   );
   const width = natural.width * scale;
   const height = natural.height * scale;
-  const candidates = [
-    { x_mm: margin, y_mm: margin },
-    ...frames.flatMap((f) => [
-      { x_mm: f.x_mm + f.width_mm + GUTTER_MM, y_mm: f.y_mm },
-      { x_mm: margin, y_mm: f.y_mm + f.height_mm + GUTTER_MM },
-    ]),
-  ].sort((a, b) => a.y_mm - b.y_mm || a.x_mm - b.x_mm);
-  const free = candidates.find((spot) => {
+  const { frames, spots } = openSpots(document);
+  const free = spots.find((spot) => {
     const frame = { ...spot, width_mm: width, height_mm: height };
     return (
       spot.x_mm + width <= page.width_mm - margin + 0.01 &&
@@ -336,4 +369,30 @@ export function placeNewPanel(
   });
   const spot = free ?? { x_mm: margin, y_mm: margin };
   return { x_mm: round(spot.x_mm), y_mm: round(spot.y_mm), scale };
+}
+
+/** A new slot at the first free spot; a slot has no fixed proportions, so it shrinks to fit. */
+export function placeNewSlot(document: FigureDocument): PanelGeometry & Size {
+  const page = document.content.page;
+  const margin = page.margin_mm;
+  const preferred = newSlotSize(page);
+  const { frames, spots } = openSpots(document);
+  for (const spot of spots) {
+    const x_mm = round(spot.x_mm);
+    const y_mm = round(spot.y_mm);
+    const width = Math.floor(
+      Math.min(preferred.width, page.width_mm - margin - x_mm),
+    );
+    const height = Math.floor(
+      Math.min(preferred.height, page.height_mm - margin - y_mm),
+    );
+    const frame = { x_mm, y_mm, width_mm: width, height_mm: height };
+    if (
+      width >= MIN_SLOT_MM &&
+      height >= MIN_SLOT_MM &&
+      frames.every((other) => !overlaps(frame, other))
+    )
+      return { x_mm, y_mm, scale: 1, width, height };
+  }
+  return { x_mm: margin, y_mm: margin, scale: 1, ...preferred };
 }

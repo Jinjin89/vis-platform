@@ -20,6 +20,7 @@ from vis_platform_backend.contracts.figure_composition_content import (
     FigurePanel,
     ImagePanelContent,
     PlotPanelContent,
+    SlotPanelContent,
 )
 from vis_platform_backend.contracts.figure_composition_operations import (
     AddPanel,
@@ -36,12 +37,18 @@ from vis_platform_backend.contracts.figure_messages import (
     FigurePlanStep,
     FigurePlotStatus,
     FigurePlotStep,
+    FigureSlotsStep,
 )
 from vis_platform_backend.contracts.plot_runs import PlotResultSummary, PlotRunAccepted, RunStatus
 from vis_platform_backend.contracts.questions import PlannerAnswerRequest, PlannerQuestions
 from vis_platform_backend.data.errors import DataError
 from vis_platform_backend.data.service import DatasetService
-from vis_platform_backend.domain.figure_compositions import MM_PER_INCH, image_natural_size
+from vis_platform_backend.domain.figure_compositions import (
+    MM_PER_INCH,
+    apply_figure_operations,
+    image_natural_size,
+    reading_order,
+)
 from vis_platform_backend.domain.figure_layout import append_below
 from vis_platform_backend.domain.questions import validate_answers
 from vis_platform_backend.infrastructure.database import utc_now
@@ -55,6 +62,8 @@ STEPS = TypeAdapter(list[FigurePlanStep])
 MAX_REVIEWS = 2
 GUTTER_MM = 4
 POLL_SECONDS = 0.4
+# A fitted plot this far from its slot's size is rendered again at the slot size.
+FIT_TOLERANCE_MM = 0.5
 
 
 class FigureMessageRuntime:
@@ -84,6 +93,22 @@ class FigureMessageRuntime:
     def submit(
         self, project_id: str, composition_id: str, request: FigureMessageRequest
     ) -> FigureCompositionDocument:
+        content: FigureCompositionContent = self.figures.get(project_id, composition_id)["content"]
+        panels = {panel.id: panel for panel in content.panels}
+        # A repeated request returns its message, even after its slots were filled.
+        fill = [] if self.store.submitted(composition_id, request.request_id) else request.fill
+        for panel_id in fill:
+            slot = panels.get(panel_id)
+            if slot is None or not isinstance(slot.content, SlotPanelContent):
+                raise DataError(
+                    f"Panel “{panel_id}” is not an empty slot.", "INVALID_FIGURE_OPERATION", 422
+                )
+            if not slot.content.prompt.strip():
+                raise DataError(
+                    f"Describe the plot for panel “{panel_id}” before creating it.",
+                    "INVALID_FIGURE_OPERATION",
+                    422,
+                )
         state = FigureMessage(
             message_id="figure_message_" + uuid4().hex,
             prompt=request.message,
@@ -228,6 +253,8 @@ class FigureMessageRuntime:
                     data=figure.data_summary,
                     renderable=renderable(figure),
                 )
+            elif isinstance(panel.content, SlotPanelContent):
+                item.update(type="slot", prompt=panel.content.prompt)
             else:
                 image = document.images[panel.content.image_id]
                 item.update(type="image", image_id=image.image_id, name=image.name)
@@ -274,13 +301,17 @@ class FigureMessageRuntime:
                 for figure in saved
                 if figure["version_id"] not in used
             ],
+            # New plots use the figure's datasets; without any, the plot agent finds project data.
+            "data_source": "figure" if document.datasets else "project",
             "datasets": [
                 {
                     "dataset_id": dataset.dataset_id,
                     "name": dataset.name,
                     "description": dataset.description,
                 }
-                for dataset in self.data.list_datasets(document.project_id).datasets
+                for dataset in (
+                    document.datasets or self.data.list_datasets(document.project_id).datasets
+                )
             ],
             "conversation": history,
             "clarification_answers": record["execution"]["answers"],
@@ -290,6 +321,26 @@ class FigureMessageRuntime:
 
     async def _prepare(self, record: dict[str, Any]) -> bool:
         message_id = record["message_id"]
+        if fill := record["request"].get("fill"):
+            # Filling named slots is a direct instruction; no planning is needed.
+            content = self.figures.get(record["project_id"], record["composition_id"])["content"]
+            prompts = {
+                panel.id: panel.content.prompt
+                for panel in content.panels
+                if isinstance(panel.content, SlotPanelContent)
+            }
+            # A slot filled or removed since the request was sent is skipped.
+            queued = [panel_id for panel_id in fill if prompts.get(panel_id, "").strip()]
+            steps: list[FigurePlanStep] = [
+                FigurePlotStep(kind="plot", panel_id=panel_id, instructions=prompts[panel_id])
+                for panel_id in queued
+            ]
+            self.store.update(
+                message_id,
+                {"panels": [{"panel_id": panel_id, "status": "waiting"} for panel_id in queued]},
+                {"steps": STEPS.dump_python(steps, mode="json"), "step": 0},
+            )
+            return True
         document = self.compositions.get(record["project_id"], record["composition_id"])
         plan = await self.planner.plan(self.context(document, record))
         if self.store.get(message_id)["state"]["status"] not in ACTIVE:
@@ -322,12 +373,26 @@ class FigureMessageRuntime:
         """After layout changes, let the planner fix remaining warnings (bounded rounds)."""
         execution, message_id = record["execution"], record["message_id"]
         steps = STEPS.validate_python(execution["steps"])
-        if execution["reviews"] >= MAX_REVIEWS or not any(
-            isinstance(step, FigurePlotStep | FigureAddStep | FigureArrangeStep) for step in steps
+        if (
+            execution["reviews"] >= MAX_REVIEWS
+            or record["request"].get("fill")
+            or not any(
+                isinstance(
+                    step, FigurePlotStep | FigureAddStep | FigureArrangeStep | FigureSlotsStep
+                )
+                for step in steps
+            )
         ):
             return False
         document = self.compositions.get(record["project_id"], record["composition_id"])
-        if not any(check.severity == "warning" for check in document.checks):
+        # New plots are reviewed once so the legend can describe results, not intentions.
+        # Empty slots are left to the user, who can revise the description and retry.
+        built = execution["reviews"] == 0 and any(
+            isinstance(step, FigureSlotsStep) for step in steps
+        )
+        if not built and not any(
+            check.severity == "warning" and check.code != "empty_slot" for check in document.checks
+        ):
             return False
         self.store.update(message_id, {"phase": "reviewing"})
         plan = await self.planner.plan(self.context(document, record, review=True))
@@ -378,6 +443,37 @@ class FigureMessageRuntime:
                     note = await self._arrange(record, step, key)
                     if note is None:
                         return
+                elif isinstance(step, FigureSlotsStep):
+                    fills = await self._slots(record, step, key)
+                    if fills is None:
+                        return
+                    # The new slots are filled next, one at a time, in reading order.
+                    record = self.store.get(message_id)
+                    self.store.update(
+                        message_id,
+                        {
+                            "completed_actions": [
+                                *record["state"]["completed_actions"],
+                                step.summary,
+                            ],
+                            "panels": [
+                                *record["state"].get("panels", []),
+                                *(
+                                    {"panel_id": fill.panel_id, "status": "waiting"}
+                                    for fill in fills
+                                ),
+                            ],
+                        },
+                        {
+                            "steps": [
+                                *execution["steps"][: index + 1],
+                                *STEPS.dump_python(list[FigurePlanStep](fills), mode="json"),
+                                *execution["steps"][index + 1 :],
+                            ],
+                            "step": index + 1,
+                        },
+                    )
+                    continue
                 else:
                     note = await self._plot(record, step, key)
                     if note is None:
@@ -427,12 +523,14 @@ class FigureMessageRuntime:
         self._apply(record, key, list(step.operations), step.summary)
 
     def _natural_size(
-        self, project_id: str, content: PlotPanelContent | ImagePanelContent
+        self, project_id: str, content: PlotPanelContent | ImagePanelContent | SlotPanelContent
     ) -> tuple[float, float]:
         if isinstance(content, PlotPanelContent):
             return self.compositions.natural_size(
                 self.compositions.figure(project_id, content.version_id)
             )
+        if isinstance(content, SlotPanelContent):
+            return content.width_mm, content.height_mm
         image = self.compositions.images.get(project_id, content.image_id)
         return image_natural_size(image.width, image.height)
 
@@ -483,6 +581,16 @@ class FigureMessageRuntime:
                     summary=step.summary,
                 ),
             )
+        jobs = await self._renders(record, key)
+        if jobs is None:
+            return None
+        failed = [job for job in jobs if job["status"] != "completed"]
+        if failed:
+            return f"{step.summary} ({len(failed)} of {len(jobs)} plots kept their scaled size.)"
+        return step.summary
+
+    async def _renders(self, record: dict[str, Any], key: str) -> list[dict[str, Any]] | None:
+        """Wait for the renders a step started; None when the message stopped meanwhile."""
         while True:
             jobs = [
                 job
@@ -490,60 +598,184 @@ class FigureMessageRuntime:
                 if job["request_key"].startswith(key + ":")
             ]
             if all(job["status"] != "running" for job in jobs):
-                break
-            if self.store.get(message_id)["state"]["status"] not in ACTIVE:
+                return jobs
+            if self.store.get(record["message_id"])["state"]["status"] not in ACTIVE:
                 return None
             await asyncio.sleep(POLL_SECONDS)
-        failed = [job for job in jobs if job["status"] != "completed"]
-        if failed:
-            return f"{step.summary} ({len(failed)} of {len(jobs)} plots kept their scaled size.)"
-        return step.summary
+
+    async def _slots(
+        self, record: dict[str, Any], step: FigureSlotsStep, key: str
+    ) -> list[FigurePlotStep] | None:
+        """Lay out the planned panels, then return one fill per slot in reading order."""
+        message_id, project_id = record["message_id"], record["project_id"]
+        self.store.update(message_id, {"phase": "editing"})
+        added = key + ":slots"
+        if not self.figures.operation_applied(record["composition_id"], added):
+            content = self.figures.get(project_id, record["composition_id"])["content"]
+            page = content.page
+            operations = []
+            for slot in step.slots:
+                # Provisional size only; the arrangement below decides the final one.
+                width = min((page.width_mm - 2 * page.margin_mm) / 2, 90.0)
+                size = SlotPanelContent(
+                    prompt=slot.prompt,
+                    width_mm=round(width, 2),
+                    height_mm=round(max(5.0, width / slot.aspect), 2),
+                )
+                panel = self._place(
+                    record, content, FigurePanel(id=slot.panel_id, content=size, x_mm=0, y_mm=0)
+                )
+                operation = AddPanel(op="add_panel", panel=panel)
+                content = apply_figure_operations(content, [operation])
+                operations.append(operation)
+            self._apply(record, added, operations, f"Planned {len(operations)} panels")
+        arrangement = FigureArrangeStep(
+            kind="arrange",
+            arrangement=step.arrangement,
+            render=True,
+            gutter_mm=step.gutter_mm,
+            summary=step.summary,
+        )
+        if await self._arrange(record, arrangement, key) is None:
+            return None
+        document = self.compositions.get(project_id, record["composition_id"])
+        frames = {panel_id: panel.frame for panel_id, panel in document.panels.items()}
+        prompts = {slot.panel_id: slot.prompt for slot in step.slots}
+        return [
+            FigurePlotStep(kind="plot", panel_id=panel.id, instructions=prompts[panel.id])
+            for panel in reading_order(document.content.panels, frames)
+            if panel.id in prompts and isinstance(panel.content, SlotPanelContent)
+        ]
 
     async def _plot(self, record: dict[str, Any], step: FigurePlotStep, key: str) -> str | None:
         message_id, project_id = record["message_id"], record["project_id"]
-        plot = record["execution"].get("plot")
-        if plot is None:
-            content = self.figures.get(project_id, record["composition_id"])["content"]
-            panel = next((p for p in content.panels if p.id == step.panel_id), None)
-            base = (
-                panel.content.version_id
-                if panel and isinstance(panel.content, PlotPanelContent)
-                else None
+        plot = record["execution"].get("plot") or self._start_plot(record, step, key)
+        try:
+            result = await self._plot_result(record, plot)
+        except DataError as error:
+            if not plot.get("slot"):
+                raise
+            # A slot that cannot be made keeps its place and description for a retry.
+            self._progress(message_id, step.panel_id, "failed", str(error))
+            self.store.update(message_id, {"status": "running"}, {"plot": None})
+            return f"Panel “{step.panel_id}” could not be created: {error}"
+        if result is None:
+            return None
+        if not plot.get("placed"):
+            placed = self._use(record, step, result, slot=bool(plot.get("slot")))
+            plot = {**plot, "placed": True, "kept": placed}
+            self.store.update(message_id, {"status": "running"}, {"plot": plot})
+        if not plot.get("slot"):
+            self.store.update(message_id, execution={"plot": None})
+            return (
+                f"Refined panel “{step.panel_id}”."
+                if plot["refine"]
+                else f"Created panel “{step.panel_id}”."
             )
-            images = (
-                [panel.content.image_id]
-                if panel and isinstance(panel.content, ImagePanelContent)
-                else []
+        if not plot["kept"]:
+            self._progress(message_id, step.panel_id, "failed", "The slot was removed.")
+            self.store.update(message_id, execution={"plot": None})
+            return (
+                f"Panel “{step.panel_id}” was removed before its plot finished; "
+                "the plot is kept with your saved plots."
             )
-            text = ("Refine the selected plot: " if base else "Create a plot: ") + step.instructions
-            if step.width_mm and step.height_mm:
-                text += (
-                    f"\nRender it at {step.width_mm / MM_PER_INCH:.2f} × "
-                    f"{step.height_mm / MM_PER_INCH:.2f} inches for its figure panel."
-                )
-            text += f"\nFigure: {content.title}."
-            turn = self.assistant.start_turn(
-                AssistantTurnRequest.model_validate(
-                    {
-                        "project_id": project_id,
-                        "request": {
-                            "text": text,
-                            **({"reference_image_ids": images} if images else {}),
-                        },
-                        "data_scope": {"mode": "auto"},
-                        "base_version_id": base,
-                    }
-                ),
-                idempotency_key=key,
+        width, height = plot["size_mm"]
+        natural = self.compositions.natural_size(result)
+        content = self.figures.get(project_id, record["composition_id"])["content"]
+        current = next((p.content for p in content.panels if p.id == step.panel_id), None)
+        if (
+            renderable(result)
+            and isinstance(current, PlotPanelContent)
+            and current.version_id == result.version_id
+            and (
+                abs(natural[0] - width) > FIT_TOLERANCE_MM
+                or abs(natural[1] - height) > FIT_TOLERANCE_MM
             )
-            plot = {
-                "panel_id": step.panel_id,
-                "prompt": step.instructions,
-                "refine": panel is not None,
-                "assistant": turn.model_dump(mode="json"),
-                "run": None,
-            }
-            self.store.update(message_id, {"phase": "plotting"}, {"plot": plot})
+        ):
+            # Rendered again at the slot's size, so its text prints as designed.
+            self.arrangement.start_renders(
+                project_id, record["composition_id"], key + ":fit", {step.panel_id: (width, height)}
+            )
+            if await self._renders(record, key + ":fit") is None:
+                return None
+        self._progress(message_id, step.panel_id, "completed")
+        self.store.update(message_id, execution={"plot": None})
+        return f"Created panel “{step.panel_id}”."
+
+    def _start_plot(self, record: dict[str, Any], step: FigurePlotStep, key: str) -> dict[str, Any]:
+        """Start the shared plot agent for a slot, a new panel, or a panel to refine."""
+        message_id, project_id = record["message_id"], record["project_id"]
+        content = self.figures.get(project_id, record["composition_id"])["content"]
+        panel = next((p for p in content.panels if p.id == step.panel_id), None)
+        slot = panel is not None and isinstance(panel.content, SlotPanelContent)
+        base = (
+            panel.content.version_id
+            if panel and isinstance(panel.content, PlotPanelContent)
+            else None
+        )
+        images = (
+            [panel.content.image_id]
+            if panel and isinstance(panel.content, ImagePanelContent)
+            else []
+        )
+        size: tuple[float, float] | None = None
+        if panel is not None and slot:
+            frame = self.compositions.resolve(project_id, content).frames[panel.id]
+            size = (frame.width_mm, frame.height_mm)
+        elif step.width_mm and step.height_mm:
+            size = (step.width_mm, step.height_mm)
+        text = ("Refine the selected plot: " if base else "Create a plot: ") + step.instructions
+        if size:
+            # Plots are at least 1 in; a smaller slot shows its plot scaled down.
+            factor = max(1.0, MM_PER_INCH / size[0], MM_PER_INCH / size[1])
+            text += (
+                f"\nRender it at {size[0] * factor / MM_PER_INCH:.2f} × "
+                f"{size[1] * factor / MM_PER_INCH:.2f} inches for its figure panel."
+            )
+        text += f"\nFigure: {content.title}."
+        dataset_ids = [dataset.dataset_id for dataset in content.datasets]
+        if base:
+            source = self.compositions.figure(project_id, base)
+            dataset_ids = sorted(
+                self.data.dataset_ids_for_objects(project_id, source.input_objects)
+            )
+        turn = self.assistant.start_turn(
+            AssistantTurnRequest.model_validate(
+                {
+                    "project_id": project_id,
+                    "request": {
+                        "text": text,
+                        **({"reference_image_ids": images} if images else {}),
+                    },
+                    "data_scope": (
+                        {"mode": "selected", "bundle_ids": dataset_ids}
+                        if dataset_ids
+                        else {"mode": "auto"}
+                    ),
+                    "base_version_id": base,
+                }
+            ),
+            idempotency_key=key,
+        )
+        plot = {
+            "panel_id": step.panel_id,
+            "prompt": step.instructions,
+            "refine": panel is not None and not slot,
+            "slot": slot,
+            "size_mm": list(size) if slot and size else None,
+            "assistant": turn.model_dump(mode="json"),
+            "run": None,
+        }
+        self.store.update(message_id, {"phase": "plotting"}, {"plot": plot})
+        if slot:
+            self._progress(message_id, step.panel_id, "plotting")
+        return plot
+
+    async def _plot_result(
+        self, record: dict[str, Any], plot: dict[str, Any]
+    ) -> PlotResultSummary | None:
+        """Follow the assistant turn and its plot run; None when the message stopped."""
+        message_id, project_id = record["message_id"], record["project_id"]
         while True:
             if self.store.get(message_id)["state"]["status"] not in ACTIVE:
                 return None
@@ -556,13 +788,7 @@ class FigureMessageRuntime:
                             "NO_FIGURE",
                             422,
                         )
-                    self._use(record, step, run.result)
-                    self.store.update(message_id, {"status": "running"}, {"plot": None})
-                    return (
-                        f"Refined panel “{step.panel_id}”."
-                        if plot["refine"]
-                        else f"Created panel “{step.panel_id}”."
-                    )
+                    return run.result
                 if run.status in {RunStatus.FAILED, RunStatus.CANCELLED}:
                     raise DataError(
                         run.failure.message if run.failure else "The plot was cancelled.",
@@ -592,15 +818,39 @@ class FigureMessageRuntime:
         if self.store.get(message_id)["state"]["status"] != resolved:
             self.store.update(message_id, {"status": resolved})
 
-    def _use(self, record: dict[str, Any], step: FigurePlotStep, result: PlotResultSummary) -> None:
-        """Put a finished plot into its panel, keeping an existing panel's width on the page."""
+    def _progress(
+        self, message_id: str, panel_id: str, status: str, error: str | None = None
+    ) -> None:
+        panels = self.store.get(message_id)["state"].get("panels", [])
+        self.store.update(
+            message_id,
+            {
+                "panels": [
+                    {**item, "status": status, "error": error}
+                    if item["panel_id"] == panel_id
+                    else item
+                    for item in panels
+                ]
+            },
+        )
+
+    def _use(
+        self, record: dict[str, Any], step: FigurePlotStep, result: PlotResultSummary, *, slot: bool
+    ) -> bool:
+        """Put a finished plot into its panel; False when its slot no longer exists.
+
+        A slot's plot is fitted inside the slot. A refined plot keeps the panel's width, and a
+        plot for a new panel is placed below the existing content.
+        """
         project_id = record["project_id"]
         width, height = self.compositions.natural_size(result)
         plot = PlotPanelContent(version_id=result.version_id)
 
-        def update(content: FigureCompositionContent) -> FigureCompositionContent:
+        def update(content: FigureCompositionContent) -> FigureCompositionContent | None:
             panels = list(content.panels)
             index = next((i for i, p in enumerate(panels) if p.id == step.panel_id), None)
+            if slot and (index is None or not isinstance(panels[index].content, SlotPanelContent)):
+                return None
             if index is None:
                 panels.append(
                     self._place(
@@ -613,8 +863,8 @@ class FigureMessageRuntime:
                 page = content.page
                 scale = min(
                     frame.width_mm / width,
+                    (frame.height_mm if slot else page.height_mm - old.y_mm) / height,
                     (page.width_mm - old.x_mm) / width,
-                    (page.height_mm - old.y_mm) / height,
                 )
                 panels[index] = old.model_copy(
                     update={"content": plot, "scale": max(0.05, int(scale * 1000) / 1000)}
@@ -623,7 +873,7 @@ class FigureMessageRuntime:
                 {**content.model_dump(mode="json"), "panels": [p.model_dump() for p in panels]}
             )
 
-        self.figures.change(
+        return self.figures.change(
             project_id,
             record["composition_id"],
             update,

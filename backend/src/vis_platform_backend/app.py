@@ -140,7 +140,7 @@ def create_app(
         # Created after the report store, which owns the shared figure selection table.
         composition_store = FigureCompositionRepository(resolved_settings.database_path)
         figure_compositions = FigureCompositionService(
-            composition_store, repository, reference_images, figure_exporter
+            composition_store, repository, reference_images, figure_exporter, dataset_service
         )
         app.state.figure_compositions = figure_compositions
         figure_arrangement = FigureArrangementService(figure_compositions, coordinator)

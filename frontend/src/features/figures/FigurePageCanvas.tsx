@@ -5,13 +5,16 @@ import type {
   FigurePanel,
   PanelFrame,
   PanelGeometry,
+  PanelProgress,
 } from "../../api/schemas/figureCompositions";
+import { reportEditActive } from "../../api/schemas/reports";
 import {
   MM_PER_POINT,
   PX_PER_MM,
   clampMove,
   clampScale,
   frameAt,
+  reshapeSlot,
   round,
   snapFrame,
   snapTargets,
@@ -28,6 +31,12 @@ export function panelTitle(document: FigureDocument, panel: FigurePanel) {
     const figure = document.figures[panel.content.version_id];
     return figure?.title ?? figure?.preview.description ?? "Saved plot";
   }
+  if (panel.content.type === "slot") {
+    const prompt = panel.content.prompt.trim();
+    return prompt
+      ? `Slot: ${prompt.length > 80 ? `${prompt.slice(0, 79)}…` : prompt}`
+      : "Empty slot";
+  }
   return document.images[panel.content.image_id]?.name ?? "Image";
 }
 
@@ -35,9 +44,36 @@ export function panelSource(document: FigureDocument, panel: FigurePanel) {
   const href =
     panel.content.type === "plot"
       ? document.figures[panel.content.version_id]?.preview.href
-      : document.images[panel.content.image_id]?.links.content;
+      : panel.content.type === "image"
+        ? document.images[panel.content.image_id]?.links.content
+        : undefined;
   return href ? resolveArtifactUrl(href) : undefined;
 }
+
+/**
+ * A slot's latest fill from the conversation. A fill that was still waiting when its
+ * message stopped no longer applies.
+ */
+export function slotStatus(
+  document: FigureDocument,
+  panelId: string,
+): PanelProgress | null {
+  let latest: PanelProgress | null = null;
+  for (const message of document.messages) {
+    const item = message.panels.find((entry) => entry.panel_id === panelId);
+    if (!item) continue;
+    const pending = item.status === "waiting" || item.status === "plotting";
+    latest = pending && !reportEditActive(message) ? null : item;
+  }
+  return latest?.status === "completed" ? null : latest;
+}
+
+const SLOT_STATUS: Record<PanelProgress["status"], string> = {
+  waiting: "Waiting",
+  plotting: "Creating the plot…",
+  completed: "",
+  failed: "Could not be created",
+};
 
 export function naturalSize(document: FigureDocument, panelId: string): Size {
   const resolved = document.panels[panelId];
@@ -53,6 +89,7 @@ export function FigurePageCanvas({
   busy,
   onSelect,
   onCommit,
+  onReshape,
   onRemove,
   onMenu,
   onOpen,
@@ -65,6 +102,8 @@ export function FigurePageCanvas({
     changes: Record<string, PanelGeometry>,
     summary: string,
   ) => Promise<boolean>;
+  /** A slot's new displayed size; slots have no content proportions to keep. */
+  onReshape: (panelId: string, size: Size) => Promise<boolean>;
   onRemove: (ids: string[]) => void;
   onMenu: (event: React.MouseEvent<HTMLElement>, panelId: string) => void;
   onOpen: (panelId: string) => void;
@@ -73,6 +112,7 @@ export function FigurePageCanvas({
   const [viewport, setViewport] = useState({ width: 900, height: 700 });
   const [zoom, setZoom] = useState<number | "fit">("fit");
   const [draft, setDraft] = useState<Record<string, PanelGeometry>>({});
+  const [reshaping, setReshaping] = useState<Record<string, Size>>({});
   const [guides, setGuides] = useState<Guides | null>(null);
   const pending = useRef<Record<string, PanelGeometry>>({});
   const timer = useRef<number | undefined>(undefined);
@@ -99,7 +139,10 @@ export function FigurePageCanvas({
   const frames: Record<string, PanelFrame> = Object.fromEntries(
     panels.map((panel) => [
       panel.id,
-      frameAt(geometry(panel), naturalSize(document, panel.id)),
+      frameAt(
+        geometry(panel),
+        reshaping[panel.id] ?? naturalSize(document, panel.id),
+      ),
     ]),
   );
   const contentBottom = Math.max(
@@ -240,6 +283,10 @@ export function FigurePageCanvas({
       pageHeight,
       panels.filter((p) => p.id !== panel.id).map((p) => frames[p.id]!),
     );
+    if (panel.content.type === "slot") {
+      reshapeFreely(target, event, panel, start, targets);
+      return;
+    }
     const origin = event.clientX;
     let latest: PanelGeometry | null = null;
     const move = (e: PointerEvent) => {
@@ -273,6 +320,55 @@ export function FigurePageCanvas({
       if (latest && latest.scale !== panel.scale)
         commit({ [panel.id]: latest }, "Resized panel");
       else setDraft({});
+    };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", finish);
+    target.addEventListener("pointercancel", finish);
+  }
+
+  function reshapeFreely(
+    target: HTMLSpanElement,
+    event: React.PointerEvent<HTMLSpanElement>,
+    panel: FigurePanel,
+    start: PanelFrame,
+    targets: { x: number[]; y: number[] },
+  ) {
+    const origin = { x: event.clientX, y: event.clientY };
+    let latest: Size | null = null;
+    const move = (e: PointerEvent) => {
+      let right = start.x_mm + start.width_mm + (e.clientX - origin.x) / px;
+      let bottom = start.y_mm + start.height_mm + (e.clientY - origin.y) / px;
+      const snap = e.altKey
+        ? null
+        : snapFrame(
+            { x_mm: right, y_mm: bottom, width_mm: 0, height_mm: 0 },
+            targets,
+            SNAP_PX / px,
+          );
+      if (snap?.guides.x != null) right = snap.guides.x;
+      if (snap?.guides.y != null) bottom = snap.guides.y;
+      latest = reshapeSlot(start, right, bottom, page);
+      setReshaping({
+        [panel.id]: {
+          width: latest.width / panel.scale,
+          height: latest.height / panel.scale,
+        },
+      });
+      setGuides(snap?.guides ?? null);
+    };
+    const finish = () => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", finish);
+      target.removeEventListener("pointercancel", finish);
+      setGuides(null);
+      const size: Size | null = latest;
+      if (
+        size &&
+        (Math.abs(size.width - start.width_mm) >= 0.1 ||
+          Math.abs(size.height - start.height_mm) >= 0.1)
+      )
+        void onReshape(panel.id, size).finally(() => setReshaping({}));
+      else setReshaping({});
     };
     target.addEventListener("pointermove", move);
     target.addEventListener("pointerup", finish);
@@ -450,6 +546,7 @@ export function FigurePageCanvas({
                   aria-pressed={isSelected}
                   aria-label={`Panel ${label ?? "without label"}: ${title}`}
                   data-locked={panel.locked}
+                  data-slot={panel.content.type === "slot"}
                   data-warning={flagged.has(panel.id)}
                   style={{
                     left: toPx(frame.x_mm),
@@ -466,7 +563,12 @@ export function FigurePageCanvas({
                     onMenu(event, panel.id);
                   }}
                 >
-                  {source ? (
+                  {panel.content.type === "slot" ? (
+                    <SlotFace
+                      prompt={panel.content.prompt}
+                      progress={slotStatus(document, panel.id)}
+                    />
+                  ) : source ? (
                     <img src={source} alt={title} draggable={false} />
                   ) : (
                     <span className="composition-panel-missing">{title}</span>
@@ -531,5 +633,32 @@ export function FigurePageCanvas({
         </div>
       </div>
     </div>
+  );
+}
+
+function SlotFace({
+  prompt,
+  progress,
+}: {
+  prompt: string;
+  progress: PanelProgress | null;
+}) {
+  return (
+    <span
+      className="composition-slot"
+      data-status={progress?.status ?? (prompt.trim() ? "planned" : "empty")}
+    >
+      <span className="composition-slot-prompt">
+        {prompt.trim() || "Describe the plot for this slot in the Panel tab."}
+      </span>
+      {progress ? (
+        <span className="composition-slot-status" role="status">
+          {progress.status === "plotting" ? (
+            <span className="report-spinner" />
+          ) : null}
+          {SLOT_STATUS[progress.status]}
+        </span>
+      ) : null}
+    </span>
   );
 }

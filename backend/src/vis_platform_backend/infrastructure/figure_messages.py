@@ -73,6 +73,15 @@ class FigureMessageStore:
             )
         return str(state["message_id"])
 
+    def submitted(self, composition_id: str, request_id: str) -> bool:
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT 1 FROM figure_composition_messages "
+                "WHERE composition_id = ? AND request_id = ?",
+                (composition_id, request_id),
+            ).fetchone()
+        return row is not None
+
     def get(self, message_id: str) -> dict[str, Any]:
         with self.lock:
             row = self.connection.execute(

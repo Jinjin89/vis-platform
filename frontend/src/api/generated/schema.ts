@@ -1246,7 +1246,7 @@ export interface components {
             panel_id: string;
             /**
              * Aspect
-             * @description Preferred width / height when the plot is rendered at its panel size. Scaled content always keeps its natural proportions.
+             * @description Preferred width / height for a slot, or for a plot rendered at its panel size. Scaled content always keeps its natural proportions.
              */
             aspect?: number | null;
         };
@@ -1816,7 +1816,7 @@ export interface components {
              * Code
              * @enum {string}
              */
-            code: "outside_margin" | "overlap" | "small_text" | "low_resolution" | "label_order" | "unused_space";
+            code: "outside_margin" | "overlap" | "small_text" | "low_resolution" | "label_order" | "unused_space" | "empty_slot";
             /**
              * Severity
              * @enum {string}
@@ -1845,6 +1845,11 @@ export interface components {
              */
             panels?: components["schemas"]["FigurePanel"][];
             legend?: components["schemas"]["FigureLegend"];
+            /**
+             * Datasets
+             * @description Plots created in this figure use these datasets; none means project data.
+             */
+            datasets?: components["schemas"]["FigureDataset"][];
             /**
              * Min Font Pt
              * @description Text smaller than this on the printed page is reported by the checks.
@@ -1902,6 +1907,11 @@ export interface components {
             images: {
                 [key: string]: components["schemas"]["ReferenceImage"];
             };
+            /**
+             * Datasets
+             * @description The figure's datasets, in content order.
+             */
+            datasets?: components["schemas"]["Dataset"][];
             /**
              * Updates
              * @description Newer plot versions available, keyed by panel ID.
@@ -1981,6 +1991,11 @@ export interface components {
              */
             updated_at: string;
         };
+        /** FigureDataset */
+        FigureDataset: {
+            /** Dataset Id */
+            dataset_id: string;
+        };
         /**
          * FigureExportFormat
          * @enum {string}
@@ -2025,6 +2040,11 @@ export interface components {
             error?: string | null;
             question?: components["schemas"]["PlannerQuestions"] | null;
             active_step?: components["schemas"]["FigurePlotStatus"] | null;
+            /**
+             * Panels
+             * @description Slots this message fills, in the order they are made.
+             */
+            panels?: components["schemas"]["FigurePanelProgress"][];
             /** Completed Actions */
             completed_actions?: string[];
             /**
@@ -2047,6 +2067,11 @@ export interface components {
             /** Message */
             message: string;
             selection?: components["schemas"]["FigureSelection"] | null;
+            /**
+             * Fill
+             * @description Slots to fill from their descriptions without planning, in this order.
+             */
+            fill?: string[];
         };
         /** FigureOperationsRequest */
         FigureOperationsRequest: {
@@ -2055,7 +2080,7 @@ export interface components {
             /** Base Revision */
             base_revision: number;
             /** Operations */
-            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["SetMinimumFont"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["MovePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
+            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["SetMinimumFont"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["MovePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"] | components["schemas"]["SetFigureDatasets"])[];
             /**
              * Summary
              * @default Edited figure
@@ -2089,7 +2114,7 @@ export interface components {
             /** Id */
             id: string;
             /** Content */
-            content: components["schemas"]["PlotPanelContent"] | components["schemas"]["ImagePanelContent"];
+            content: components["schemas"]["PlotPanelContent"] | components["schemas"]["ImagePanelContent"] | components["schemas"]["SlotPanelContent"];
             /** X Mm */
             x_mm: number;
             /** Y Mm */
@@ -2116,6 +2141,22 @@ export interface components {
              * @default false
              */
             locked: boolean;
+        };
+        /**
+         * FigurePanelProgress
+         * @description A slot queued for filling by this message.
+         */
+        FigurePanelProgress: {
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Status
+             * @default waiting
+             * @enum {string}
+             */
+            status: "waiting" | "plotting" | "completed" | "failed";
+            /** Error */
+            error?: string | null;
         };
         /**
          * FigurePlotStatus
@@ -3860,6 +3901,16 @@ export interface components {
             /** Bundle Ids */
             bundle_ids: string[];
         };
+        /** SetFigureDatasets */
+        SetFigureDatasets: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_datasets";
+            /** Datasets */
+            datasets: components["schemas"]["FigureDataset"][];
+        };
         /** SetFigurePage */
         SetFigurePage: {
             /**
@@ -4010,6 +4061,27 @@ export interface components {
             frames?: {
                 [key: string]: components["schemas"]["SlideFrame"];
             };
+        };
+        /**
+         * SlotPanelContent
+         * @description A planned panel: the size and description of a plot that does not exist yet.
+         */
+        SlotPanelContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "slot";
+            /**
+             * Prompt
+             * @description What the plot should show; the request given to the plotting agent.
+             * @default
+             */
+            prompt: string;
+            /** Width Mm */
+            width_mm: number;
+            /** Height Mm */
+            height_mm: number;
         };
         /** TextControl */
         TextControl: {

@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 from conftest import ScenarioIntentAgent
 from fastapi.testclient import TestClient
-from test_figure_compositions import create, new_project, plot, plot_panel
+from test_figure_compositions import create, new_project, plot, plot_panel, slot
 
 from vis_platform_backend.app import create_app
 from vis_platform_backend.config import LlmSettings, Settings
@@ -343,3 +343,132 @@ def test_failures_and_cancellation_are_reported(figure_app):
         ).status_code
         == 404
     )
+
+
+DEMO = "Use demonstration data to make "
+
+
+def test_slots_lay_out_the_page_then_fill_one_at_a_time(figure_app):
+    prompts = {
+        "violin": DEMO + "a violin plot of expression by treatment",
+        "scatter": DEMO + "a scatter plot of dose against response",
+        "heatmap": "Make a heatmap of the study measurements",
+    }
+
+    def respond(context):
+        if context["review"] and "Wrote the legend." in context["completed_actions"]:
+            return {"action": "reply", "message": "The figure is ready."}
+        if context["review"]:
+            plots = [panel for panel in context["panels"] if panel["type"] == "plot"]
+            return {
+                "action": "execute",
+                "message": "The legend describes the new plots.",
+                "steps": [
+                    {
+                        "kind": "edit",
+                        "summary": "Wrote the legend.",
+                        "operations": [
+                            {
+                                "op": "set_legend",
+                                "legend": {"entries": {p["id"]: p["title"] for p in plots}},
+                            }
+                        ],
+                    }
+                ],
+            }
+        return {
+            "action": "execute",
+            "message": "Building a three-panel figure.",
+            "steps": [
+                {
+                    "kind": "slots",
+                    "summary": "Planned three panels.",
+                    "slots": [
+                        {"panel_id": key, "prompt": text, "aspect": 1.5}
+                        for key, text in prompts.items()
+                    ],
+                    "arrangement": {
+                        "type": "column",
+                        "children": [
+                            {"type": "panel", "panel_id": "violin", "aspect": 2},
+                            {
+                                "type": "row",
+                                "children": [
+                                    {"type": "panel", "panel_id": "scatter"},
+                                    {"type": "panel", "panel_id": "heatmap"},
+                                ],
+                            },
+                        ],
+                    },
+                }
+            ],
+        }
+
+    planner = ScriptedPlanner(respond)
+    client = figure_app(planner)
+    document = create(client, new_project(client), []).json()
+    send(client, document, "Build a figure of the treatment response")
+    finished = settle(client, document)
+    message = finished["messages"][-1]
+    assert planner.contexts[0]["data_source"] == "project"
+    # Slots are filled in reading order; a failure leaves its slot and the queue continues.
+    assert [(item["panel_id"], item["status"]) for item in message["panels"]] == [
+        ("violin", "completed"),
+        ("scatter", "completed"),
+        ("heatmap", "failed"),
+    ]
+    assert message["panels"][2]["error"]
+    assert message["completed_actions"][:3] == [
+        "Planned three panels.",
+        "Created panel “violin”.",
+        "Created panel “scatter”.",
+    ]
+    assert message["completed_actions"][3].startswith("Panel “heatmap” could not be created")
+    types = {panel["id"]: panel["content"]["type"] for panel in finished["content"]["panels"]}
+    assert types == {"violin": "plot", "scatter": "plot", "heatmap": "slot"}
+    # Each plot was made, or rendered again, at its slot's size.
+    violin = finished["panels"]["violin"]["frame"]
+    assert (violin["x_mm"], violin["y_mm"]) == (5, 5)
+    assert violin["width_mm"] == pytest.approx(200, abs=0.3)
+    assert violin["height_mm"] == pytest.approx(100, abs=0.3)
+    scatter, heatmap = finished["panels"]["scatter"]["frame"], finished["panels"]["heatmap"]
+    assert scatter["width_mm"] + 4 + heatmap["frame"]["width_mm"] == pytest.approx(200, abs=0.3)
+    assert heatmap["label"] == "C"
+    # The legend is written in the review, once the plots exist.
+    review = planner.contexts[1]
+    assert review["review"] and {p["type"] for p in review["panels"]} == {"plot", "slot"}
+    assert set(finished["content"]["legend"]["entries"]) == {"violin", "scatter"}
+    assert any(check["code"] == "empty_slot" for check in finished["checks"])
+
+
+def test_create_plot_fills_a_slot_without_planning(figure_app):
+    planner = ScriptedPlanner(lambda context: {"action": "reply", "message": "Unused."})
+    client = figure_app(planner)
+    owner = new_project(client)
+    violin = plot(client, owner)
+    document = create(
+        client,
+        owner,
+        [
+            slot("growth", 5, 5, prompt=DEMO + "a violin plot of expression by treatment"),
+            slot("blank", 100, 5, prompt=" "),
+            plot_panel("existing", violin, 5, 70, scale=0.3),
+        ],
+    ).json()
+    url = base(document) + "/messages"
+    for fill in (["existing"], ["blank"], ["missing"]):
+        rejected = client.post(url, json={"request_id": "x", "message": "Create", "fill": fill})
+        assert rejected.status_code in {404, 422}, rejected.text
+    duplicate = {"request_id": "x", "message": "Create", "fill": ["growth", "growth"]}
+    assert client.post(url, json=duplicate).status_code == 422
+
+    send(client, document, "Create the plot for panel A", "fill", fill=["growth"])
+    finished = settle(client, document)
+    assert planner.contexts == []
+    message = finished["messages"][-1]
+    assert message["panels"] == [{"panel_id": "growth", "status": "completed", "error": None}]
+    growth = next(panel for panel in finished["content"]["panels"] if panel["id"] == "growth")
+    assert growth["content"]["type"] == "plot"
+    # Repeating the request returns the same message instead of rejecting the filled slot.
+    again = send(client, document, "Create the plot for panel A", "fill", fill=["growth"])
+    assert len(again["messages"]) == 1

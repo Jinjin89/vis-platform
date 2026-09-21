@@ -46,6 +46,29 @@ class BrowserFigurePlanner:
                     ],
                 }
             )
+        if "build" in text:
+            slots = {
+                "distribution": "Use demonstration data to create a violin distribution",
+                "comparison": "Use demonstration data to compare expression by treatment",
+                "summary": "Use demonstration data to summarise expression by group",
+            }
+            return FigurePlan.model_validate(
+                {
+                    "action": "execute",
+                    "message": "I planned three panels and will create each plot in turn.",
+                    "steps": [
+                        {
+                            "kind": "slots",
+                            "summary": "Planned three panels.",
+                            "slots": [
+                                {"panel_id": key, "prompt": prompt, "aspect": 1.4}
+                                for key, prompt in slots.items()
+                            ],
+                            "arrangement": _layout(list(slots)),
+                        }
+                    ],
+                }
+            )
         if "legend" in text:
             return FigurePlan.model_validate(
                 {

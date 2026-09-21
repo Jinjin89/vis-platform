@@ -283,3 +283,54 @@ test("the assistant asks, arranges, and writes the legend", async ({
     "Overview of the study results.",
   );
 });
+
+test("a figure is built from a description, one slot at a time", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  const create = page.getByRole("dialog", { name: "New figure" });
+  await create
+    .getByLabel(/What should this figure show/)
+    .fill("Build a figure of the treatment response");
+  await create.getByRole("button", { name: "Create and build" }).click();
+  const sheet = page.getByRole("region", { name: "Figure page" });
+  await expect(sheet.getByRole("button", { name: /^Panel C:/ })).toBeVisible();
+  const types = async () =>
+    (await current(page, project)).content.panels.map(
+      (panel) => panel.content.type,
+    );
+  await expect
+    .poll(types, { timeout: 60_000 })
+    .toEqual(["plot", "plot", "plot"]);
+  await expect(
+    page.getByRole("list", { name: "Completed changes" }),
+  ).toContainText("Created panel “summary”.");
+  let document = await current(page, project);
+  // The first panel spans the page; the other two share a row below it.
+  const [lead, left, right] = ["distribution", "comparison", "summary"].map(
+    (id) => document.panels[id]!.frame,
+  );
+  expect(lead!.width_mm).toBeGreaterThan(left!.width_mm + right!.width_mm);
+  expect(left!.y_mm).toBeCloseTo(right!.y_mm, 1);
+
+  // A slot drawn by hand is described and filled on request.
+  await page.getByRole("button", { name: "+ Slot" }).click();
+  await expect(sheet.getByRole("button", { name: /Empty slot/ })).toBeVisible();
+  await page
+    .getByLabel("What should this plot show?")
+    .fill("Use demonstration data to create a violin distribution");
+  await page.getByRole("button", { name: "Create plot" }).click();
+  await expect
+    .poll(types, { timeout: 60_000 })
+    .toEqual(["plot", "plot", "plot", "plot"]);
+  // The plot may still be rendering at the slot's size; the message then finishes.
+  await expect
+    .poll(async () => (await current(page, project)).messages.at(-1)!.panels, {
+      timeout: 30_000,
+    })
+    .toEqual([{ panel_id: "panel-1", status: "completed", error: null }]);
+  await page.screenshot({ path: test.info().outputPath("built-figure.png") });
+});

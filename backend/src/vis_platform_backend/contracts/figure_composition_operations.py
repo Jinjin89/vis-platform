@@ -7,6 +7,7 @@ from pydantic import Field
 from .common import Identifier, StrictModel
 from .figure_composition_content import (
     MAX_PANELS,
+    FigureDataset,
     FigureLegend,
     FigurePage,
     FigurePanel,
@@ -77,6 +78,11 @@ class SetLegend(StrictModel):
     legend: FigureLegend
 
 
+class SetFigureDatasets(StrictModel):
+    op: Literal["set_datasets"]
+    datasets: list[FigureDataset] = Field(max_length=50)
+
+
 FigureOperation = Annotated[
     SetFigureTitle
     | SetFigurePage
@@ -87,7 +93,8 @@ FigureOperation = Annotated[
     | MovePanel
     | RemovePanel
     | SetPanelGeometry
-    | SetLegend,
+    | SetLegend
+    | SetFigureDatasets,
     Field(discriminator="op"),
 ]
 

@@ -47,6 +47,7 @@ def compose_page(
     labels: Mapping[str, str | None],
     sources: Mapping[str, PanelSource],
 ) -> bytes:
+    """Panels without a source, such as empty slots, are left out with their labels."""
     width = _number(content.page.width_mm)
     height = _number(page_height_mm)
     page = ET.Element(
@@ -55,6 +56,8 @@ def compose_page(
     )
     ET.SubElement(page, f"{{{SVG}}}rect", {"width": width, "height": height, "fill": "white"})
     for index, panel in enumerate(content.panels):
+        if panel.id not in sources:
+            continue
         frame = frames[panel.id]
         placement = {
             "x": _number(frame.x_mm),
@@ -89,7 +92,7 @@ def compose_page(
     size = style.size_pt * MM_PER_POINT
     for panel in content.panels:
         label = labels[panel.id]
-        if label is None:
+        if label is None or panel.id not in sources:
             continue
         frame = frames[panel.id]
         text = ET.SubElement(

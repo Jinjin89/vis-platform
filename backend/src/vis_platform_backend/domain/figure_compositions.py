@@ -20,6 +20,7 @@ from vis_platform_backend.contracts.figure_composition_operations import (
     MovePanel,
     RemovePanel,
     ReplacePanel,
+    SetFigureDatasets,
     SetFigurePage,
     SetFigureTitle,
     SetLabelStyle,
@@ -80,6 +81,8 @@ def apply_figure_operations(
                 panels[_panel_index(panels, panel_id)].update(geometry.model_dump(mode="json"))
         elif isinstance(operation, SetLegend):
             result["legend"] = operation.legend.model_dump(mode="json")
+        elif isinstance(operation, SetFigureDatasets):
+            result["datasets"] = [dataset.model_dump(mode="json") for dataset in operation.datasets]
     try:
         return FigureCompositionContent.model_validate(result)
     except ValidationError as error:

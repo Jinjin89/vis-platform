@@ -81,6 +81,15 @@ def plot_panel(panel_id, snapshot, x, y, scale=0.45, **options):
     }
 
 
+def slot(panel_id, x, y, width=90, height=60, prompt="Violin of expression by treatment."):
+    return {
+        "id": panel_id,
+        "content": {"type": "slot", "prompt": prompt, "width_mm": width, "height_mm": height},
+        "x_mm": x,
+        "y_mm": y,
+    }
+
+
 def create(client, owner, panels, *, request_id="figure-create", **changes):
     return client.post(
         f"/api/v1/projects/{owner}/figure-compositions",
@@ -442,3 +451,70 @@ def test_export_composes_one_page_at_physical_size(client, format):
             x = round(20 / 25.4 * 300)
             y = round(80 / 25.4 * 300)
             assert raster.convert("RGB").getpixel((x, y)) == (0, 128, 128)
+
+
+def test_slots_and_datasets_plan_a_figure_before_its_plots_exist(client):
+    owner = new_project(client)
+    violin = plot(client, owner)
+    dataset = client.post(
+        "/api/v1/data-bundles", json={"project_id": owner, "name": "Tumour study"}
+    ).json()
+    response = create(
+        client,
+        owner,
+        [slot("growth", 5, 5), plot_panel("violin", violin, 100, 5, scale=0.4)],
+        datasets=[{"dataset_id": dataset["dataset_id"]}],
+    )
+    assert response.status_code == 201, response.text
+    document = response.json()
+    assert document["panels"]["growth"]["frame"] == {
+        "x_mm": 5,
+        "y_mm": 5,
+        "width_mm": 90,
+        "height_mm": 60,
+    }
+    assert document["panels"]["growth"]["label"] == "A"
+    assert [item["dataset_id"] for item in document["datasets"]] == [dataset["dataset_id"]]
+    empty = next(check for check in document["checks"] if check["code"] == "empty_slot")
+    assert empty["severity"] == "warning" and empty["panel_ids"] == ["growth"]
+
+    missing = [{"op": "set_datasets", "datasets": [{"dataset_id": "missing"}]}]
+    assert operate(client, document, missing).status_code == 404
+    cleared = operate(client, document, [{"op": "set_datasets", "datasets": []}], "clear").json()
+    assert cleared["datasets"] == [] and cleared["content"]["datasets"] == []
+
+    # A slot takes the shape the arrangement gives it, at scale 1.
+    base = f"/api/v1/projects/{owner}/figure-compositions/{document['composition_id']}"
+    arranged = client.post(
+        base + "/arrange",
+        json={
+            "request_id": "stack",
+            "base_revision": cleared["revision"],
+            "arrangement": {
+                "type": "column",
+                "children": [
+                    {"type": "panel", "panel_id": "growth", "aspect": 2},
+                    {"type": "panel", "panel_id": "violin"},
+                ],
+            },
+            "render": False,
+            "summary": "Stacked panels",
+        },
+    )
+    assert arranged.status_code == 200, arranged.text
+    growth = arranged.json()["content"]["panels"][0]
+    assert growth["scale"] == 1 and (growth["x_mm"], growth["y_mm"]) == (5, 5)
+    assert growth["content"]["width_mm"] == pytest.approx(200, abs=0.01)
+    assert growth["content"]["height_mm"] == pytest.approx(100, abs=0.01)
+    rendered = client.post(
+        base + "/renders",
+        json={"request_id": "fit", "panels": {"growth": {"width_mm": 80, "height_mm": 60}}},
+    )
+    assert rendered.status_code == 422
+
+    # Exports leave empty slots and their labels out.
+    exported = client.get(base + "/exports/svg")
+    assert exported.status_code == 200, exported.text[:300]
+    root = ET.fromstring(exported.content)
+    assert [text.text for text in root.findall(SVG + "text")] == ["B"]
+    assert len(root.findall(SVG + "svg")) == 1

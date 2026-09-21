@@ -18,7 +18,7 @@ The infinite canvas supports dataset-to-plot branches, immutable refinements, an
 
 The [Slides MVP](docs/SLIDES_UI.md) adds an online presentation editor with shared figures, layouts, speaker notes, presentation mode, and JSON/PDF export. Linked figures update across Report and Slides; pinned versions remain unchanged.
 
-The [Figure interface](docs/FIGURE_UI.md) composes saved plots and images into multi-panel publication figures on an A4 or journal-width page, with snapping, alignment, reading-order panel labels, a per-panel legend, update notices for newer plot versions, and PDF, SVG, PNG, and TIFF export. Its assistant arranges panels, creates or refines plots through the shared plot agent, and writes the legend from one message. See its [design](docs/FIGURE_UI_DESIGN.md) for the contract and agent.
+The [Figure interface](docs/FIGURE_UI.md) builds multi-panel publication figures on an A4 or journal-width page. Like Report and Slides it stands on its own: describe a figure and its assistant lays out the page as slots, then creates each plot from the figure's data through the shared plot agent, one at a time; or compose saved plots and images yourself. It offers snapping, alignment, reading-order panel labels, a per-panel legend, update notices for newer plot versions, and PDF, SVG, PNG, and TIFF export. See its [design](docs/FIGURE_UI_DESIGN.md) for the contract and agent.
 
 ## Current implementation
 

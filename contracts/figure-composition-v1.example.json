@@ -23,6 +23,21 @@
       "label": null,
       "show_label": true,
       "locked": false
+    },
+    {
+      "id": "markers",
+      "content": {
+        "type": "slot",
+        "prompt": "Dot plot of marker genes by cluster in the treated samples.",
+        "width_mm": 200,
+        "height_mm": 70
+      },
+      "x_mm": 5,
+      "y_mm": 110,
+      "scale": 1,
+      "label": null,
+      "show_label": true,
+      "locked": false
     }
   ],
   "legend": {
@@ -31,5 +46,6 @@
       "umap": "UMAP of all cells coloured by cluster.",
       "micrograph": "Representative micrograph of a treated sample."
     }
-  }
+  },
+  "datasets": [{ "dataset_id": "dataset_replace_with_project_dataset" }]
 }

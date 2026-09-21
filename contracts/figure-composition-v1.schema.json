@@ -1,5 +1,21 @@
 {
   "$defs": {
+    "FigureDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id"
+      ],
+      "title": "FigureDataset",
+      "type": "object"
+    },
     "FigureLegend": {
       "additionalProperties": false,
       "properties": {
@@ -81,7 +97,8 @@
           "discriminator": {
             "mapping": {
               "image": "#/$defs/ImagePanelContent",
-              "plot": "#/$defs/PlotPanelContent"
+              "plot": "#/$defs/PlotPanelContent",
+              "slot": "#/$defs/SlotPanelContent"
             },
             "propertyName": "type"
           },
@@ -91,6 +108,9 @@
             },
             {
               "$ref": "#/$defs/ImagePanelContent"
+            },
+            {
+              "$ref": "#/$defs/SlotPanelContent"
             }
           ],
           "title": "Content"
@@ -261,6 +281,43 @@
       ],
       "title": "PlotPanelContent",
       "type": "object"
+    },
+    "SlotPanelContent": {
+      "additionalProperties": false,
+      "description": "A planned panel: the size and description of a plot that does not exist yet.",
+      "properties": {
+        "type": {
+          "const": "slot",
+          "default": "slot",
+          "title": "Type",
+          "type": "string"
+        },
+        "prompt": {
+          "default": "",
+          "description": "What the plot should show; the request given to the plotting agent.",
+          "maxLength": 8000,
+          "title": "Prompt",
+          "type": "string"
+        },
+        "width_mm": {
+          "maximum": 500,
+          "minimum": 5,
+          "title": "Width Mm",
+          "type": "number"
+        },
+        "height_mm": {
+          "maximum": 1000,
+          "minimum": 5,
+          "title": "Height Mm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "width_mm",
+        "height_mm"
+      ],
+      "title": "SlotPanelContent",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -294,6 +351,15 @@
     },
     "legend": {
       "$ref": "#/$defs/FigureLegend"
+    },
+    "datasets": {
+      "description": "Plots created in this figure use these datasets; none means project data.",
+      "items": {
+        "$ref": "#/$defs/FigureDataset"
+      },
+      "maxItems": 50,
+      "title": "Datasets",
+      "type": "array"
     },
     "min_font_pt": {
       "default": 5,

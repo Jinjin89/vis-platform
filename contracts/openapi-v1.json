@@ -5289,7 +5289,7 @@
               }
             ],
             "title": "Aspect",
-            "description": "Preferred width / height when the plot is rendered at its panel size. Scaled content always keeps its natural proportions."
+            "description": "Preferred width / height for a slot, or for a plot rendered at its panel size. Scaled content always keeps its natural proportions."
           }
         },
         "additionalProperties": false,
@@ -6833,7 +6833,8 @@
               "small_text",
               "low_resolution",
               "label_order",
-              "unused_space"
+              "unused_space",
+              "empty_slot"
             ],
             "title": "Code"
           },
@@ -6897,6 +6898,15 @@
           },
           "legend": {
             "$ref": "#/components/schemas/FigureLegend"
+          },
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/FigureDataset"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Datasets",
+            "description": "Plots created in this figure use these datasets; none means project data."
           },
           "min_font_pt": {
             "type": "number",
@@ -6979,6 +6989,14 @@
             },
             "type": "object",
             "title": "Images"
+          },
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/Dataset"
+            },
+            "type": "array",
+            "title": "Datasets",
+            "description": "The figure's datasets, in content order."
           },
           "updates": {
             "additionalProperties": {
@@ -7151,6 +7169,22 @@
         ],
         "title": "FigureCompositionSummary"
       },
+      "FigureDataset": {
+        "properties": {
+          "dataset_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Dataset Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dataset_id"
+        ],
+        "title": "FigureDataset"
+      },
       "FigureExportFormat": {
         "type": "string",
         "enum": [
@@ -7275,6 +7309,14 @@
               }
             ]
           },
+          "panels": {
+            "items": {
+              "$ref": "#/components/schemas/FigurePanelProgress"
+            },
+            "type": "array",
+            "title": "Panels",
+            "description": "Slots this message fills, in the order they are made."
+          },
           "completed_actions": {
             "items": {
               "type": "string"
@@ -7345,6 +7387,17 @@
                 "type": "null"
               }
             ]
+          },
+          "fill": {
+            "items": {
+              "type": "string",
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Fill",
+            "description": "Slots to fill from their descriptions without planning, in this order."
           }
         },
         "additionalProperties": false,
@@ -7400,6 +7453,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/SetLegend"
+                },
+                {
+                  "$ref": "#/components/schemas/SetFigureDatasets"
                 }
               ],
               "discriminator": {
@@ -7409,6 +7465,7 @@
                   "move_panel": "#/components/schemas/MovePanel",
                   "remove_panel": "#/components/schemas/RemovePanel",
                   "replace_panel": "#/components/schemas/ReplacePanel",
+                  "set_datasets": "#/components/schemas/SetFigureDatasets",
                   "set_label_style": "#/components/schemas/SetLabelStyle",
                   "set_legend": "#/components/schemas/SetLegend",
                   "set_min_font": "#/components/schemas/SetMinimumFont",
@@ -7496,6 +7553,9 @@
               },
               {
                 "$ref": "#/components/schemas/ImagePanelContent"
+              },
+              {
+                "$ref": "#/components/schemas/SlotPanelContent"
               }
             ],
             "title": "Content",
@@ -7503,7 +7563,8 @@
               "propertyName": "type",
               "mapping": {
                 "image": "#/components/schemas/ImagePanelContent",
-                "plot": "#/components/schemas/PlotPanelContent"
+                "plot": "#/components/schemas/PlotPanelContent",
+                "slot": "#/components/schemas/SlotPanelContent"
               }
             }
           },
@@ -7563,6 +7624,43 @@
           "y_mm"
         ],
         "title": "FigurePanel"
+      },
+      "FigurePanelProgress": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "waiting",
+              "plotting",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "default": "waiting"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id"
+        ],
+        "title": "FigurePanelProgress",
+        "description": "A slot queued for filling by this message."
       },
       "FigurePlotStatus": {
         "properties": {
@@ -12697,6 +12795,30 @@
         ],
         "title": "SelectedDataScope"
       },
+      "SetFigureDatasets": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_datasets",
+            "title": "Op"
+          },
+          "datasets": {
+            "items": {
+              "$ref": "#/components/schemas/FigureDataset"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Datasets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "datasets"
+        ],
+        "title": "SetFigureDatasets"
+      },
       "SetFigurePage": {
         "properties": {
           "op": {
@@ -13085,6 +13207,43 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SlideSettings"
+      },
+      "SlotPanelContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "slot",
+            "title": "Type",
+            "default": "slot"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 8000,
+            "title": "Prompt",
+            "description": "What the plot should show; the request given to the plotting agent.",
+            "default": ""
+          },
+          "width_mm": {
+            "type": "number",
+            "maximum": 500.0,
+            "minimum": 5.0,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 5.0,
+            "title": "Height Mm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width_mm",
+          "height_mm"
+        ],
+        "title": "SlotPanelContent",
+        "description": "A planned panel: the size and description of a plot that does not exist yet."
       },
       "TextControl": {
         "properties": {

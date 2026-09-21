@@ -399,6 +399,67 @@
   color: var(--color-muted);
   font-size: 11px;
 }
+.composition-slot {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 6px 8px 6px 18px;
+  overflow: hidden;
+  border: 1.5px dashed var(--color-border-strong);
+  background: var(--color-primary-faint);
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.composition-slot[data-status="empty"] .composition-slot-prompt {
+  font-style: italic;
+}
+.composition-slot[data-status="plotting"] {
+  border-color: var(--color-primary);
+}
+.composition-slot[data-status="failed"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.composition-slot-prompt {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  color: var(--color-text);
+}
+.composition-slot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.composition-slot[data-status="plotting"] .composition-slot-status {
+  color: var(--color-primary);
+}
+.composition-slot[data-status="failed"] .composition-slot-status {
+  color: var(--color-danger);
+}
+.composition-slot-controls textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+.composition-message-panels {
+  margin: 8px 0;
+  padding-left: 18px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.composition-message-panels li[data-status="plotting"] {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.composition-message-panels li[data-status="failed"] {
+  color: var(--color-danger);
+}
 .composition-panel-label {
   position: absolute;
   top: 0;

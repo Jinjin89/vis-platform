@@ -11,6 +11,8 @@ import {
 import { FigureWorkspace } from "../src/features/figures/FigureWorkspace";
 
 const api = vi.hoisted(() => ({
+  listFigures: vi.fn(),
+  createFigure: vi.fn(),
   getFigure: vi.fn(),
   applyFigureOperations: vi.fn(),
   arrangeFigure: vi.fn(),
@@ -22,6 +24,14 @@ vi.mock("../src/api/figureCompositions", async (original) => ({
   ...(await original<typeof import("../src/api/figureCompositions")>()),
   ...api,
 }));
+
+// jsdom has no modal dialogs.
+HTMLDialogElement.prototype.showModal ??= function () {
+  this.open = true;
+};
+HTMLDialogElement.prototype.close ??= function () {
+  this.open = false;
+};
 
 const preview = (id: string) => ({
   artifact_id: `artifact-${id}`,
@@ -113,13 +123,63 @@ function makeDocument(revision = 1): FigureDocument {
   });
 }
 
-function renderEditor() {
+/** The standard document with a third panel: a slot, optionally with a fill in progress. */
+function slotDocument(
+  fill?: "waiting" | "plotting" | "failed",
+  prompt = "Tumour volume over time.",
+): FigureDocument {
+  const base = makeDocument();
+  return figureDocumentSchema.parse({
+    ...base,
+    content: {
+      ...base.content,
+      panels: [
+        ...base.content.panels,
+        {
+          id: "growth",
+          content: { type: "slot", prompt, width_mm: 120, height_mm: 60 },
+          x_mm: 5,
+          y_mm: 90,
+        },
+      ],
+    },
+    panels: {
+      ...base.panels,
+      growth: {
+        label: "C",
+        frame: { x_mm: 5, y_mm: 90, width_mm: 120, height_mm: 60 },
+        natural_width_mm: 120,
+        natural_height_mm: 60,
+      },
+    },
+    messages: fill
+      ? [
+          {
+            message_id: "m1",
+            prompt: "Build the figure",
+            status: fill === "failed" ? "completed" : "running",
+            panels: [
+              {
+                panel_id: "growth",
+                status: fill,
+                error:
+                  fill === "failed" ? "No data matched the request." : null,
+              },
+            ],
+            created_at: "2026-09-21T00:00:00Z",
+          },
+        ]
+      : [],
+  });
+}
+
+function renderEditor(entry = "/figure?id=figure-1") {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/figure?id=figure-1"]}>
+      <MemoryRouter initialEntries={[entry]}>
         <FigureWorkspace projectId="project-1" />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -324,6 +384,7 @@ test("assistant questions and progress are shown in the conversation", async () 
           ],
         },
         active_step: null,
+        panels: [],
         completed_actions: [],
         created_at: "2026-09-21T00:00:00Z",
       },
@@ -346,4 +407,111 @@ test("assistant questions and progress are shown in the conversation", async () 
     "i1",
     [{ question_id: "lead", choice_ids: ["umap"], free_text: null }],
   );
+});
+
+test("a failed slot is described again, resized, and retried", async () => {
+  const user = userEvent.setup();
+  api.getFigure.mockResolvedValue(slotDocument("failed"));
+  api.applyFigureOperations.mockImplementation(async () =>
+    slotDocument("failed"),
+  );
+  api.sendFigureMessage.mockImplementation(async () => slotDocument("waiting"));
+  renderEditor();
+  const slot = await screen.findByRole("button", {
+    name: "Panel C: Slot: Tumour volume over time.",
+  });
+  expect(within(slot).getByText("Could not be created")).toBeInTheDocument();
+  await user.dblClick(slot);
+  expect(screen.getByText("No data matched the request.")).toBeInTheDocument();
+
+  const height = screen.getByRole("spinbutton", { name: /^Height/ });
+  await user.clear(height);
+  await user.type(height, "80");
+  await user.tab();
+  expect(sentOperations()).toEqual([
+    {
+      op: "replace_panel",
+      panel: expect.objectContaining({
+        id: "growth",
+        scale: 1,
+        content: expect.objectContaining({ width_mm: 120, height_mm: 80 }),
+      }),
+    },
+  ]);
+
+  const prompt = screen.getByRole("textbox", {
+    name: "What should this plot show?",
+  });
+  await user.clear(prompt);
+  await user.type(prompt, "Tumour volume by group, mean ± SEM.");
+  await user.click(screen.getByRole("button", { name: "Retry" }));
+  expect(sentOperations()).toEqual([
+    {
+      op: "replace_panel",
+      panel: expect.objectContaining({
+        content: expect.objectContaining({
+          type: "slot",
+          prompt: "Tumour volume by group, mean ± SEM.",
+        }),
+      }),
+    },
+  ]);
+  expect(api.sendFigureMessage).toHaveBeenCalledWith("project-1", "figure-1", {
+    request_id: expect.any(String),
+    message: "Create the plot for panel C.",
+    fill: ["growth"],
+  });
+  expect(await within(slot).findByText("Waiting")).toBeInTheDocument();
+});
+
+test("slots are added from the toolbar at a free spot", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+  await user.click(await screen.findByRole("button", { name: "+ Slot" }));
+  expect(sentOperations()).toEqual([
+    {
+      op: "add_panel",
+      panel: {
+        id: "panel-1",
+        content: { type: "slot", prompt: "", width_mm: 90, height_mm: 67 },
+        x_mm: 5,
+        y_mm: 85.2,
+        scale: 1,
+        label: null,
+        show_label: true,
+        locked: false,
+      },
+    },
+  ]);
+});
+
+test("a new figure with a description starts the assistant", async () => {
+  const user = userEvent.setup();
+  api.listFigures.mockResolvedValue({
+    schema_version: "1.0",
+    compositions: [],
+    total: 0,
+    offset: 0,
+  });
+  api.createFigure.mockImplementation(async () => makeDocument());
+  api.sendFigureMessage.mockImplementation(async () => makeDocument());
+  renderEditor("/figure");
+  await user.click(await screen.findByRole("button", { name: "+ New figure" }));
+  await user.type(
+    screen.getByRole("textbox", { name: /What should this figure show/ }),
+    "Treatment response in four panels.",
+  );
+  await user.click(screen.getByRole("button", { name: "Create and build" }));
+  expect(api.createFigure).toHaveBeenCalledWith(
+    "project-1",
+    expect.objectContaining({ datasets: [] }),
+    expect.any(String),
+  );
+  expect(api.sendFigureMessage).toHaveBeenCalledWith("project-1", "figure-1", {
+    request_id: expect.any(String),
+    message: "Treatment response in four panels.",
+  });
+  expect(
+    await screen.findByRole("region", { name: "Figure page" }),
+  ).toBeInTheDocument();
 });

@@ -15,10 +15,13 @@ from vis_platform_backend.contracts.figure_arrangement import (
 from vis_platform_backend.contracts.figure_composition_content import (
     FigureCompositionContent,
     PlotPanelContent,
+    SlotPanelContent,
 )
 from vis_platform_backend.contracts.figure_composition_operations import (
+    FigureOperation,
     FigureOperationsRequest,
     PanelGeometry,
+    ReplacePanel,
     SetPanelGeometry,
 )
 from vis_platform_backend.contracts.figure_compositions import FigureCompositionDocument
@@ -97,6 +100,8 @@ class FigureArrangementService:
             ]
         )
         leaves = _leaves(node)
+        # Slots have no content proportions yet, so they take the shape they are given.
+        slots = {pid for pid in ids if isinstance(panels[pid].content, SlotPanelContent)}
         resize = set()
         for panel_id in ids:
             plot = panels[panel_id].content
@@ -110,7 +115,8 @@ class FigureArrangementService:
         for panel_id in ids:
             width, height = resolved.natural_sizes[panel_id]
             preferred = leaves[panel_id].aspect
-            aspects[panel_id] = preferred if panel_id in resize and preferred else width / height
+            reshape = panel_id in resize or panel_id in slots
+            aspects[panel_id] = preferred if reshape and preferred else width / height
         frames = solve_arrangement(
             node,
             aspects,
@@ -121,7 +127,29 @@ class FigureArrangementService:
             gutter=gutter,
         )
         geometry, targets = {}, {}
+        operations: list[FigureOperation] = []
         for panel_id, frame in frames.items():
+            panel = panels[panel_id]
+            if isinstance(panel.content, SlotPanelContent):
+                size = {
+                    "width_mm": max(5, _floor(frame.width_mm, 0.01)),
+                    "height_mm": max(5, _floor(frame.height_mm, 0.01)),
+                }
+                reshaped = panel.content.model_copy(update=size)
+                operations.append(
+                    ReplacePanel(
+                        op="replace_panel",
+                        panel=panel.model_copy(
+                            update={
+                                "content": reshaped,
+                                "x_mm": round(frame.x_mm, 2),
+                                "y_mm": round(frame.y_mm, 2),
+                                "scale": 1,
+                            }
+                        ),
+                    )
+                )
+                continue
             width, height = resolved.natural_sizes[panel_id]
             # Until a render completes, resized plots are shown scaled inside their frame.
             scale = min(frame.width_mm / width, frame.height_mm / height)
@@ -136,13 +164,20 @@ class FigureArrangementService:
             FigureOperationsRequest(
                 request_id=request.request_id,
                 base_revision=request.base_revision,
-                operations=[SetPanelGeometry(op="set_panel_geometry", panels=geometry)],
+                operations=[
+                    *(
+                        [SetPanelGeometry(op="set_panel_geometry", panels=geometry)]
+                        if geometry
+                        else []
+                    ),
+                    *operations,
+                ],
                 summary=request.summary,
             ),
             lambda updated: self.compositions.validate(project_id, updated),
         )
         if targets:
-            self._start(project_id, composition_id, request.request_id, targets)
+            self.start_renders(project_id, composition_id, request.request_id, targets)
         return self.compositions.get(project_id, composition_id)
 
     def render(
@@ -173,7 +208,7 @@ class FigureArrangementService:
                     "INVALID_FIGURE_LAYOUT",
                     422,
                 )
-        self._start(
+        self.start_renders(
             project_id,
             composition_id,
             request.request_id,
@@ -181,7 +216,7 @@ class FigureArrangementService:
         )
         return self.compositions.get(project_id, composition_id)
 
-    def _start(
+    def start_renders(
         self,
         project_id: str,
         composition_id: str,

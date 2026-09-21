@@ -62,7 +62,22 @@ class ImagePanelContent(StrictModel):
     image_id: Identifier
 
 
-PanelContent = Annotated[PlotPanelContent | ImagePanelContent, Field(discriminator="type")]
+class SlotPanelContent(StrictModel):
+    """A planned panel: the size and description of a plot that does not exist yet."""
+
+    type: Literal["slot"] = "slot"
+    prompt: str = Field(
+        default="",
+        max_length=8000,
+        description="What the plot should show; the request given to the plotting agent.",
+    )
+    width_mm: float = Field(ge=5, le=500, allow_inf_nan=False)
+    height_mm: float = Field(ge=5, le=1000, allow_inf_nan=False)
+
+
+PanelContent = Annotated[
+    PlotPanelContent | ImagePanelContent | SlotPanelContent, Field(discriminator="type")
+]
 
 
 class FigurePanel(StrictModel):
@@ -95,6 +110,10 @@ class FigureLegend(StrictModel):
     )
 
 
+class FigureDataset(StrictModel):
+    dataset_id: Identifier
+
+
 class FigureCompositionContent(StrictModel):
     schema_version: Literal["1.0"] = "1.0"
     title: str = Field(min_length=1, max_length=200)
@@ -106,6 +125,11 @@ class FigureCompositionContent(StrictModel):
         description="Drawing order: later panels are drawn on top.",
     )
     legend: FigureLegend = Field(default_factory=FigureLegend)
+    datasets: list[FigureDataset] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Plots created in this figure use these datasets; none means project data.",
+    )
     min_font_pt: float = Field(
         default=5,
         ge=4,
@@ -126,4 +150,7 @@ class FigureCompositionContent(StrictModel):
             raise ValueError("Custom panel labels must be unique.")
         if not set(self.legend.entries).issubset(ids):
             raise ValueError("Legend entries must refer to panels in this figure.")
+        datasets = [dataset.dataset_id for dataset in self.datasets]
+        if len(datasets) != len(set(datasets)):
+            raise ValueError("Each dataset can be added to a figure once.")
         return self

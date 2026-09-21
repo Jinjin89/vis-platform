@@ -9,6 +9,7 @@ from vis_platform_backend.contracts.figure_composition_content import (
     FigureCompositionContent,
     ImagePanelContent,
     PlotPanelContent,
+    SlotPanelContent,
 )
 from vis_platform_backend.contracts.figure_composition_operations import FigureOperationsRequest
 from vis_platform_backend.contracts.figure_compositions import (
@@ -26,6 +27,7 @@ from vis_platform_backend.contracts.figures import FigureExportFormat
 from vis_platform_backend.contracts.plot_runs import PlotResultSummary
 from vis_platform_backend.contracts.reference_images import ReferenceImage
 from vis_platform_backend.data.errors import DataError
+from vis_platform_backend.data.service import DatasetService
 from vis_platform_backend.domain.figure_checks import figure_checks
 from vis_platform_backend.domain.figure_compositions import (
     MM_PER_INCH,
@@ -66,12 +68,14 @@ class FigureCompositionService:
         repository: Repository,
         images: ReferenceImageService,
         exporter: FigureExporter,
+        data: DatasetService,
     ) -> None:
-        self.store, self.repository, self.images, self.exporter = (
+        self.store, self.repository, self.images, self.exporter, self.data = (
             store,
             repository,
             images,
             exporter,
+            data,
         )
         # Immutable versions have fixed text sizes, so measurements are kept per version.
         self._text_sizes: dict[str, tuple[float, bool]] = {}
@@ -110,6 +114,8 @@ class FigureCompositionService:
                 if version_id not in figures:
                     figures[version_id] = self.figure(project_id, version_id)
                 natural_sizes[panel.id] = self.natural_size(figures[version_id])
+            elif isinstance(panel.content, SlotPanelContent):
+                natural_sizes[panel.id] = (panel.content.width_mm, panel.content.height_mm)
             else:
                 image_id = panel.content.image_id
                 if image_id not in images:
@@ -129,6 +135,8 @@ class FigureCompositionService:
 
     def validate(self, project_id: str, content: FigureCompositionContent) -> None:
         self.resolve(project_id, content)
+        for dataset in content.datasets:
+            self.data.get(project_id, dataset.dataset_id)
 
     def get(self, project_id: str, composition_id: str) -> FigureCompositionDocument:
         record = self.store.get(project_id, composition_id)
@@ -193,6 +201,9 @@ class FigureCompositionService:
             },
             figures=figures,
             images=resolved.images,
+            datasets=[
+                self.data.get(project_id, dataset.dataset_id) for dataset in content.datasets
+            ],
             updates=updates,
             checks=checks,
             jobs=jobs,
@@ -266,7 +277,7 @@ class FigureCompositionService:
             if isinstance(panel.content, ImagePanelContent):
                 path = self.images.content_path(project_id, panel.content.image_id)
                 sources[panel.id] = path.read_bytes()
-            else:
+            elif isinstance(panel.content, PlotPanelContent):
                 figure = resolved.figures[panel.content.version_id]
                 sources[panel.id] = self.exporter.plot_svg(figure)[0]
         data = compose_page(

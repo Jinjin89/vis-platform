@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import Markdown from "react-markdown";
 import { createMutationId } from "../../api/client";
 import {
@@ -8,6 +8,7 @@ import {
 import type {
   FigureDocument,
   FigureMessage,
+  PanelProgress,
 } from "../../api/schemas/figureCompositions";
 import { reportEditActive } from "../../api/schemas/reports";
 import { PlannerQuestionCard } from "../plot-run/PlannerQuestionCard";
@@ -28,10 +29,17 @@ const PHASES: Record<FigureMessage["phase"], string> = {
   finished: "",
 };
 
+const PROGRESS: Record<PanelProgress["status"], string> = {
+  waiting: "waiting",
+  plotting: "creating the plot…",
+  completed: "done",
+  failed: "could not be created",
+};
+
 const STARTERS = [
+  "Build a figure from the data that summarises the main result in four panels.",
   "Arrange the panels so the main result leads the figure.",
   "Write a legend entry for every panel.",
-  "Make sure all text prints at a readable size.",
 ];
 
 function MessageView({
@@ -71,6 +79,17 @@ function MessageView({
       <div className="composition-message-reply">
         {message.response_text ? (
           <Markdown>{message.response_text}</Markdown>
+        ) : null}
+        {message.panels.length && active ? (
+          <ol className="composition-message-panels" aria-label="Panels">
+            {message.panels.map((item) => (
+              <li key={item.panel_id} data-status={item.status}>
+                Panel{" "}
+                {document.panels[item.panel_id]?.label ?? `“${item.panel_id}”`}{" "}
+                · {PROGRESS[item.status]}
+              </li>
+            ))}
+          </ol>
         ) : null}
         {message.completed_actions.length ? (
           <ul aria-label="Completed changes">
@@ -141,6 +160,8 @@ function MessageView({
 export function FigureAssistantPanel({
   document,
   selected,
+  composer,
+  initialDraft = "",
   onSend,
   onShow,
   onClearSelection,
@@ -148,17 +169,18 @@ export function FigureAssistantPanel({
 }: {
   document: FigureDocument;
   selected: string[];
+  composer: RefObject<HTMLTextAreaElement | null>;
+  initialDraft?: string;
   onSend: (input: MessageInput) => Promise<boolean>;
   onShow: (next: FigureDocument) => void;
   onClearSelection: () => void;
   refresh: () => Promise<unknown>;
 }) {
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
   const pending = useRef<{ fingerprint: string; input: MessageInput } | null>(
     null,
   );
-  const composer = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const messages = document.messages;
   const last = messages.at(-1);
@@ -210,8 +232,9 @@ export function FigureAssistantPanel({
             <span className="composition-kicker">Figure assistant</span>
             <h2>Describe the figure you need.</h2>
             <p>
-              The assistant plans the composition, creates or refines plots with
-              the plotting agent, arranges panels, and writes the legend. You
+              The assistant plans the panels and lays out the page, then creates
+              each plot from the figure’s data with the plotting agent, one at a
+              time. It also arranges existing panels and writes the legend. You
               can adjust everything afterwards.
             </p>
             {STARTERS.map((text) => (
@@ -255,7 +278,7 @@ export function FigureAssistantPanel({
           rows={3}
           maxLength={8000}
           aria-label="Message the figure assistant"
-          placeholder="For example: put the UMAP first, then the two violin plots side by side."
+          placeholder="For example: a figure on treatment response with growth curves, final volumes, and marker expression."
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {

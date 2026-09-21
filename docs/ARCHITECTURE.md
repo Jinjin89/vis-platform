@@ -592,7 +592,9 @@ revision snapshots retain immutable versions. See [SLIDES_UI.md](SLIDES_UI.md).
 ### Figure compositions
 
 A figure composition is a separate versioned document that places shared plot
-versions and uploaded images on a publication page. Panels store millimetre
+versions, uploaded images, and planned slots on a publication page. Like a report,
+it has its own datasets, so a figure can be built from data and a description
+alone. Panels store millimetre
 positions and a scale over each content's natural size; the backend resolves
 geometry, reading-order labels, and page height, and composes exports from the
 saved drawings without re-execution. Panels stay pinned to their versions and
@@ -602,5 +604,7 @@ parameter update. These placement renders never become a plot's current version.
 Non-blocking checks report margins, overlaps, small text, image resolution, label
 order, and unused space. A separate figure planner turns messages into edits,
 additions, plot steps through the shared assistant and plot pipeline, and
-arrangement trees. It reviews remaining warnings for at most two rounds. See
-[FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).
+arrangement trees. To build from data, it lays out the whole page as slots; the
+runtime then fills them one at a time in reading order through the shared plot agent,
+at each slot's size, continuing past slots that fail. It reviews remaining warnings
+for at most two rounds. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).

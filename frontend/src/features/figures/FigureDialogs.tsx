@@ -13,32 +13,50 @@ import type {
 } from "../../api/schemas/figureCompositions";
 import type { PlotResult } from "../../api/schemas/plotRun";
 import type { ReferenceImage } from "../../api/schemas/referenceImages";
+import { DatasetSelector } from "../datasets/DatasetSelector";
 import { ReportDialog } from "../reports/ReportDialog";
 import { PAGE_PRESETS } from "./figureGeometry";
 
 const message = (reason: unknown, fallback: string) =>
   reason instanceof Error ? reason.message : fallback;
 
+export type NewFigure = {
+  title: string;
+  preset: string;
+  datasetIds: string[];
+  /** What the figure should show; the assistant starts building from it. */
+  description: string;
+};
+
 export function NewFigureDialog({
+  projectId,
   busy,
   error,
   onCreate,
   onClose,
 }: {
+  projectId: string;
   busy: boolean;
   error: string | null;
-  onCreate: (title: string, presetId: string) => void;
+  onCreate: (figure: NewFigure) => void;
   onClose: () => void;
 }) {
   const [title, setTitle] = useState("Figure 1");
   const [preset, setPreset] = useState("a4-width");
+  const [datasetIds, setDatasetIds] = useState<string[]>([]);
+  const [description, setDescription] = useState("");
   return (
     <ReportDialog title="New figure" onClose={onClose}>
       <form
         className="report-dialog-form"
         onSubmit={(event) => {
           event.preventDefault();
-          onCreate(title.trim(), preset);
+          onCreate({
+            title: title.trim(),
+            preset,
+            datasetIds,
+            description: description.trim(),
+          });
         }}
       >
         <label>
@@ -68,6 +86,33 @@ export function NewFigureDialog({
           Auto height ends the page below the last panel, which suits figures
           shorter than a full page. You can change the page at any time.
         </p>
+        <div className="report-data-choice">
+          <strong>Data for this figure</strong>
+          <DatasetSelector
+            projectId={projectId}
+            ensureProject={async () => projectId}
+            selectedIds={datasetIds}
+            onSelect={setDatasetIds}
+            resultIds={[]}
+            onUseResult={() => undefined}
+            datasetsOnly
+            disabled={busy}
+          />
+        </div>
+        <label>
+          What should this figure show? (optional)
+          <textarea
+            value={description}
+            rows={4}
+            maxLength={8000}
+            placeholder="For example: Figure 2 — treatment response: tumour growth over time, final volumes by group, and marker expression."
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </label>
+        <small>
+          With a description, the assistant plans the panels and creates each
+          plot from the data. Leave it empty to start with a blank page.
+        </small>
         {error ? (
           <p role="alert" className="report-error">
             {error}
@@ -82,7 +127,7 @@ export function NewFigureDialog({
             className="report-primary"
             disabled={busy || !title.trim()}
           >
-            Create figure
+            {description.trim() ? "Create and build" : "Create figure"}
           </button>
         </footer>
       </form>

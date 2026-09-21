@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { createMutationId, type FigureExportFormat } from "../../api/client";
 import {
   applyFigureOperations,
@@ -23,6 +23,8 @@ import {
 } from "../../api/schemas/figureCompositions";
 import type { PlotResult } from "../../api/schemas/plotRun";
 import type { ReferenceImage } from "../../api/schemas/referenceImages";
+import { reportEditActive } from "../../api/schemas/reports";
+import { DatasetSelector } from "../datasets/DatasetSelector";
 import { downloadReportFile } from "../reports/ReportDialog";
 import {
   AddImageDialog,
@@ -41,6 +43,7 @@ import {
   imageNaturalSize,
   newPanelId,
   placeNewPanel,
+  placeNewSlot,
   plotNaturalSize,
   type Size,
 } from "./figureGeometry";
@@ -81,20 +84,35 @@ function FigureLibrary({ projectId }: { projectId: string }) {
     queryKey: ["figures", projectId, offset],
     queryFn: () => listFigures(projectId, offset),
   });
-  async function create(content: FigureContent) {
+  async function create(content: FigureContent, description = "") {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
       const created = await createFigure(projectId, content, createKey.current);
       createKey.current = createMutationId();
+      let opened = created;
+      let unsent: string | null = null;
+      // With a description, the assistant starts building as soon as the figure opens.
+      if (description)
+        try {
+          opened = await sendFigureMessage(projectId, created.composition_id, {
+            request_id: createMutationId(),
+            message: description,
+          });
+        } catch {
+          unsent = description;
+        }
       queryClient.setQueryData(
         ["figure", projectId, created.composition_id],
-        created,
+        opened,
       );
       void queryClient.invalidateQueries({ queryKey: ["figures", projectId] });
       setCreating(false);
-      setParams({ id: created.composition_id });
+      setParams(
+        { id: created.composition_id },
+        unsent ? { state: { unsent } } : undefined,
+      );
     } catch (reason) {
       setError(reasonText(reason, "The figure could not be created."));
     } finally {
@@ -128,10 +146,11 @@ function FigureLibrary({ projectId }: { projectId: string }) {
       <div className="composition-library-heading">
         <div>
           <span className="composition-kicker">Publication figures</span>
-          <h1>Compose your figures.</h1>
+          <h1>Build your figures.</h1>
           <p>
-            Arrange saved plots and images into multi-panel figures on an A4 or
-            journal-width page, then export them for your manuscript.
+            Describe a figure and let the assistant build it from your data
+            panel by panel, or arrange saved plots and images yourself, on an A4
+            or journal-width page. Export it for your manuscript.
           </p>
         </div>
         <div>
@@ -180,7 +199,7 @@ function FigureLibrary({ projectId }: { projectId: string }) {
           >
             <span>+</span>
             <strong>Start your first figure</strong>
-            <small>Combine saved plots and images on one page.</small>
+            <small>Build it from your data, or combine saved plots.</small>
           </button>
         ) : null}
       </div>
@@ -216,12 +235,15 @@ function FigureLibrary({ projectId }: { projectId: string }) {
           busy={busy}
           error={error}
           onClose={() => setCreating(false)}
-          onCreate={(title, preset) =>
+          projectId={projectId}
+          onCreate={({ title, preset, datasetIds, description }) =>
             void create(
               figureContentSchema.parse({
                 title,
                 page: PAGE_PRESETS.find((item) => item.id === preset)!.page,
+                datasets: datasetIds.map((dataset_id) => ({ dataset_id })),
               }),
+              description,
             )
           }
         />
@@ -239,6 +261,12 @@ function FigureEditor({
 }) {
   const queryClient = useQueryClient();
   const [, setParams] = useSearchParams();
+  const location = useLocation();
+  // A description that could not be sent when the figure was created.
+  const [unsent] = useState(
+    () => (location.state as { unsent?: string } | null)?.unsent ?? "",
+  );
+  const composer = useRef<HTMLTextAreaElement>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [tab, setTab] = useState<"assistant" | "inspect" | "legend">(
     "assistant",
@@ -253,7 +281,11 @@ function FigureEditor({
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    unsent
+      ? "The assistant could not start. Your description is in the message box; send it again."
+      : null,
+  );
   const lock = useRef(false);
   const query = useQuery({
     queryKey: ["figure", projectId, figureId],
@@ -349,6 +381,63 @@ function FigureEditor({
       plotNaturalSize(figure) ?? FALLBACK_PLOT_SIZE,
       "Added plot panel",
     );
+  function addSlot() {
+    if (!document) return;
+    const place = placeNewSlot(document);
+    const panel: FigurePanel = {
+      id: newPanelId(document),
+      content: {
+        type: "slot",
+        prompt: "",
+        width_mm: place.width,
+        height_mm: place.height,
+      },
+      x_mm: place.x_mm,
+      y_mm: place.y_mm,
+      scale: 1,
+      label: null,
+      show_label: true,
+      locked: false,
+    };
+    void apply([{ op: "add_panel", panel }], "Added a slot").then((added) => {
+      if (!added) return;
+      setSelected([panel.id]);
+      setTab("inspect");
+    });
+  }
+  function reshape(panelId: string, size: Size) {
+    const panel = document?.content.panels.find((item) => item.id === panelId);
+    if (!panel || panel.content.type !== "slot") return Promise.resolve(false);
+    return apply(
+      [
+        {
+          op: "replace_panel",
+          panel: {
+            ...panel,
+            content: {
+              ...panel.content,
+              width_mm: size.width,
+              height_mm: size.height,
+            },
+            scale: 1,
+          },
+        },
+      ],
+      "Resized slot",
+    );
+  }
+  const fill = (panelIds: string[]) =>
+    document
+      ? execute(() =>
+          sendFigureMessage(projectId, figureId, {
+            request_id: createMutationId(),
+            message: `Create the plot for ${panelIds
+              .map((id) => `panel ${document.panels[id]?.label ?? id}`)
+              .join(", ")}.`,
+            fill: panelIds,
+          }),
+        )
+      : Promise.resolve(false);
   const addImage = (image: ReferenceImage) =>
     addPanel(
       { type: "image", image_id: image.image_id },
@@ -458,6 +547,31 @@ function FigureEditor({
           {busy ? "Saving…" : `Saved · revision ${document.revision}`}
         </span>
         <div className="composition-toolbar-actions">
+          <DatasetSelector
+            projectId={projectId}
+            ensureProject={async () => projectId}
+            selectedIds={document.content.datasets.map(
+              (dataset) => dataset.dataset_id,
+            )}
+            onSelect={(ids) =>
+              void apply(
+                [
+                  {
+                    op: "set_datasets",
+                    datasets: ids.map((dataset_id) => ({ dataset_id })),
+                  },
+                ],
+                "Updated figure data",
+              )
+            }
+            resultIds={[]}
+            onUseResult={() => undefined}
+            datasetsOnly
+            disabled={busy}
+          />
+          <button type="button" disabled={busy} onClick={addSlot}>
+            + Slot
+          </button>
           <button
             type="button"
             disabled={busy}
@@ -557,13 +671,26 @@ function FigureEditor({
           {document.content.panels.length ? null : (
             <div className="composition-empty">
               <strong>Your page is empty.</strong>
-              <p>Add saved plots or images to start composing.</p>
+              <p>
+                Describe the figure to the assistant: it plans the panels, lays
+                out the page, and creates each plot from your data. Or build it
+                yourself from slots, saved plots, and images.
+              </p>
               <div>
                 <button
                   type="button"
                   className="composition-primary"
-                  onClick={() => setDialog("plot")}
+                  onClick={() => {
+                    setTab("assistant");
+                    window.setTimeout(() => composer.current?.focus());
+                  }}
                 >
+                  Describe the figure
+                </button>
+                <button type="button" disabled={busy} onClick={addSlot}>
+                  Add a slot
+                </button>
+                <button type="button" onClick={() => setDialog("plot")}>
                   Add a saved plot
                 </button>
                 <button type="button" onClick={() => setDialog("image")}>
@@ -584,6 +711,7 @@ function FigureEditor({
             onCommit={(changes, summary) =>
               apply([{ op: "set_panel_geometry", panels: changes }], summary)
             }
+            onReshape={reshape}
             onRemove={remove}
             onMenu={(event, panelId) =>
               setMenu({ x: event.clientX, y: event.clientY, panelId })
@@ -595,8 +723,8 @@ function FigureEditor({
           />
           <p className="composition-hint">
             Double-click a panel for its properties · drag to move · drag the
-            corner to scale · Shift-click to select several · arrow keys nudge
-            0.5 mm (Shift: 5 mm) · hold Alt to skip snapping
+            corner to scale (slots: to reshape) · Shift-click to select several
+            · arrow keys nudge 0.5 mm (Shift: 5 mm) · hold Alt to skip snapping
           </p>
         </div>
         <aside className="composition-sidebar" aria-label="Figure details">
@@ -630,6 +758,8 @@ function FigureEditor({
             <FigureAssistantPanel
               document={document}
               selected={selected}
+              composer={composer}
+              initialDraft={unsent}
               onSend={(input) =>
                 execute(() => sendFigureMessage(projectId, figureId, input))
               }
@@ -642,8 +772,10 @@ function FigureEditor({
               document={document}
               selected={selected}
               busy={busy}
+              working={document.messages.some(reportEditActive)}
               onApply={apply}
               onRender={render}
+              onFill={fill}
               onSelect={setSelected}
             />
           ) : (

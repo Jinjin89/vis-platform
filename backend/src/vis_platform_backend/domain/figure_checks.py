@@ -103,6 +103,18 @@ def figure_checks(
                     panel_ids=[panel.id],
                 )
             )
+    empty = [panel.id for panel in content.panels if panel.content.type == "slot"]
+    if empty:
+        checks.append(
+            FigureCheck(
+                code="empty_slot",
+                severity="warning",
+                message=f"{', '.join(_name(labels, i) for i in empty)} "
+                f"{'has' if len(empty) == 1 else 'have'} no plot yet and "
+                f"{'is' if len(empty) == 1 else 'are'} left out of exports.",
+                panel_ids=empty,
+            )
+        )
     shown = [panel for panel in content.panels if panel.show_label]
     ordered = [labels[panel.id] for panel in reading_order(shown, frames)]
     if any(panel.label for panel in shown) and ordered != sorted(

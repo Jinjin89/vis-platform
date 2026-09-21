@@ -111,6 +111,8 @@ export const sendFigureMessage = (
     request_id: string;
     message: string;
     selection?: { panel_ids: string[] };
+    /** Slots to fill from their descriptions, without planning. */
+    fill?: string[];
   },
 ) =>
   request(

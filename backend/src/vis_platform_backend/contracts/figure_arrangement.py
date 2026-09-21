@@ -19,7 +19,7 @@ class ArrangedPanel(StrictModel):
         lt=10,
         allow_inf_nan=False,
         description=(
-            "Preferred width / height when the plot is rendered at its panel size. "
+            "Preferred width / height for a slot, or for a plot rendered at its panel size. "
             "Scaled content always keeps its natural proportions."
         ),
     )

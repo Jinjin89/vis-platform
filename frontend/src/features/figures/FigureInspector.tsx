@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type {
   FigureCheck,
   FigureDocument,
@@ -6,6 +6,7 @@ import type {
   FigurePage,
   FigurePanel,
   PanelLabelStyle,
+  SlotContent,
 } from "../../api/schemas/figureCompositions";
 import type { PlotResult } from "../../api/schemas/plotRun";
 import {
@@ -18,7 +19,7 @@ import {
   round,
   type Alignment,
 } from "./figureGeometry";
-import { naturalSize, panelTitle } from "./FigurePageCanvas";
+import { naturalSize, panelTitle, slotStatus } from "./FigurePageCanvas";
 
 type Apply = (
   operations: FigureOperation[],
@@ -29,6 +30,13 @@ export type RenderSizes = Record<
   { width_mm: number; height_mm: number }
 >;
 type Render = (panels: RenderSizes) => Promise<boolean>;
+type Fill = (panelIds: string[]) => Promise<boolean>;
+
+const CONTENT_KIND: Record<FigurePanel["content"]["type"], string> = {
+  plot: "Saved plot",
+  image: "Uploaded image",
+  slot: "Slot for a new plot",
+};
 
 /** Plots rendered in figures must be at least 1 inch on each side. */
 const MIN_RENDER_MM = 25.4;
@@ -156,15 +164,20 @@ export function FigureInspector({
   document,
   selected,
   busy,
+  working,
   onApply,
   onRender,
+  onFill,
   onSelect,
 }: {
   document: FigureDocument;
   selected: string[];
   busy: boolean;
+  /** The assistant is running a request, so slots cannot be filled yet. */
+  working: boolean;
   onApply: Apply;
   onRender: Render;
+  onFill: Fill;
   onSelect: (ids: string[]) => void;
 }) {
   const panels = document.content.panels.filter((panel) =>
@@ -177,8 +190,10 @@ export function FigureInspector({
         document={document}
         panel={panels[0]!}
         busy={busy}
+        working={working}
         onApply={onApply}
         onRender={onRender}
+        onFill={onFill}
         onSelect={onSelect}
       />
     );
@@ -207,15 +222,19 @@ function PanelInspector({
   document,
   panel,
   busy,
+  working,
   onApply,
   onRender,
+  onFill,
   onSelect,
 }: {
   document: FigureDocument;
   panel: FigurePanel;
   busy: boolean;
+  working: boolean;
   onApply: Apply;
   onRender: Render;
+  onFill: Fill;
   onSelect: (ids: string[]) => void;
 }) {
   const checks = document.checks.filter((check) =>
@@ -275,8 +294,9 @@ function PanelInspector({
         </span>
         <h2>{panelTitle(document, panel)}</h2>
         <small>
-          {panel.content.type === "plot" ? "Saved plot" : "Uploaded image"} ·
-          natural size {round(natural.width, 1)} × {round(natural.height, 1)} mm
+          {CONTENT_KIND[panel.content.type]} ·{" "}
+          {panel.content.type === "slot" ? "size" : "natural size"}{" "}
+          {round(natural.width, 1)} × {round(natural.height, 1)} mm
         </small>
       </header>
       {update ? (
@@ -307,6 +327,17 @@ function PanelInspector({
       ) : null}
       {checks.length ? (
         <ChecksList checks={checks} onSelect={onSelect} />
+      ) : null}
+      {panel.content.type === "slot" ? (
+        <SlotControls
+          key={panel.content.prompt}
+          document={document}
+          panel={panel}
+          slot={panel.content}
+          working={working}
+          onApply={onApply}
+          onFill={onFill}
+        />
       ) : null}
       {panel.content.type === "plot" ? (
         <RenderControls
@@ -370,44 +401,56 @@ function PanelInspector({
             max={page.height_mm - (resolved?.frame.height_mm ?? 0)}
             onCommit={(y_mm) => void geometry({ y_mm }, "Moved panel")}
           />
-          <NumberField
-            label="Width"
-            unit="mm"
-            value={natural.width * panel.scale}
-            min={1}
-            max={page.width_mm}
-            onCommit={(width) =>
-              void geometry(
-                {
-                  scale: clampScale(
-                    panel,
-                    natural,
-                    page,
-                    width / natural.width,
-                  ),
-                },
-                "Resized panel",
-              )
-            }
-          />
-          <NumberField
-            label="Scale"
-            unit="%"
-            step={1}
-            value={panel.scale * 100}
-            min={5}
-            max={1000}
-            onCommit={(percent) =>
-              void geometry(
-                { scale: clampScale(panel, natural, page, percent / 100) },
-                "Resized panel",
-              )
-            }
-          />
+          {panel.content.type === "slot" ? (
+            <SlotSizeFields
+              panel={panel}
+              slot={panel.content}
+              page={page}
+              onApply={onApply}
+            />
+          ) : (
+            <>
+              <NumberField
+                label="Width"
+                unit="mm"
+                value={natural.width * panel.scale}
+                min={1}
+                max={page.width_mm}
+                onCommit={(width) =>
+                  void geometry(
+                    {
+                      scale: clampScale(
+                        panel,
+                        natural,
+                        page,
+                        width / natural.width,
+                      ),
+                    },
+                    "Resized panel",
+                  )
+                }
+              />
+              <NumberField
+                label="Scale"
+                unit="%"
+                step={1}
+                value={panel.scale * 100}
+                min={5}
+                max={1000}
+                onCommit={(percent) =>
+                  void geometry(
+                    { scale: clampScale(panel, natural, page, percent / 100) },
+                    "Resized panel",
+                  )
+                }
+              />
+            </>
+          )}
         </div>
         <small>
-          Height {round(natural.height * panel.scale, 0.1)} mm follows the
-          content’s proportions.
+          {panel.content.type === "slot"
+            ? "The plot is made at the slot’s size."
+            : `Height ${round(natural.height * panel.scale, 0.1)} mm follows the content’s proportions.`}
         </small>
       </fieldset>
       <fieldset disabled={busy}>
@@ -474,6 +517,137 @@ function PanelInspector({
         </button>
       </fieldset>
     </div>
+  );
+}
+
+/** A slot's displayed size; width and height are independent until a plot fills it. */
+function SlotSizeFields({
+  panel,
+  slot,
+  page,
+  onApply,
+}: {
+  panel: FigurePanel;
+  slot: SlotContent;
+  page: FigurePage;
+  onApply: Apply;
+}) {
+  const reshape = (size: { width_mm: number; height_mm: number }) =>
+    void onApply(
+      [
+        {
+          op: "replace_panel",
+          panel: { ...panel, content: { ...slot, ...size }, scale: 1 },
+        },
+      ],
+      "Resized slot",
+    );
+  const width = slot.width_mm * panel.scale;
+  const height = slot.height_mm * panel.scale;
+  return (
+    <>
+      <NumberField
+        label="Width"
+        unit="mm"
+        value={width}
+        min={5}
+        max={page.width_mm - panel.x_mm}
+        onCommit={(value) => reshape({ width_mm: value, height_mm: height })}
+      />
+      <NumberField
+        label="Height"
+        unit="mm"
+        value={height}
+        min={5}
+        max={page.height_mm - panel.y_mm}
+        onCommit={(value) => reshape({ width_mm: width, height_mm: value })}
+      />
+    </>
+  );
+}
+
+function SlotControls({
+  document,
+  panel,
+  slot,
+  working,
+  onApply,
+  onFill,
+}: {
+  document: FigureDocument;
+  panel: FigurePanel;
+  slot: SlotContent;
+  working: boolean;
+  onApply: Apply;
+  onFill: Fill;
+}) {
+  const [prompt, setPrompt] = useState(slot.prompt);
+  const saved = useRef(slot.prompt.trim());
+  // Leaving the text box saves it; Create plot then waits for that same save.
+  const saving = useRef<Promise<boolean>>(Promise.resolve(true));
+  const progress = slotStatus(document, panel.id);
+  const pending =
+    progress?.status === "waiting" || progress?.status === "plotting";
+  function save() {
+    const next = prompt.trim();
+    if (next === saved.current) return saving.current;
+    saved.current = next;
+    saving.current = onApply(
+      [
+        {
+          op: "replace_panel",
+          panel: { ...panel, content: { ...slot, prompt: next } },
+        },
+      ],
+      "Described slot",
+    ).then((ok) => {
+      if (!ok) saved.current = slot.prompt.trim();
+      return ok;
+    });
+    return saving.current;
+  }
+  return (
+    <fieldset className="composition-slot-controls">
+      <legend>Plot for this slot</legend>
+      <label className="composition-field">
+        <span>What should this plot show?</span>
+        <textarea
+          value={prompt}
+          rows={4}
+          maxLength={8000}
+          placeholder="For example: tumour volume over time by treatment group, mean ± SEM."
+          onChange={(event) => setPrompt(event.target.value)}
+          onBlur={() => void save()}
+        />
+      </label>
+      {progress?.status === "failed" ? (
+        <p className="report-error" role="alert">
+          {progress.error ?? "The plot could not be created."}
+        </p>
+      ) : null}
+      {pending ? (
+        <p role="status">
+          <span className="report-spinner" />{" "}
+          {progress.status === "plotting"
+            ? "Creating the plot…"
+            : "Waiting for the panels before it."}
+        </p>
+      ) : null}
+      <button
+        type="button"
+        className="composition-primary"
+        disabled={working || pending || !prompt.trim()}
+        onClick={async () => {
+          if (await save()) void onFill([panel.id]);
+        }}
+      >
+        {progress?.status === "failed" ? "Retry" : "Create plot"}
+      </button>
+      <small>
+        The plotting agent makes the plot from the figure’s data at the slot’s
+        size.
+      </small>
+    </fieldset>
   );
 }
 

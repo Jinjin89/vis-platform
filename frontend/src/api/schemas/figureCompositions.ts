@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { components } from "../generated/schema";
+import { datasetSchema } from "./datasets";
 import { plannerQuestionsSchema } from "./planner";
 import {
   assistantTurnAcceptedSchema,
@@ -47,6 +48,14 @@ export const panelContentSchema = z.discriminatedUnion("type", [
     })
     .strict(),
   z.object({ type: z.literal("image"), image_id: identifier }).strict(),
+  z
+    .object({
+      type: z.literal("slot"),
+      prompt: z.string().max(8000).default(""),
+      width_mm: z.number().finite().min(5).max(500),
+      height_mm: z.number().finite().min(5).max(1000),
+    })
+    .strict(),
 ]);
 export const figurePanelSchema = z
   .object({
@@ -85,6 +94,10 @@ export const figureContentSchema = z
     }),
     panels: z.array(figurePanelSchema).max(40).default([]),
     legend: figureLegendSchema.default({ title: "", entries: {} }),
+    datasets: z
+      .array(z.object({ dataset_id: identifier }).strict())
+      .max(50)
+      .default([]),
     min_font_pt: z.number().finite().min(4).max(12).default(5),
   })
   .strict()
@@ -119,6 +132,7 @@ const checkSchema = z
       "low_resolution",
       "label_order",
       "unused_space",
+      "empty_slot",
     ]),
     severity: z.enum(["warning", "info"]),
     message: z.string(),
@@ -183,6 +197,19 @@ const messageSchema = z
       .strict()
       .nullable()
       .default(null),
+    panels: z
+      .array(
+        z
+          .object({
+            panel_id: z.string(),
+            status: z
+              .enum(["waiting", "plotting", "completed", "failed"])
+              .default("waiting"),
+            error: z.string().nullable().default(null),
+          })
+          .strict(),
+      )
+      .default([]),
     completed_actions: z.array(z.string()).default([]),
     created_at: z.string(),
   })
@@ -215,6 +242,7 @@ export const figureDocumentSchema = summarySchema
     ),
     figures: z.record(z.string(), plotResultSchema),
     images: z.record(z.string(), referenceImageSchema),
+    datasets: z.array(datasetSchema).default([]),
     updates: z.record(z.string(), z.string()).default({}),
     checks: z.array(checkSchema).default([]),
     jobs: z.array(jobSchema).default([]),
@@ -257,6 +285,8 @@ export type PanelFrame = z.infer<typeof frameSchema>;
 export type FigureCheck = z.infer<typeof checkSchema>;
 export type FigureRenderJob = z.infer<typeof jobSchema>;
 export type FigureMessage = z.infer<typeof messageSchema>;
+export type PanelProgress = FigureMessage["panels"][number];
+export type SlotContent = Extract<FigurePanel["content"], { type: "slot" }>;
 export type FigureArrangement =
   components["schemas"]["ArrangeRequest"]["arrangement"];
 export type PanelGeometry = Pick<FigurePanel, "x_mm" | "y_mm" | "scale">;

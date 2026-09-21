@@ -17,6 +17,7 @@ from vis_platform_backend.contracts.figure_composition_content import (
 from vis_platform_backend.contracts.figure_composition_operations import (
     AddPanel,
     FigureOperation,
+    MovePanel,
     RemovePanel,
     ReplacePanel,
     SetFigurePage,
@@ -62,6 +63,12 @@ def apply_figure_operations(
             panels[_panel_index(panels, operation.panel.id)] = operation.panel.model_dump(
                 mode="json"
             )
+        elif isinstance(operation, MovePanel):
+            moved = panels.pop(_panel_index(panels, operation.panel_id))
+            index = (
+                _panel_index(panels, operation.before_id) if operation.before_id else len(panels)
+            )
+            panels.insert(index, moved)
         elif isinstance(operation, RemovePanel):
             panels.pop(_panel_index(panels, operation.panel_id))
             result["legend"]["entries"].pop(operation.panel_id, None)

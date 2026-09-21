@@ -6583,6 +6583,9 @@
                   "$ref": "#/components/schemas/ReplacePanel"
                 },
                 {
+                  "$ref": "#/components/schemas/MovePanel"
+                },
+                {
                   "$ref": "#/components/schemas/RemovePanel"
                 },
                 {
@@ -6596,6 +6599,7 @@
                 "propertyName": "op",
                 "mapping": {
                   "add_panel": "#/components/schemas/AddPanel",
+                  "move_panel": "#/components/schemas/MovePanel",
                   "remove_panel": "#/components/schemas/RemovePanel",
                   "replace_panel": "#/components/schemas/ReplacePanel",
                   "set_label_style": "#/components/schemas/SetLabelStyle",
@@ -7658,6 +7662,42 @@
           "section_id"
         ],
         "title": "MoveBlock"
+      },
+      "MovePanel": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "move_panel",
+            "title": "Op"
+          },
+          "panel_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Panel Id"
+          },
+          "before_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before Id",
+            "description": "Draw below this panel. Omit to draw on top of all panels."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "panel_id"
+        ],
+        "title": "MovePanel"
       },
       "MoveSection": {
         "properties": {

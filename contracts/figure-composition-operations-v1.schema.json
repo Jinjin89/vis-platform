@@ -208,6 +208,43 @@
       "title": "ImagePanelContent",
       "type": "object"
     },
+    "MovePanel": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "move_panel",
+          "title": "Op",
+          "type": "string"
+        },
+        "panel_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Panel Id",
+          "type": "string"
+        },
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Draw below this panel. Omit to draw on top of all panels.",
+          "title": "Before Id"
+        }
+      },
+      "required": [
+        "op",
+        "panel_id"
+      ],
+      "title": "MovePanel",
+      "type": "object"
+    },
     "PanelGeometry": {
       "additionalProperties": false,
       "properties": {
@@ -479,6 +516,7 @@
         "discriminator": {
           "mapping": {
             "add_panel": "#/$defs/AddPanel",
+            "move_panel": "#/$defs/MovePanel",
             "remove_panel": "#/$defs/RemovePanel",
             "replace_panel": "#/$defs/ReplacePanel",
             "set_label_style": "#/$defs/SetLabelStyle",
@@ -504,6 +542,9 @@
           },
           {
             "$ref": "#/$defs/ReplacePanel"
+          },
+          {
+            "$ref": "#/$defs/MovePanel"
           },
           {
             "$ref": "#/$defs/RemovePanel"

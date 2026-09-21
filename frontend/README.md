@@ -22,6 +22,10 @@ contract supports first-level sections and second-level subsections with stable
 IDs, atomic document operations, and shared plot metadata. Legacy pre-reports
 remain importable. See [the report guide](../docs/REPORT_UI.md).
 
+## Figure interface
+
+Open `/figure` or choose **Figure** in the header to compose saved plots and images into a publication figure. `features/figures/` holds the page canvas (dragging, snapping, scaling, keyboard nudges), the inspector, the legend editor, and dialogs; `figureGeometry.ts` holds the pure layout helpers. Edits are sent as figure operations, and labels, bounds, and page height come from the backend. See [the figure guide](../docs/FIGURE_UI.md).
+
 ## Canvas interface
 
 The header switches between `/workspace` and `/canvas`. The canvas reuses the dataset picker and figure inspector, adds directional plotting branches and pan/zoom navigation, and keeps parameter edits as per-node drafts. Layout and pending request references persist in this browser. See [the canvas guide](../docs/CANVAS_UI.md) for details and API additions.

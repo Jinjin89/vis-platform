@@ -10,7 +10,8 @@ export function App() {
       <Route path="/workspace" element={<WorkspacePage />} />
       <Route path="/canvas" element={<CanvasPage />} />
       <Route path="/report" element={<ReportPage />} />
-      <Route path="/slides" element={<ReportPage slides />} />
+      <Route path="/slides" element={<ReportPage format="slides" />} />
+      <Route path="/figure" element={<ReportPage format="figure" />} />
       <Route path="*" element={<Navigate to="/workspace" replace />} />
     </Routes>
   );

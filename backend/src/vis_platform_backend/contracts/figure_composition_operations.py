@@ -43,6 +43,14 @@ class ReplacePanel(StrictModel):
     panel: FigurePanel
 
 
+class MovePanel(StrictModel):
+    op: Literal["move_panel"]
+    panel_id: Identifier
+    before_id: Identifier | None = Field(
+        default=None, description="Draw below this panel. Omit to draw on top of all panels."
+    )
+
+
 class RemovePanel(StrictModel):
     op: Literal["remove_panel"]
     panel_id: Identifier
@@ -70,6 +78,7 @@ FigureOperation = Annotated[
     | SetLabelStyle
     | AddPanel
     | ReplacePanel
+    | MovePanel
     | RemovePanel
     | SetPanelGeometry
     | SetLegend,

@@ -53,7 +53,7 @@ export function ReportDialog({
 }
 
 export function downloadReportFile(
-  content: string,
+  content: BlobPart,
   filename: string,
   mediaType = "application/json",
 ) {

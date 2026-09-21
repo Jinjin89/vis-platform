@@ -1832,7 +1832,7 @@ export interface components {
             /** Base Revision */
             base_revision: number;
             /** Operations */
-            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
+            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["MovePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
             /**
              * Summary
              * @default Edited figure
@@ -2121,6 +2121,21 @@ export interface components {
             block_id: string;
             /** Section Id */
             section_id: string;
+        };
+        /** MovePanel */
+        MovePanel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "move_panel";
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Before Id
+             * @description Draw below this panel. Omit to draw on top of all panels.
+             */
+            before_id?: string | null;
         };
         /** MoveSection */
         MoveSection: {

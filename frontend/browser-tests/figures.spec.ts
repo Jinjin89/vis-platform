@@ -1,0 +1,151 @@
+import { expect, test, type Page } from "@playwright/test";
+import type { FigureDocument } from "../src/api/schemas/figureCompositions";
+
+async function projectId(page: Page): Promise<string> {
+  await expect
+    .poll(() =>
+      page.evaluate(() => sessionStorage.getItem("vis-platform.project-id")),
+    )
+    .not.toBeNull();
+  return (await page.evaluate(() =>
+    sessionStorage.getItem("vis-platform.project-id"),
+  ))!;
+}
+
+async function demoPlot(page: Page, project: string, text: string) {
+  const accepted = await page.request.post("/api/v1/plot-runs", {
+    data: {
+      project_id: project,
+      request: { text },
+      data_scope: { mode: "demo" },
+    },
+  });
+  expect(accepted.status()).toBe(202);
+  const status = (await accepted.json()).links.status as string;
+  await expect
+    .poll(async () => (await (await page.request.get(status)).json()).status)
+    .toBe("completed");
+}
+
+async function current(page: Page, project: string): Promise<FigureDocument> {
+  const id = new URL(page.url()).searchParams.get("id");
+  return (
+    await page.request.get(
+      `/api/v1/projects/${project}/figure-compositions/${id}`,
+    )
+  ).json();
+}
+
+async function addPlot(page: Page, title: RegExp) {
+  await page.getByRole("button", { name: "+ Plot" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add a saved plot" });
+  await dialog.getByRole("button", { name: title }).first().click();
+  await expect(dialog).toBeHidden();
+}
+
+test("compose, arrange, label, and export a figure", async ({ page }) => {
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await demoPlot(page, project, "Make a violin distribution of expression");
+  await demoPlot(page, project, "Make a scatter relationship plot");
+
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  const create = page.getByRole("dialog", { name: "New figure" });
+  await create.getByLabel("Figure title").fill("Figure 3");
+  await create.getByRole("combobox").selectOption("double-column");
+  await create.getByRole("button", { name: "Create figure" }).click();
+  const sheet = page.getByRole("region", { name: "Figure page" });
+  await expect(sheet).toBeVisible();
+  await expect(page.getByText("Your page is empty.")).toBeVisible();
+
+  await addPlot(page, /distribution/i);
+  await addPlot(page, /relationship/i);
+  const first = sheet.getByRole("button", { name: /^Panel A:/ });
+  const second = sheet.getByRole("button", { name: /^Panel B:/ });
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  let document = await current(page, project);
+  expect(document.revision).toBe(3);
+  expect(document.content.page.width_mm).toBe(183);
+  const [a, b] = document.content.panels;
+  expect(document.panels[b!.id]!.frame.x_mm).toBeGreaterThan(
+    document.panels[a!.id]!.frame.x_mm,
+  );
+
+  // Drag the second panel below the first; the page height follows the content.
+  const before = document.page_height_mm;
+  const box = (await second.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x - box.width / 2, box.y + box.height * 1.6, {
+    steps: 8,
+  });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await current(page, project)).revision)
+    .toBe(4);
+  document = await current(page, project);
+  expect(document.page_height_mm).toBeGreaterThan(before);
+  expect(document.panels[b!.id]!.frame.y_mm).toBeGreaterThan(
+    document.panels[a!.id]!.frame.y_mm +
+      document.panels[a!.id]!.frame.height_mm,
+  );
+
+  // Keyboard nudges are saved as one revision.
+  const start = document.content.panels[0]!.x_mm;
+  await first.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(async () => (await current(page, project)).revision)
+    .toBe(5);
+  document = await current(page, project);
+  expect(document.content.panels[0]!.x_mm).toBeCloseTo(start + 1);
+
+  // Custom label and legend text.
+  await first.click();
+  const properties = page.getByLabel("Panel properties");
+  await properties.getByRole("textbox", { name: "Custom label" }).fill("a");
+  await properties.getByRole("textbox", { name: "Custom label" }).blur();
+  await expect(sheet.getByRole("button", { name: /^Panel a:/ })).toBeVisible();
+  await page.getByRole("tab", { name: "Legend" }).click();
+  const legend = page.getByLabel("Figure legend");
+  await legend
+    .getByRole("textbox", { name: /Legend for panel a/ })
+    .fill("Expression by group.");
+  await legend.getByRole("textbox", { name: /Legend for panel a/ }).blur();
+  await expect(legend.getByLabel("Legend preview")).toContainText(
+    "Figure 3. (a) Expression by group.",
+  );
+
+  // Exports come from the server composition.
+  await page.getByText("Export", { exact: true }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "PDF · vector" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^Figure-3-r\d+\.pdf$/);
+
+  // The figure is saved and reopens from the library.
+  await page.getByRole("button", { name: /Figures/ }).click();
+  await page.getByRole("button", { name: /Figure 3/ }).click();
+  await expect(sheet.getByRole("button", { name: /^Panel a:/ })).toBeVisible();
+});
+
+test("history restores an earlier arrangement", async ({ page }) => {
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await demoPlot(page, project, "Make a violin distribution of expression");
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  await page
+    .getByRole("dialog", { name: "New figure" })
+    .getByRole("button", { name: "Create figure" })
+    .click();
+  await addPlot(page, /distribution/i);
+  const sheet = page.getByRole("region", { name: "Figure page" });
+  await sheet.getByRole("button", { name: /^Panel A:/ }).click();
+  await page.getByRole("button", { name: "Remove panel" }).click();
+  await expect(page.getByText("Your page is empty.")).toBeVisible();
+  await page.getByRole("button", { name: "History" }).click();
+  await page.getByRole("button", { name: "Restore revision 2" }).click();
+  await expect(sheet.getByRole("button", { name: /^Panel A:/ })).toBeVisible();
+  expect((await current(page, project)).revision).toBe(4);
+});

@@ -12,13 +12,13 @@ The implemented plot reference image workflow is documented in [docs/REFERENCE_I
 
 ## Interfaces
 
-Choose **Workspace**, **Canvas**, **Report**, or **Slides** in the header. The [Report interface](docs/REPORT_UI.md) organizes figures, tables, and prose into sections and subsections. Its single assistant input chooses whether to plot, write, or reorganize the report and where to place the changes. Report content v2 supports targeted edits, saved history, and legacy pre-report import.
+Choose **Workspace**, **Canvas**, **Report**, **Slides**, or **Figure** in the header. The [Report interface](docs/REPORT_UI.md) organizes figures, tables, and prose into sections and subsections. Its single assistant input chooses whether to plot, write, or reorganize the report and where to place the changes. Report content v2 supports targeted edits, saved history, and legacy pre-report import.
 
-The infinite canvas supports dataset-to-plot branches, immutable refinements, and the existing parameter controls. All four interfaces use the same plot agent and figure records. See [the canvas guide](docs/CANVAS_UI.md) for navigation, persistence, and code export.
+The infinite canvas supports dataset-to-plot branches, immutable refinements, and the existing parameter controls. All interfaces use the same plot agent and figure records. See [the canvas guide](docs/CANVAS_UI.md) for navigation, persistence, and code export.
 
 The [Slides MVP](docs/SLIDES_UI.md) adds an online presentation editor with shared figures, layouts, speaker notes, presentation mode, and JSON/PDF export. Linked figures update across Report and Slides; pinned versions remain unchanged.
 
-A fifth interface, **Figure**, will compose saved plots and images into publication figures on an A4 or journal-width page. Its [design](docs/FIGURE_UI_DESIGN.md) is agreed; the backend contract, API, and page exports are implemented, and the editor and figure agent follow.
+The [Figure interface](docs/FIGURE_UI.md) composes saved plots and images into multi-panel publication figures on an A4 or journal-width page, with snapping, alignment, reading-order panel labels, a per-panel legend, update notices for newer plot versions, and PDF, SVG, PNG, and TIFF export. See its [design](docs/FIGURE_UI_DESIGN.md) for the contract and the planned figure agent.
 
 ## Current implementation
 

@@ -308,22 +308,21 @@ export function cancelAssistant(path: string): Promise<AssistantTurnSnapshot> {
 export type FigureExportFormat =
   import("./generated/schema").components["schemas"]["FigureExportFormat"];
 
-export async function getFigureExport(
-  projectId: string,
-  plotId: string,
-  versionId: string,
-  format: FigureExportFormat,
+export const EXPORT_MEDIA_TYPES: Record<FigureExportFormat, string> = {
+  png: "image/png",
+  pdf: "application/pdf",
+  svg: "image/svg+xml",
+  tiff: "image/tiff",
+};
+
+export async function downloadAttachment(
+  path: string,
+  mediaType: string,
+  fallbackName: string,
 ): Promise<{ blob: Blob; filename: string }> {
-  const path = `/api/v1/projects/${encodeURIComponent(projectId)}/plots/${encodeURIComponent(plotId)}/versions/${encodeURIComponent(versionId)}/exports/${format}`;
   const response = await fetch(apiUrl(path));
   await checkResponse(response);
-  const expected = {
-    png: "image/png",
-    pdf: "application/pdf",
-    svg: "image/svg+xml",
-    tiff: "image/tiff",
-  }[format];
-  if (response.headers.get("Content-Type")?.split(";")[0] !== expected)
+  if (response.headers.get("Content-Type")?.split(";")[0] !== mediaType)
     throw new ApiClientError(
       "INVALID_EXPORT",
       "The export did not return a valid figure. Please retry.",
@@ -332,7 +331,7 @@ export async function getFigureExport(
   const disposition = response.headers.get("Content-Disposition") ?? "";
   const encoded = /filename\*=utf-8''([^;]+)/i.exec(disposition)?.[1];
   const plain = /filename="([^"]+)"/i.exec(disposition)?.[1];
-  let filename = plain ?? `vis-platform-figure.${format}`;
+  let filename = plain ?? fallbackName;
   if (encoded) {
     try {
       filename = decodeURIComponent(encoded);
@@ -341,4 +340,18 @@ export async function getFigureExport(
     }
   }
   return { blob: await response.blob(), filename };
+}
+
+export function getFigureExport(
+  projectId: string,
+  plotId: string,
+  versionId: string,
+  format: FigureExportFormat,
+): Promise<{ blob: Blob; filename: string }> {
+  const path = `/api/v1/projects/${encodeURIComponent(projectId)}/plots/${encodeURIComponent(plotId)}/versions/${encodeURIComponent(versionId)}/exports/${format}`;
+  return downloadAttachment(
+    path,
+    EXPORT_MEDIA_TYPES[format],
+    `vis-platform-figure.${format}`,
+  );
 }

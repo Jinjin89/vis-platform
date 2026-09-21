@@ -216,6 +216,14 @@ def test_operations_edit_an_isolated_copy():
     assert changed.legend.entries == {"b": "Second"}
     assert changed.title == "Figure 2"
     assert [item.id for item in original.panels] == ["a", "b"]
+    reordered = apply(
+        {"op": "move_panel", "panel_id": "a"},
+        {"op": "move_panel", "panel_id": "b", "before_id": "a"},
+    )
+    assert [item.id for item in reordered.panels] == ["b", "a"]
+    assert reordered.legend.entries == original.legend.entries
+    with pytest.raises(DataError, match="not found"):
+        apply({"op": "move_panel", "panel_id": "a", "before_id": "a"})
     with pytest.raises(DataError, match="not found") as missing:
         apply({"op": "remove_panel", "panel_id": "missing"})
     assert missing.value.status == 404

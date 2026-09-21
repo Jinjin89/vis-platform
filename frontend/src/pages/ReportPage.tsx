@@ -1,6 +1,7 @@
 import { linkSharedFigure } from "../api/slides";
 import { figureForBlock } from "../api/schemas/reports";
 import { SlidesWorkspace } from "../features/slides/SlidesWorkspace";
+import { FigureWorkspace } from "../features/figures/FigureWorkspace";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
@@ -50,7 +51,11 @@ import {
 import { downloadReportFile } from "../features/reports/ReportDialog";
 import "../features/reports/reports.css";
 
-export function ReportPage({ slides = false }: { slides?: boolean }) {
+export function ReportPage({
+  format = "report",
+}: {
+  format?: "report" | "slides" | "figure";
+}) {
   const [projectId, setProjectId] = useState<string | null>(() => {
     try {
       return window.sessionStorage.getItem("vis-platform.project-id");
@@ -99,8 +104,10 @@ export function ReportPage({ slides = false }: { slides?: boolean }) {
         <WorkspaceSwitcher />
       </header>
       {projectId ? (
-        slides ? (
+        format === "slides" ? (
           <SlidesWorkspace key={projectId} projectId={projectId} />
+        ) : format === "figure" ? (
+          <FigureWorkspace key={projectId} projectId={projectId} />
         ) : (
           <ReportWorkspace key={projectId} projectId={projectId} />
         )

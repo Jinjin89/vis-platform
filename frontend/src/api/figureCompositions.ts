@@ -1,0 +1,98 @@
+import {
+  EXPORT_MEDIA_TYPES,
+  downloadAttachment,
+  request,
+  type FigureExportFormat,
+} from "./client";
+import {
+  figureContentSchema,
+  figureDocumentSchema,
+  figureHistorySchema,
+  figureListSchema,
+  type FigureContent,
+  type FigureOperation,
+} from "./schemas/figureCompositions";
+
+const base = (projectId: string) =>
+  `/api/v1/projects/${encodeURIComponent(projectId)}/figure-compositions`;
+const figurePath = (projectId: string, compositionId: string) =>
+  `${base(projectId)}/${encodeURIComponent(compositionId)}`;
+
+export const listFigures = (projectId: string, offset = 0) =>
+  request(`${base(projectId)}?offset=${offset}`, figureListSchema);
+export const getFigure = (projectId: string, compositionId: string) =>
+  request(figurePath(projectId, compositionId), figureDocumentSchema);
+export const createFigure = (
+  projectId: string,
+  content: FigureContent,
+  requestId: string,
+) =>
+  request(base(projectId), figureDocumentSchema, {
+    method: "POST",
+    body: JSON.stringify({ request_id: requestId, content }),
+  });
+export const saveFigure = (
+  projectId: string,
+  compositionId: string,
+  baseRevision: number,
+  content: FigureContent,
+  summary: string,
+) =>
+  request(figurePath(projectId, compositionId), figureDocumentSchema, {
+    method: "PUT",
+    body: JSON.stringify({ base_revision: baseRevision, content, summary }),
+  });
+export const applyFigureOperations = (
+  projectId: string,
+  compositionId: string,
+  baseRevision: number,
+  operations: FigureOperation[],
+  requestId: string,
+  summary: string,
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/operations`,
+    figureDocumentSchema,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        request_id: requestId,
+        base_revision: baseRevision,
+        operations,
+        summary,
+      }),
+    },
+  );
+export const listFigureHistory = (
+  projectId: string,
+  compositionId: string,
+  offset = 0,
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/history?offset=${offset}`,
+    figureHistorySchema,
+  );
+export const getFigureRevision = (
+  projectId: string,
+  compositionId: string,
+  revision: number,
+) =>
+  request(
+    `${figurePath(projectId, compositionId)}/revisions/${revision}`,
+    figureContentSchema,
+  );
+export const exportFigureContent = (projectId: string, compositionId: string) =>
+  request(
+    `${figurePath(projectId, compositionId)}/content`,
+    figureContentSchema,
+  );
+export const downloadFigure = (
+  projectId: string,
+  compositionId: string,
+  format: FigureExportFormat,
+) =>
+  downloadAttachment(
+    `${figurePath(projectId, compositionId)}/exports/${format}`,
+    EXPORT_MEDIA_TYPES[format],
+    `figure.${format}`,
+  );

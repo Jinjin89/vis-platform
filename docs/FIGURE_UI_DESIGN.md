@@ -1,6 +1,6 @@
 # Figure composer design
 
-Status: agreed design; Phase 1 (backend foundation) implemented
+Status: agreed design; Phases 1 (backend foundation) and 2 (editor) implemented
 Last updated: 2026-09-21
 
 The fifth interface, **Figure**, combines saved plots and uploaded images into one
@@ -106,7 +106,7 @@ Every committed change creates a revision with a short summary. Edits carry the
 revision they were based on, and a stale base revision is rejected with a
 conflict. Repeating the same request ID returns the original result.
 
-Operations are atomic in groups of up to 50:
+Operations are applied atomically, up to 50 per request:
 
 | Operation | Purpose |
 | --- | --- |
@@ -115,6 +115,7 @@ Operations are atomic in groups of up to 50:
 | `set_label_style` | Change label case, size, weight, or font. |
 | `add_panel` | Add a panel at an optional drawing-order position. |
 | `replace_panel` | Replace a panel's content, label, position, scale, or lock state. |
+| `move_panel` | Change a panel's drawing order. |
 | `remove_panel` | Remove a panel and its legend entry. |
 | `set_panel_geometry` | Move and scale several panels at once (drag, align, arrange). |
 | `set_legend` | Replace the legend title and entries. |
@@ -236,7 +237,9 @@ the page on the left and the conversation on the right.
 - **Legend:** editable text shown beside the page with resolved labels.
 
 The frontend draws panels from their preview artifacts and the backend's resolved
-geometry. It does not compute labels, bounds, or page height.
+geometry. While a drag is in progress it previews positions locally; the saved
+revision's labels, bounds, and page height always come from the backend. Usage is
+documented in [FIGURE_UI.md](FIGURE_UI.md).
 
 ## 9. Phases
 

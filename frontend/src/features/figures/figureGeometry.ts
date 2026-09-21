@@ -286,6 +286,14 @@ function overlaps(a: PanelFrame, b: PanelFrame): boolean {
   );
 }
 
+/** The first unused `panel-N`; bounded, so it cannot loop on a repeated value. */
+export function newPanelId(document: FigureDocument): string {
+  const used = new Set(document.content.panels.map((panel) => panel.id));
+  let number = 1;
+  while (used.has(`panel-${number}`)) number += 1;
+  return `panel-${number}`;
+}
+
 /**
  * Place new content at the first free spot in reading order, sized to at most half the
  * printable width so a second panel can sit beside it.

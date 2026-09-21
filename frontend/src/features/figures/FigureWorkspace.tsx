@@ -39,6 +39,7 @@ import { FigurePageCanvas, panelTitle } from "./FigurePageCanvas";
 import {
   PAGE_PRESETS,
   imageNaturalSize,
+  newPanelId,
   placeNewPanel,
   plotNaturalSize,
   type Size,
@@ -227,13 +228,6 @@ function FigureLibrary({ projectId }: { projectId: string }) {
       ) : null}
     </section>
   );
-}
-
-function newPanelId(document: FigureDocument) {
-  let id: string;
-  do id = `panel-${createMutationId().replace(/-/g, "").slice(0, 8)}`;
-  while (document.content.panels.some((panel) => panel.id === id));
-  return id;
 }
 
 function FigureEditor({

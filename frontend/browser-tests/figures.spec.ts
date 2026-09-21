@@ -130,6 +130,43 @@ test("compose, arrange, label, and export a figure", async ({ page }) => {
   await expect(sheet.getByRole("button", { name: /^Panel a:/ })).toBeVisible();
 });
 
+const IMAGE_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAASwAAADICAIAAADdvUsCAAABsElEQVR42u3TQREAMAjAsDE1SEQispDBg0RC7xpZ/YA9XwIwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAiYEEwImBBMCJgQTAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYETAgmBEwIJgRMCCYEEwImBBMCJoSbBuJSAvi+UQSDAAAAAElFTkSuQmCC",
+  "base64",
+);
+
+async function addImage(page: Page, name: string) {
+  await page.getByRole("button", { name: "+ Image" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add an image" });
+  await dialog
+    .getByLabel("Image file")
+    .setInputFiles({ name, mimeType: "image/png", buffer: IMAGE_PNG });
+  await dialog.getByRole("button", { name: "Add image" }).click();
+  await expect(dialog).toBeHidden();
+}
+
+test("several images upload on a plain-http address", async ({ page }) => {
+  // Browsers omit crypto.randomUUID outside secure contexts, such as a LAN IP over http.
+  await page.addInitScript(() => {
+    Object.defineProperty(Crypto.prototype, "randomUUID", { value: undefined });
+  });
+  await page.goto("/figure");
+  const project = await projectId(page);
+  await page.getByRole("button", { name: "+ New figure" }).click();
+  await page
+    .getByRole("dialog", { name: "New figure" })
+    .getByRole("button", { name: "Create figure" })
+    .click();
+  await addImage(page, "micrograph.png");
+  await addImage(page, "diagram.png");
+  await addImage(page, "stain.png");
+  const sheet = page.getByRole("region", { name: "Figure page" });
+  await expect(sheet.getByRole("button", { name: /^Panel C:/ })).toBeVisible();
+  expect(
+    (await current(page, project)).content.panels.map((panel) => panel.id),
+  ).toEqual(["panel-1", "panel-2", "panel-3"]);
+});
+
 test("history restores an earlier arrangement", async ({ page }) => {
   await page.goto("/figure");
   const project = await projectId(page);

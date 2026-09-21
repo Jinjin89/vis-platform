@@ -11,6 +11,7 @@ import {
   clampScale,
   distribute,
   imageNaturalSize,
+  newPanelId,
   placeNewPanel,
   presetId,
   round,
@@ -155,6 +156,16 @@ describe("figure geometry", () => {
       natural,
     );
     expect(below).toMatchObject({ x_mm: 5, y_mm: 76 });
+  });
+  it("numbers new panels without repeating an ID", () => {
+    expect(newPanelId(document([]))).toBe("panel-1");
+    const used = document([
+      { id: "panel-1", frame: frame(5, 5, 50, 50) },
+      { id: "umap", frame: frame(60, 5, 50, 50) },
+      { id: "panel-3", frame: frame(115, 5, 50, 50) },
+    ]);
+    expect(newPanelId(used)).toBe("panel-2");
+    expect(newPanelId(used)).toBe("panel-2");
   });
   it("rounds to steps without floating-point residue", () => {
     expect(round(27.9)).toBe(27.9);

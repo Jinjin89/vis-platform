@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "title": "Research presentation",
+  "datasets": [],
+  "presentation": { "aspect_ratio": "16:9", "theme": "paper" },
+  "slides": [
+    {
+      "id": "opening",
+      "title": "Research presentation",
+      "elements": [{ "id": "subtitle", "type": "text", "body": "Study overview and supporting evidence." }],
+      "settings": { "layout": "title", "notes": "Introduce the study question.", "frames": {} }
+    },
+    {
+      "id": "findings",
+      "title": "Key findings",
+      "elements": [],
+      "settings": { "layout": "figure-summary", "notes": "Add a shared figure and summarize its results.", "frames": {} }
+    },
+    {
+      "id": "takeaways",
+      "title": "Takeaways",
+      "elements": [],
+      "settings": { "layout": "statement", "notes": "Explain the conclusions and remaining uncertainties.", "frames": {} }
+    }
+  ]
+}

@@ -1,0 +1,776 @@
+{
+  "$defs": {
+    "Approval": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_id": {
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "operation": {
+          "title": "Operation",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "scientific_effect": {
+          "title": "Scientific Effect",
+          "type": "string"
+        }
+      },
+      "required": [
+        "approval_id",
+        "operation",
+        "summary",
+        "scientific_effect"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "ApprovalRequiredEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "approval.required",
+          "default": "approval.required",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ApprovalRequiredPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "ApprovalRequiredEvent",
+      "type": "object"
+    },
+    "ApprovalRequiredPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "awaiting_approval",
+          "title": "Status",
+          "type": "string"
+        },
+        "stage": {
+          "$ref": "#/$defs/RunStage"
+        },
+        "approval": {
+          "$ref": "#/$defs/Approval"
+        }
+      },
+      "required": [
+        "status",
+        "stage",
+        "approval"
+      ],
+      "title": "ApprovalRequiredPayload",
+      "type": "object"
+    },
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "preview",
+            "publication",
+            "data",
+            "model",
+            "script",
+            "methods"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "media_type": {
+          "title": "Media Type",
+          "type": "string"
+        },
+        "href": {
+          "title": "Href",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "role",
+        "media_type",
+        "href",
+        "description"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "PreviewReadyEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "preview.ready",
+          "default": "preview.ready",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/PreviewReadyPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "PreviewReadyEvent",
+      "type": "object"
+    },
+    "PreviewReadyPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/ArtifactReference"
+        },
+        "provisional": {
+          "title": "Provisional",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "artifact",
+        "provisional"
+      ],
+      "title": "PreviewReadyPayload",
+      "type": "object"
+    },
+    "ProgressPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "running",
+          "title": "Status",
+          "type": "string"
+        },
+        "stage": {
+          "$ref": "#/$defs/RunStage"
+        },
+        "progress": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Progress",
+          "type": "integer"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "stage",
+        "progress",
+        "message"
+      ],
+      "title": "ProgressPayload",
+      "type": "object"
+    },
+    "ProgressUpdatedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "progress.updated",
+          "default": "progress.updated",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ProgressPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "ProgressUpdatedEvent",
+      "type": "object"
+    },
+    "Question": {
+      "additionalProperties": false,
+      "properties": {
+        "question_id": {
+          "title": "Question Id",
+          "type": "string"
+        },
+        "prompt": {
+          "title": "Prompt",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "$ref": "#/$defs/QuestionChoice"
+          },
+          "minItems": 2,
+          "title": "Choices",
+          "type": "array"
+        },
+        "allow_free_text": {
+          "default": false,
+          "title": "Allow Free Text",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "question_id",
+        "prompt",
+        "reason",
+        "choices"
+      ],
+      "title": "Question",
+      "type": "object"
+    },
+    "QuestionChoice": {
+      "additionalProperties": false,
+      "properties": {
+        "choice_id": {
+          "title": "Choice Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "choice_id",
+        "label"
+      ],
+      "title": "QuestionChoice",
+      "type": "object"
+    },
+    "QuestionRequiredEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "question.required",
+          "default": "question.required",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/QuestionRequiredPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "QuestionRequiredEvent",
+      "type": "object"
+    },
+    "QuestionRequiredPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "awaiting_input",
+          "title": "Status",
+          "type": "string"
+        },
+        "stage": {
+          "$ref": "#/$defs/RunStage"
+        },
+        "question": {
+          "$ref": "#/$defs/Question"
+        }
+      },
+      "required": [
+        "status",
+        "stage",
+        "question"
+      ],
+      "title": "QuestionRequiredPayload",
+      "type": "object"
+    },
+    "RunCancelledEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.cancelled",
+          "default": "run.cancelled",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RunCancelledPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "RunCancelledEvent",
+      "type": "object"
+    },
+    "RunCancelledPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "cancelled",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "RunCancelledPayload",
+      "type": "object"
+    },
+    "RunCompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.completed",
+          "default": "run.completed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RunCompletedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "RunCompletedEvent",
+      "type": "object"
+    },
+    "RunCompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "completed",
+          "title": "Status",
+          "type": "string"
+        },
+        "plot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Plot Id"
+        },
+        "version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Id"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "RunCompletedPayload",
+      "type": "object"
+    },
+    "RunFailedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.failed",
+          "default": "run.failed",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RunFailedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "RunFailedEvent",
+      "type": "object"
+    },
+    "RunFailedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "failed",
+          "title": "Status",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "recoverable": {
+          "title": "Recoverable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "status",
+        "code",
+        "message",
+        "recoverable"
+      ],
+      "title": "RunFailedPayload",
+      "type": "object"
+    },
+    "RunStage": {
+      "enum": [
+        "received",
+        "understanding_intent",
+        "selecting_data",
+        "profiling_data",
+        "planning_transformations",
+        "planning_plot",
+        "checking_capabilities",
+        "generating_code",
+        "running_r",
+        "validating_plot",
+        "committing_version"
+      ],
+      "title": "RunStage",
+      "type": "string"
+    },
+    "RunStartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "type": {
+          "const": "run.started",
+          "default": "run.started",
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/RunStartedPayload"
+        }
+      },
+      "required": [
+        "event_id",
+        "run_id",
+        "sequence",
+        "occurred_at",
+        "payload"
+      ],
+      "title": "RunStartedEvent",
+      "type": "object"
+    },
+    "RunStartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "queued",
+          "title": "Status",
+          "type": "string"
+        },
+        "stage": {
+          "const": "received",
+          "title": "Stage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "stage"
+      ],
+      "title": "RunStartedPayload",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "approval.required": "#/$defs/ApprovalRequiredEvent",
+      "preview.ready": "#/$defs/PreviewReadyEvent",
+      "progress.updated": "#/$defs/ProgressUpdatedEvent",
+      "question.required": "#/$defs/QuestionRequiredEvent",
+      "run.cancelled": "#/$defs/RunCancelledEvent",
+      "run.completed": "#/$defs/RunCompletedEvent",
+      "run.failed": "#/$defs/RunFailedEvent",
+      "run.started": "#/$defs/RunStartedEvent"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RunStartedEvent"
+    },
+    {
+      "$ref": "#/$defs/ProgressUpdatedEvent"
+    },
+    {
+      "$ref": "#/$defs/QuestionRequiredEvent"
+    },
+    {
+      "$ref": "#/$defs/ApprovalRequiredEvent"
+    },
+    {
+      "$ref": "#/$defs/PreviewReadyEvent"
+    },
+    {
+      "$ref": "#/$defs/RunCompletedEvent"
+    },
+    {
+      "$ref": "#/$defs/RunFailedEvent"
+    },
+    {
+      "$ref": "#/$defs/RunCancelledEvent"
+    }
+  ]
+}

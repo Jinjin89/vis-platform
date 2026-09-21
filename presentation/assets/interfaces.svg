@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="600" viewBox="0 0 1280 600" role="img" aria-labelledby="title desc">
+  <title id="title">三类数据、四个界面与两个智能体</title>
+  <desc id="desc">数据、Dataset 与 AnalysisResult 三类数据互相独立，都可直接送入四个界面；四个界面共用绘图智能体，Report 与 Slides 另外使用文本智能体</desc>
+
+  <defs>
+    <marker id="a-if" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M1 1 L7.5 4.5 L1 8" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"/>
+    </marker>
+    <marker id="a-if2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M1 1 L7.5 4.5 L1 8" fill="none" stroke="#7e22ce" stroke-width="1.8" stroke-linecap="round"/>
+    </marker>
+    <marker id="a-if5" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M1 1 L7.5 4.5 L1 8" fill="none" stroke="#059669" stroke-width="1.8" stroke-linecap="round"/>
+    </marker>
+    <filter id="sh-if" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .h1 { font-size: 22px; font-weight: 800; fill: #0f172a; }
+      .h2 { font-size: 13px; fill: #64748b; }
+      .ui-t { font-size: 18px; font-weight: 700; fill: #0f172a; }
+      .ui-d { font-size: 12.5px; fill: #64748b; }
+      .box-t { font-size: 16px; font-weight: 800; fill: #334155; }
+      .row-t { font-size: 15px; font-weight: 800; }
+      .row-d { font-size: 11px; fill: #64748b; }
+      .blk-t { font-size: 18px; font-weight: 800; }
+      .blk-d { font-size: 13px; fill: #334155; }
+      .note { font-size: 12px; fill: #64748b; }
+      .note-h { font-size: 12.5px; font-weight: 700; fill: #7e22ce; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="600" rx="16" fill="#f8fafc"/>
+
+  <text x="40" y="44" class="h1">三类数据、四个界面与两个智能体</text>
+  <text x="40" y="68" class="h2">三类数据互相独立，都可直接送入四个界面；四个界面共用绘图智能体，Report 与 Slides 另外使用文本智能体</text>
+
+  <!-- ==================== 左：数据盒子（三类，互相独立） ==================== -->
+  <g transform="translate(40, 157)">
+    <rect width="200" height="262" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" filter="url(#sh-if)"/>
+    <text x="18" y="30" class="box-t">数据（三类）</text>
+
+    <rect x="14" y="44" width="172" height="62" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.2"/>
+    <text x="24" y="70" class="row-t" fill="#334155">数据</text>
+    <text x="24" y="90" class="row-d">上传文件 / 平台对象</text>
+
+    <rect x="14" y="114" width="172" height="62" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+    <text x="24" y="140" class="row-t" fill="#1d4ed8">Dataset</text>
+    <text x="24" y="160" class="row-d">结构化数据 + 精简画像</text>
+
+    <rect x="14" y="184" width="172" height="62" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.2"/>
+    <text x="24" y="210" class="row-t" fill="#b45309" font-size="13">AnalysisResult</text>
+    <text x="24" y="230" class="row-d">数据集 + 计算结果</text>
+  </g>
+
+  <!-- 三类数据 -> 四个界面 -->
+  <path d="M 242 288 L 276 156" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+  <path d="M 242 288 L 276 244" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+  <path d="M 242 288 L 276 332" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+  <path d="M 242 288 L 276 420" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+
+  <!-- ==================== 四个界面 ==================== -->
+  <g transform="translate(280, 120)">
+    <rect width="280" height="72" rx="10" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="ui-t">Workspace</text>
+    <text x="20" y="56" class="ui-d">单图精修</text>
+  </g>
+
+  <g transform="translate(280, 208)">
+    <rect width="280" height="72" rx="10" fill="#ffffff" stroke="#c084fc" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="ui-t">Canvas</text>
+    <text x="20" y="56" class="ui-d">分支探索</text>
+  </g>
+
+  <g transform="translate(280, 296)">
+    <rect width="280" height="72" rx="10" fill="#ffffff" stroke="#fdba74" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="ui-t">Report</text>
+    <text x="20" y="56" class="ui-d">论文与结题报告</text>
+  </g>
+
+  <g transform="translate(280, 384)">
+    <rect width="280" height="72" rx="10" fill="#ffffff" stroke="#fdba74" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="ui-t">Slides</text>
+    <text x="20" y="56" class="ui-d">学术汇报演示</text>
+  </g>
+
+  <!-- ==================== 四个界面 -> 绘图智能体 ==================== -->
+  <path d="M 560 156 L 616 156" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+  <path d="M 560 244 L 616 186" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+  <path d="M 560 330 L 590 330 L 590 210 L 616 210" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)" fill="none"/>
+  <path d="M 560 400 L 604 400 L 604 238 L 616 238" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)" fill="none"/>
+
+  <!-- ==================== 绘图智能体 ==================== -->
+  <g transform="translate(620, 110)">
+    <rect width="210" height="150" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6" filter="url(#sh-if)"/>
+    <text x="20" y="56" class="blk-t" fill="#334155">绘图智能体</text>
+    <text x="20" y="86" class="blk-d">生成图像</text>
+    <text x="20" y="114" class="note">四个界面共用</text>
+  </g>
+
+  <path d="M 832 185 L 876 185" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#a-if)"/>
+
+  <g transform="translate(880, 149)">
+    <rect width="360" height="72" rx="10" fill="#ecfdf5" stroke="#86efac" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="blk-t" fill="#047857">图像</text>
+    <text x="20" y="56" class="blk-d">矢量 SVG 与 300 DPI 位图</text>
+  </g>
+
+  <!-- ==================== Report / Slides -> 文本智能体 ==================== -->
+  <path d="M 560 350 L 616 350" stroke="#7e22ce" stroke-width="1.8" marker-end="url(#a-if2)"/>
+  <path d="M 560 430 L 616 430" stroke="#7e22ce" stroke-width="1.8" marker-end="url(#a-if2)"/>
+
+  <g transform="translate(620, 310)">
+    <rect width="210" height="146" rx="10" fill="#faf5ff" stroke="#c084fc" stroke-width="1.6" filter="url(#sh-if)"/>
+    <text x="20" y="48" class="blk-t" fill="#7e22ce">文本智能体</text>
+    <text x="20" y="76" class="blk-d">生成正文与要点</text>
+    <text x="20" y="108" class="note">仅 Report 与</text>
+    <text x="20" y="126" class="note">Slides 调用</text>
+  </g>
+
+  <path d="M 832 346 L 876 346" stroke="#7e22ce" stroke-width="1.8" marker-end="url(#a-if2)"/>
+  <path d="M 832 420 L 876 420" stroke="#7e22ce" stroke-width="1.8" marker-end="url(#a-if2)"/>
+
+  <g transform="translate(880, 310)">
+    <rect width="360" height="72" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="blk-t" fill="#c2410c">报告文档</text>
+    <text x="20" y="56" class="blk-d">章节、正文与图表</text>
+  </g>
+
+  <g transform="translate(880, 384)">
+    <rect width="360" height="72" rx="10" fill="#fff7ed" stroke="#fdba74" stroke-width="1.5" filter="url(#sh-if)"/>
+    <text x="20" y="32" class="blk-t" fill="#c2410c">幻灯片</text>
+    <text x="20" y="56" class="blk-d">16:9 页面与演讲备注</text>
+  </g>
+
+  <!-- ==================== 图像 -> 报告文档 / 幻灯片 ==================== -->
+  <path d="M 1060 221 L 1060 306" stroke="#059669" stroke-width="1.8" marker-end="url(#a-if5)"/>
+  <path d="M 1240 190 L 1258 190 L 1258 420 L 1244 420" stroke="#059669" stroke-width="1.8" marker-end="url(#a-if5)" fill="none"/>
+
+  <!-- ==================== 脚注 ==================== -->
+  <g transform="translate(40, 500)">
+    <rect width="1200" height="56" rx="10" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="24" y="34" class="note-h">说明</text>
+    <text x="76" y="34" class="note" font-size="12.5">三类数据互相独立，界面可按需选用其中任意一类；图像由绘图智能体产出后嵌入文档，文本智能体只产出正文与要点。</text>
+  </g>
+</svg>

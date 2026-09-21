@@ -1,0 +1,42 @@
+{
+  "schema_version": "2.0",
+  "title": "Research report",
+  "datasets": [],
+  "sections": [
+    {
+      "id": "abstract",
+      "title": "Abstract",
+      "level": 1,
+      "parent_id": null,
+      "blocks": []
+    },
+    {
+      "id": "results",
+      "title": "Results",
+      "level": 1,
+      "parent_id": null,
+      "blocks": [
+        {
+          "id": "results-intro",
+          "type": "text",
+          "body": "Use this section to introduce the results and their supporting evidence.",
+          "evidence_version_ids": []
+        }
+      ]
+    },
+    {
+      "id": "treatment",
+      "title": "Treatment comparison",
+      "level": 2,
+      "parent_id": "results",
+      "blocks": []
+    },
+    {
+      "id": "discussion",
+      "title": "Discussion",
+      "level": 1,
+      "parent_id": null,
+      "blocks": []
+    }
+  ]
+}

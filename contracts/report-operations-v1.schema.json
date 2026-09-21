@@ -1,0 +1,922 @@
+{
+  "$defs": {
+    "InsertBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Id"
+        },
+        "after_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Id"
+        },
+        "op": {
+          "const": "insert_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "block": {
+          "discriminator": {
+            "mapping": {
+              "figure": "#/$defs/ReportFigureBlock",
+              "table": "#/$defs/ReportTableBlock",
+              "text": "#/$defs/ReportTextBlock"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ReportTextBlock"
+            },
+            {
+              "$ref": "#/$defs/ReportFigureBlock"
+            },
+            {
+              "$ref": "#/$defs/ReportTableBlock"
+            }
+          ],
+          "title": "Block"
+        }
+      },
+      "required": [
+        "op",
+        "section_id",
+        "block"
+      ],
+      "title": "InsertBlock",
+      "type": "object"
+    },
+    "InsertSection": {
+      "additionalProperties": false,
+      "properties": {
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Id"
+        },
+        "after_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Id"
+        },
+        "op": {
+          "const": "insert_section",
+          "title": "Op",
+          "type": "string"
+        },
+        "section": {
+          "$ref": "#/$defs/ReportSection"
+        }
+      },
+      "required": [
+        "op",
+        "section"
+      ],
+      "title": "InsertSection",
+      "type": "object"
+    },
+    "MoveBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Id"
+        },
+        "after_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Id"
+        },
+        "op": {
+          "const": "move_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "block_id",
+        "section_id"
+      ],
+      "title": "MoveBlock",
+      "type": "object"
+    },
+    "MoveSection": {
+      "additionalProperties": false,
+      "properties": {
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before Id"
+        },
+        "after_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Id"
+        },
+        "op": {
+          "const": "move_section",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        }
+      },
+      "required": [
+        "op",
+        "section_id"
+      ],
+      "title": "MoveSection",
+      "type": "object"
+    },
+    "PresentationSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "const": "16:9",
+          "default": "16:9",
+          "title": "Aspect Ratio",
+          "type": "string"
+        },
+        "theme": {
+          "default": "paper",
+          "enum": [
+            "paper",
+            "midnight"
+          ],
+          "title": "Theme",
+          "type": "string"
+        }
+      },
+      "title": "PresentationSettings",
+      "type": "object"
+    },
+    "RemoveBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "remove_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "block_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Block Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "block_id"
+      ],
+      "title": "RemoveBlock",
+      "type": "object"
+    },
+    "RemoveSection": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "remove_section",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "section_id"
+      ],
+      "title": "RemoveSection",
+      "type": "object"
+    },
+    "RenameReport": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "rename_report",
+          "title": "Op",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "title"
+      ],
+      "title": "RenameReport",
+      "type": "object"
+    },
+    "RenameSection": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "rename_section",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "section_id",
+        "title"
+      ],
+      "title": "RenameSection",
+      "type": "object"
+    },
+    "ReplaceBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "replace_block",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "block": {
+          "discriminator": {
+            "mapping": {
+              "figure": "#/$defs/ReportFigureBlock",
+              "table": "#/$defs/ReportTableBlock",
+              "text": "#/$defs/ReportTextBlock"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ReportTextBlock"
+            },
+            {
+              "$ref": "#/$defs/ReportFigureBlock"
+            },
+            {
+              "$ref": "#/$defs/ReportTableBlock"
+            }
+          ],
+          "title": "Block"
+        }
+      },
+      "required": [
+        "op",
+        "section_id",
+        "block"
+      ],
+      "title": "ReplaceBlock",
+      "type": "object"
+    },
+    "ReportDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision Id"
+        }
+      },
+      "required": [
+        "dataset_id"
+      ],
+      "title": "ReportDataset",
+      "type": "object"
+    },
+    "ReportFigureBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "figure",
+          "default": "figure",
+          "title": "Type",
+          "type": "string"
+        },
+        "version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Id"
+        },
+        "follow_plot_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Follow Plot Id"
+        },
+        "image_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Id"
+        },
+        "caption": {
+          "default": "",
+          "description": "Caption for a standalone image only. Plot captions come from the shared version.",
+          "maxLength": 4000,
+          "title": "Caption",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ReportFigureBlock",
+      "type": "object"
+    },
+    "ReportSection": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "level": {
+          "default": 1,
+          "enum": [
+            1,
+            2
+          ],
+          "title": "Level",
+          "type": "integer"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Id"
+        },
+        "slide": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SlideSettings"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "blocks": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "figure": "#/$defs/ReportFigureBlock",
+                "table": "#/$defs/ReportTableBlock",
+                "text": "#/$defs/ReportTextBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ReportTextBlock"
+              },
+              {
+                "$ref": "#/$defs/ReportFigureBlock"
+              },
+              {
+                "$ref": "#/$defs/ReportTableBlock"
+              }
+            ]
+          },
+          "maxItems": 200,
+          "title": "Blocks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "ReportSection",
+      "type": "object"
+    },
+    "ReportTableBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "table",
+          "default": "table",
+          "title": "Type",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Title",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "maxItems": 200,
+          "title": "Rows",
+          "type": "array"
+        },
+        "source_description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Source Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "columns"
+      ],
+      "title": "ReportTableBlock",
+      "type": "object"
+    },
+    "ReportTextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "text",
+          "default": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "maxLength": 30000,
+          "title": "Body",
+          "type": "string"
+        },
+        "evidence_version_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Evidence Version Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ReportTextBlock",
+      "type": "object"
+    },
+    "SetPresentationSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_presentation_settings",
+          "title": "Op",
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/$defs/PresentationSettings"
+        }
+      },
+      "required": [
+        "op",
+        "settings"
+      ],
+      "title": "SetPresentationSettings",
+      "type": "object"
+    },
+    "SetReportDatasets": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_datasets",
+          "title": "Op",
+          "type": "string"
+        },
+        "datasets": {
+          "items": {
+            "$ref": "#/$defs/ReportDataset"
+          },
+          "maxItems": 50,
+          "title": "Datasets",
+          "type": "array"
+        }
+      },
+      "required": [
+        "op",
+        "datasets"
+      ],
+      "title": "SetReportDatasets",
+      "type": "object"
+    },
+    "SetSlideSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_slide_settings",
+          "title": "Op",
+          "type": "string"
+        },
+        "section_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Section Id",
+          "type": "string"
+        },
+        "settings": {
+          "$ref": "#/$defs/SlideSettings"
+        }
+      },
+      "required": [
+        "op",
+        "section_id",
+        "settings"
+      ],
+      "title": "SetSlideSettings",
+      "type": "object"
+    },
+    "SlideFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Height",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "SlideFrame",
+      "type": "object"
+    },
+    "SlideSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "layout": {
+          "default": "figure-summary",
+          "enum": [
+            "title",
+            "figure-summary",
+            "two-column",
+            "statement",
+            "table"
+          ],
+          "title": "Layout",
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "maxLength": 12000,
+          "title": "Notes",
+          "type": "string"
+        },
+        "frames": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SlideFrame"
+          },
+          "maxProperties": 200,
+          "title": "Frames",
+          "type": "object"
+        }
+      },
+      "title": "SlideSettings",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "base_revision": {
+      "minimum": 1,
+      "title": "Base Revision",
+      "type": "integer"
+    },
+    "operations": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "insert_block": "#/$defs/InsertBlock",
+            "insert_section": "#/$defs/InsertSection",
+            "move_block": "#/$defs/MoveBlock",
+            "move_section": "#/$defs/MoveSection",
+            "remove_block": "#/$defs/RemoveBlock",
+            "remove_section": "#/$defs/RemoveSection",
+            "rename_report": "#/$defs/RenameReport",
+            "rename_section": "#/$defs/RenameSection",
+            "replace_block": "#/$defs/ReplaceBlock",
+            "set_datasets": "#/$defs/SetReportDatasets",
+            "set_presentation_settings": "#/$defs/SetPresentationSettings",
+            "set_slide_settings": "#/$defs/SetSlideSettings"
+          },
+          "propertyName": "op"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/SetSlideSettings"
+          },
+          {
+            "$ref": "#/$defs/SetPresentationSettings"
+          },
+          {
+            "$ref": "#/$defs/RenameReport"
+          },
+          {
+            "$ref": "#/$defs/SetReportDatasets"
+          },
+          {
+            "$ref": "#/$defs/InsertSection"
+          },
+          {
+            "$ref": "#/$defs/RenameSection"
+          },
+          {
+            "$ref": "#/$defs/MoveSection"
+          },
+          {
+            "$ref": "#/$defs/RemoveSection"
+          },
+          {
+            "$ref": "#/$defs/InsertBlock"
+          },
+          {
+            "$ref": "#/$defs/ReplaceBlock"
+          },
+          {
+            "$ref": "#/$defs/MoveBlock"
+          },
+          {
+            "$ref": "#/$defs/RemoveBlock"
+          }
+        ]
+      },
+      "maxItems": 30,
+      "minItems": 1,
+      "title": "Operations",
+      "type": "array"
+    },
+    "summary": {
+      "default": "Edited report structure",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "base_revision",
+    "operations"
+  ],
+  "title": "ReportOperationsRequest",
+  "type": "object"
+}

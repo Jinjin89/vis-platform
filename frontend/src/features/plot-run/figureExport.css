@@ -1,0 +1,92 @@
+.export-action {
+  background: var(--color-surface-raised);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.export-action:disabled {
+  color: var(--color-muted);
+}
+.export-chevron {
+  margin-left: 3px;
+  color: var(--color-muted);
+}
+.figure-export-menu {
+  position: fixed;
+  z-index: 100;
+  width: 232px;
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-raised);
+  box-shadow:
+    0 8px 32px #342b321c,
+    0 2px 8px #342b3210;
+}
+.figure-export-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px 10px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--color-border);
+}
+.figure-export-heading strong {
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.figure-export-heading > span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.figure-export-menu > button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+.figure-export-menu > button:hover,
+.figure-export-menu > button:focus-visible {
+  background: var(--color-primary-faint);
+}
+.export-format-mark {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 37px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  color: var(--color-primary);
+  background: var(--color-surface);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+.figure-export-menu button strong,
+.figure-export-menu button small {
+  display: block;
+}
+.figure-export-menu button strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.figure-export-menu button small {
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.figure-export-error {
+  margin: 5px 8px;
+  color: var(--color-danger);
+  font-size: 12px;
+  line-height: 1.45;
+}

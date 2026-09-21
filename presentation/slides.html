@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vis Platform · MVP 架构评审</title>
+  <style>
+    :root {
+      --page-bg: #eef2f7;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #0f172a;
+      --text-soft: #334155;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --accent: #7c3aed;
+      --green: #047857;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 16:9 幻灯片视口 */
+    .deck-container {
+      width: 92vw;
+      max-width: 1440px;
+      height: 51.75vw;
+      max-height: 810px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 18px 45px -18px rgba(15, 23, 42, 0.28);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 40px 60px 60px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: scale(0.985);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* 幻灯片头部 */
+    .slide-header {
+      margin-bottom: 22px;
+      flex-shrink: 0;
+    }
+
+    .slide-num-tag {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1.6px;
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-size: 31px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: var(--text);
+    }
+
+    .slide-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* 幻灯片主体内容 */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .slide-image {
+      width: 100%;
+      height: 100%;
+      max-height: 560px;
+      object-fit: contain;
+      border-radius: 10px;
+    }
+
+    /* 封面特定样式 */
+    .cover-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .cover-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 30px;
+      color: var(--primary);
+      font-size: 13.5px;
+      font-weight: 700;
+      margin-bottom: 26px;
+    }
+
+    .cover-title {
+      font-size: 54px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 22px;
+      color: var(--text);
+    }
+
+    .cover-desc {
+      font-size: 19px;
+      color: var(--muted);
+      max-width: 880px;
+      line-height: 1.65;
+      margin-bottom: 44px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 28px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    /* 卡片网格 */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      width: 100%;
+    }
+
+    .grid-cards.two {
+      grid-template-columns: repeat(2, 1fr);
+      max-width: 1080px;
+    }
+
+    .card {
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-kicker {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-soft);
+      line-height: 1.7;
+    }
+
+    .note-strip {
+      margin-top: 24px;
+      width: 100%;
+      padding: 15px 22px;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      font-size: 13.5px;
+      color: var(--text-soft);
+      line-height: 1.6;
+    }
+
+    .note-strip strong {
+      color: var(--primary);
+    }
+
+    /* 流程条 */
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .flow-box {
+      min-width: 210px;
+      padding: 18px 22px;
+      border-radius: 12px;
+      border: 1.5px solid var(--border-strong);
+      background: var(--surface-soft);
+      text-align: center;
+    }
+
+    .flow-box.blue {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+
+    .flow-box.amber {
+      background: #fef3c7;
+      border-color: #f59e0b;
+    }
+
+    .flow-t {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .flow-d {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .flow-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      min-width: 76px;
+    }
+
+    .flow-arrow span {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .flow-arrow i {
+      display: block;
+      width: 48px;
+      height: 2px;
+      background: var(--primary);
+      position: relative;
+    }
+
+    .flow-arrow i::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -3px;
+      border-left: 7px solid var(--primary);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+    }
+
+    /* 要点列表 */
+    .key-list {
+      width: 100%;
+      max-width: 1120px;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .key-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 13px 20px;
+      background: var(--surface-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15.5px;
+      color: var(--text-soft);
+      line-height: 1.55;
+    }
+
+    .key-list li::before {
+      content: "";
+      flex-shrink: 0;
+      width: 7px;
+      height: 7px;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    /* 重点条目 */
+    .key-list li.highlight {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1e40af;
+      font-weight: 600;
+    }
+
+    .key-list li.highlight::before {
+      background: var(--primary);
+    }
+
+    /* 紧凑要点列表 */
+    .key-list.compact {
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .key-list.compact li {
+      padding: 7px 16px;
+      font-size: 13.5px;
+    }
+
+    .limit-figure {
+      width: 100%;
+      max-width: 1240px;
+      max-height: 180px;
+      object-fit: contain;
+    }
+
+    .outlook-mini {
+      width: 100%;
+      margin-top: 18px;
+      border-radius: 8px;
+    }
+
+    /* 底部控制栏 */
+    .deck-footer {
+      height: 50px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      background: var(--surface-soft);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      background: #ffffff;
+      border: 1px solid var(--border-strong);
+      color: var(--text-soft);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .page-indicator {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .progress-bar-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.3s ease;
+    }
+
+    /* 目录浮层 */
+    .outline-drawer {
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      width: 100%;
+      max-height: 64%;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.98);
+      border-top: 1px solid #bfdbfe;
+      padding: 20px 30px 24px;
+      transform: translateY(100%);
+      transition: transform 0.22s ease;
+      box-shadow: 0 -8px 24px -12px rgba(15, 23, 42, 0.25);
+      z-index: 60;
+    }
+
+    .outline-drawer.open {
+      transform: translateY(0);
+    }
+
+    .outline-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .outline-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .outline-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-soft);
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .outline-item:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .outline-item.current {
+      background: #eff6ff;
+      border-color: var(--primary);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .outline-num {
+      font-weight: 800;
+      color: var(--muted);
+      min-width: 16px;
+    }
+
+    .outline-item.current .outline-num {
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+    <!-- 顶部进度条 -->
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- ==================== Slide 1: 封面 ==================== -->
+    <div class="slide cover-slide active" data-title="封面" data-notes="开场点题：今天汇报 MVP 的系统结构，重点是前后端边界、共享绘图管线，以及管线两端的结构化契约。">
+      <div class="cover-badge">MVP 架构评审</div>
+      <h1 class="cover-title">Vis Platform<br>科研智能可视化平台</h1>
+      <p class="cover-desc">用自然语言产出可发表的科研图表。今天汇报后端结构：绘图智能体与文本智能体，统一的数据结构，唯一的输出结构。</p>
+      <div class="cover-meta">
+        <span>汇报对象：技术评审</span>
+        <span>·</span>
+        <span>按 ← / → 键翻页</span>
+        <span>·</span>
+        <span>N 查看备注</span>
+      </div>
+    </div>
+
+    <!-- ==================== Slide 2: 系统结构 ==================== -->
+    <div class="slide" data-title="系统结构" data-notes="先立边界：前端只通过 API 访问后端，模型、文件与 R 进程都藏在后端之后。后端内部七个分层包，依赖方向自上而下。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Structure</div>
+        <h2 class="slide-title">系统结构：前后端分离</h2>
+        <p class="slide-sub">界面层只发出请求；后端服务由两个智能体与两类结构构成</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/system-architecture.svg" alt="系统架构与模块边界">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 3: 四个消费者 ==================== -->
+    <div class="slide" data-title="三类数据与两个智能体" data-notes="左侧三类数据互相独立：原始数据、结构化数据集、分析结果，界面可按需选用任意一类。四个界面都连接绘图智能体并产出图像；Report 与 Slides 另外连接文本智能体，由它产出报告与幻灯片。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Structure</div>
+        <h2 class="slide-title">三类数据、四个界面与两个智能体</h2>
+        <p class="slide-sub">三类数据互相独立，都可直接送入四个界面；四个界面共用两个智能体</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/interfaces.svg" alt="四个界面与共享后端管线">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 4: 结构化输入与输出 ==================== -->
+    <div class="slide" data-title="绘图管线契约" data-notes="这是全场最核心的一页。绘图管线不做自由文本进、自由文本出：左端是结构化请求，右端是结构化结果与一个不可变图版本。四个界面都消费同一个输出契约。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Contract</div>
+        <h2 class="slide-title">绘图管线的结构化输入与输出</h2>
+        <p class="slide-sub">不是自由文本进出：左端是结构化请求，右端是结构化结果与不可变图版本</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/plot-agent-contract.svg" alt="结构化输入与结构化输出">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 5: 文档结构 ==================== -->
+    <div class="slide" data-title="文档结构" data-notes="报告与幻灯片需要另一套结构化数据。它们复用同一套内容块，差别只在组织方式：报告按章节，幻灯片按页。图表块以指针绑定图版本，两种绑定方式对应锁定与跟随。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Contract</div>
+        <h2 class="slide-title">报告与幻灯片：另一套结构化文档数据</h2>
+        <p class="slide-sub">复用同一套内容块，差别只在组织方式：报告按章节，幻灯片按页</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/document-structure.svg" alt="报告与幻灯片的结构化文档数据">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 6: 执行路径 ==================== -->
+    <div class="slide" data-title="执行路径" data-notes="一次请求进入管线之后的执行顺序。六步全部在后端完成，前端只通过事件流观察进度。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Flow</div>
+        <h2 class="slide-title">一次请求的执行路径</h2>
+        <p class="slide-sub">六步都在后端完成，前端只通过事件流观察进度</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/request-lifecycle.svg" alt="请求执行路径">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 7: 数据与版本 ==================== -->
+    <div class="slide" data-title="数据与版本" data-notes="管线的输出落到三层结构上：只读数据集、可复用的统计中间态、不可变图版本。中间态是性能的关键，也是可复现性的载体。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Model</div>
+        <h2 class="slide-title">数据与版本模型</h2>
+        <p class="slide-sub">只读数据集 - 可复用统计中间态 - 不可变图版本</p>
+      </div>
+      <div class="slide-body">
+        <img class="slide-image" src="assets/data-model.svg" alt="数据与版本模型">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 8: 与 C2R / scLego 集成 ==================== -->
+    <div class="slide" data-title="与 C2R / scLego 集成" data-notes="其他模块的产物不需要改造自身，只要把输出映射到 Dataset 与分析结果两类模型，就能直接送入绘图智能体，并且可以被后续复用。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Integration</div>
+        <h2 class="slide-title">与 C2R / scLego 的集成</h2>
+        <p class="slide-sub">模块输出抽象为两类数据模型后，可直接送入绘图智能体</p>
+      </div>
+      <div class="slide-body">
+        <div class="flow-row">
+          <div class="flow-box">
+            <div class="flow-t">C2R / scLego</div>
+            <div class="flow-d">模块输出</div>
+          </div>
+          <div class="flow-arrow"><span>抽象为</span><i></i></div>
+          <div class="flow-box blue">
+            <div class="flow-t">Dataset</div>
+            <div class="flow-d">数据</div>
+          </div>
+          <div class="flow-box amber">
+            <div class="flow-t">AnalysisResult</div>
+            <div class="flow-d">分析结果</div>
+          </div>
+          <div class="flow-arrow"><span>送入</span><i></i></div>
+          <div class="flow-box">
+            <div class="flow-t">绘图智能体</div>
+            <div class="flow-d">产出图像</div>
+          </div>
+        </div>
+        <ul class="key-list">
+          <li>模块只需产出数据与分析结果，自身不需要改造</li>
+          <li>抽象后的产物可被后续复用，也可随时导入绘图智能体</li>
+          <li>接入方式与平台接入一致，都是把产物映射到这两类模型</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ==================== Slide 9: 局限与不足 ==================== -->
+    <div class="slide" data-title="局限与不足" data-notes="逐条列出边界，各条之间没有从属关系。plot-agent 与 abio-agent 职责相似，是否保留取决于能否表现更好；plot-skills 尚未部署，后续可接入。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Limitations</div>
+        <h2 class="slide-title">局限与不足</h2>
+        <p class="slide-sub">以下为当前已知的边界与未展开的方向</p>
+      </div>
+      <div class="slide-body">
+        <ul class="key-list compact">
+          <li>在 UI 上，本次只做了 plot 的常规设计，交互设计没有展开；Workspace 仍是传统的「图形 + 参数面板」形态</li>
+          <li>Canvas 是对更优雅交互范式的一次探索，但它更适合复杂流程，与本场景不匹配，不推荐使用</li>
+          <li>在 C2R 中，图已经由 abio-agent 产出；对比之下，plot-agent 的使用场景与存在必要性仍需论证（若未来并入 C2R 平台，最终的绘图界面如何存在）</li>
+          <li>plot-skills 尚未部署，后续可以接入</li>
+          <li>缺少第 5 个界面：组图。由文本驱动的智能体自动选图，按 A4 等版面尺寸编排，之后仍可由绘图智能体继续修改</li>
+          <li>组图若抽象为后端能力，可作为 Report 的输入，从而让 Report 更好</li>
+        </ul>
+        <img class="limit-figure" src="assets/figure-composer.svg" alt="组图界面示意">
+      </div>
+    </div>
+
+    <!-- ==================== Slide 10: 未来展望 ==================== -->
+    <div class="slide" data-title="未来展望" data-notes="两条相互独立的方向。一是插件化：四个界面可以作为 C2R 平台的插件，官方维护最佳实践，用户也可以贡献插件。二是结果交付：模块的结构化结果可以直接生成报告。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Outlook</div>
+        <h2 class="slide-title">未来展望</h2>
+        <p class="slide-sub">两条相互独立的方向</p>
+      </div>
+      <div class="slide-body">
+        <div class="grid-cards two">
+          <div class="card">
+            <div class="card-kicker">方向一</div>
+            <h3 class="card-title">插件化</h3>
+            <p class="card-desc">四个界面可作为 C2R 平台的插件，官方提供最佳实践，用户也可以参与。</p>
+            <img class="outlook-mini" src="assets/plugin-system.svg" alt="插件化示意">
+          </div>
+          <div class="card">
+            <div class="card-kicker">方向二</div>
+            <h3 class="card-title">结果交付</h3>
+            <p class="card-desc">模块的结构化结果可直接生成报告。</p>
+            <img class="outlook-mini" src="assets/result-delivery.svg" alt="结果交付示意">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Slide 11: 总结 ==================== -->
+    <div class="slide" data-title="总结" data-notes="收尾：已交付两个绘图向界面与两个高层可视化界面。Workspace 支持由智能体返回的自动可调参数；Canvas 支持图结构式的编辑。">
+      <div class="slide-header">
+        <div class="slide-num-tag">Summary</div>
+        <h2 class="slide-title">总结</h2>
+        <p class="slide-sub">已交付两个绘图向界面与两个高层可视化界面</p>
+      </div>
+      <div class="slide-body">
+        <ul class="key-list">
+          <li class="highlight">两个绘图向界面：Workspace 与 Canvas</li>
+          <li class="highlight">Workspace 支持由智能体返回的自动可调参数</li>
+          <li>Canvas 支持图结构式的编辑方式</li>
+          <li>两个高层可视化界面：Report 与 Slides</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 抽屉：目录 -->
+    <div class="outline-drawer" id="outlineDrawer">
+      <div class="outline-title">目录 (按 O 键开关)</div>
+      <div class="outline-grid" id="outlineGrid"></div>
+    </div>
+
+    <!-- 底部控制条 -->
+    <div class="deck-footer">
+      <div style="display: flex; gap: 10px;">
+        <button class="nav-btn" id="prevBtn">◀ 上一页</button>
+        <button class="nav-btn" id="nextBtn">下一页 ▶</button>
+      </div>
+      <div class="page-indicator" id="pageIndicator">1 / 11</div>
+      <div style="display: flex; gap: 10px;">
+        <button class="nav-btn" id="toggleOutlineBtn">目录 (O)</button>
+        <button class="nav-btn" id="fullscreenBtn">全屏 (F)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const progressBar = document.getElementById('progressBar');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const outlineDrawer = document.getElementById('outlineDrawer');
+    const outlineGrid = document.getElementById('outlineGrid');
+    const toggleOutlineBtn = document.getElementById('toggleOutlineBtn');
+
+    let currentSlide = 0;
+    const totalSlides = slides.length;
+
+    // 构建目录：每条对应一页，点击直接跳转
+    slides.forEach((slide, i) => {
+      const item = document.createElement('button');
+      item.className = 'outline-item';
+      item.innerHTML = `<span class="outline-num">${i + 1}</span><span>${slide.dataset.title || ''}</span>`;
+      item.addEventListener('click', () => {
+        updateSlide(i);
+        outlineDrawer.classList.remove('open');
+      });
+      outlineGrid.appendChild(item);
+    });
+
+    function toggleOutline() {
+      outlineDrawer.classList.toggle('open');
+    }
+
+    function updateSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      currentSlide = index;
+
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentSlide);
+      });
+
+      const progress = ((currentSlide + 1) / totalSlides) * 100;
+      progressBar.style.width = `${progress}%`;
+      pageIndicator.textContent = `${currentSlide + 1} / ${totalSlides} · ${slides[currentSlide].dataset.title || ''}`;
+
+      // 高亮目录中的当前页
+      [...outlineGrid.children].forEach((item, i) => {
+        item.classList.toggle('current', i === currentSlide);
+      });
+    }
+
+    function prev() { updateSlide(currentSlide - 1); }
+    function next() { updateSlide(currentSlide + 1); }
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    toggleOutlineBtn.addEventListener('click', toggleOutline);
+
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        next();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prev();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        updateSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        updateSlide(totalSlides - 1);
+      } else if (e.key === 'o' || e.key === 'O') {
+        toggleOutline();
+      } else if (e.key === 'Escape') {
+        outlineDrawer.classList.remove('open');
+      } else if (e.key === 'f' || e.key === 'F') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    updateSlide(0);
+  </script>
+</body>
+</html>

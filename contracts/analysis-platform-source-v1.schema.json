@@ -1,0 +1,590 @@
+{
+  "$defs": {
+    "ArtifactReference": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "preview",
+            "publication",
+            "data",
+            "model",
+            "script",
+            "methods"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "media_type": {
+          "title": "Media Type",
+          "type": "string"
+        },
+        "href": {
+          "title": "Href",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "role",
+        "media_type",
+        "href",
+        "description"
+      ],
+      "title": "ArtifactReference",
+      "type": "object"
+    },
+    "ColumnDescription": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "data_type": {
+          "enum": [
+            "number",
+            "boolean",
+            "string",
+            "unknown"
+          ],
+          "title": "Data Type",
+          "type": "string"
+        },
+        "missing_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Missing Count",
+          "type": "integer"
+        },
+        "unique_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unique Count"
+        },
+        "numeric": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NumericProfile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "meaning_origin": {
+          "anyOf": [
+            {
+              "enum": [
+                "source",
+                "inferred",
+                "user"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meaning Origin"
+        }
+      },
+      "required": [
+        "name",
+        "data_type"
+      ],
+      "title": "ColumnDescription",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "NumericProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "minimum": {
+          "title": "Minimum",
+          "type": "number"
+        },
+        "maximum": {
+          "title": "Maximum",
+          "type": "number"
+        },
+        "mean": {
+          "title": "Mean",
+          "type": "number"
+        }
+      },
+      "required": [
+        "minimum",
+        "maximum",
+        "mean"
+      ],
+      "title": "NumericProfile",
+      "type": "object"
+    },
+    "ObjectRelationship": {
+      "additionalProperties": false,
+      "properties": {
+        "relationship_id": {
+          "title": "Relationship Id",
+          "type": "string"
+        },
+        "left_object_id": {
+          "title": "Left Object Id",
+          "type": "string"
+        },
+        "right_object_id": {
+          "title": "Right Object Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "related",
+          "enum": [
+            "join",
+            "annotates",
+            "derived_from",
+            "related"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "left_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A table column containing the left join keys; mutually exclusive with left_axis.",
+          "title": "Left Key"
+        },
+        "right_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A table column containing the right join keys; mutually exclusive with right_axis.",
+          "title": "Right Key"
+        },
+        "left_axis": {
+          "anyOf": [
+            {
+              "enum": [
+                "rows",
+                "columns"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Matrix axis identifiers only. Leave null when using a table column key.",
+          "title": "Left Axis"
+        },
+        "right_axis": {
+          "anyOf": [
+            {
+              "enum": [
+                "rows",
+                "columns"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Matrix axis identifiers only. Leave null when using a table column key.",
+          "title": "Right Axis"
+        },
+        "cardinality": {
+          "default": "unknown",
+          "enum": [
+            "one_to_one",
+            "many_to_one",
+            "one_to_many",
+            "many_to_many",
+            "unknown"
+          ],
+          "title": "Cardinality",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "origin": {
+          "default": "source",
+          "enum": [
+            "source",
+            "inferred",
+            "user"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "validation": {
+          "default": "declared",
+          "enum": [
+            "declared",
+            "verified",
+            "invalid"
+          ],
+          "title": "Validation",
+          "type": "string"
+        },
+        "matched_rows": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matched Rows"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "relationship_id",
+        "left_object_id",
+        "right_object_id"
+      ],
+      "title": "ObjectRelationship",
+      "type": "object"
+    },
+    "SourceObject": {
+      "additionalProperties": false,
+      "properties": {
+        "source_object_id": {
+          "title": "Source Object Id",
+          "type": "string"
+        },
+        "description": {
+          "$ref": "#/$defs/SourceObjectDescription"
+        },
+        "content_path": {
+          "title": "Content Path",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[a-fA-F0-9]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "object_path": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "maxItems": 32,
+          "title": "Object Path",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_object_id",
+        "description",
+        "content_path"
+      ],
+      "title": "SourceObject",
+      "type": "object"
+    },
+    "SourceObjectDescription": {
+      "additionalProperties": false,
+      "properties": {
+        "object_id": {
+          "default": "",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "default": "",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "owner_id": {
+          "default": "",
+          "title": "Owner Id",
+          "type": "string"
+        },
+        "owner_kind": {
+          "default": "dataset",
+          "enum": [
+            "dataset",
+            "analysis_result"
+          ],
+          "title": "Owner Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "kind": {
+          "default": "table",
+          "enum": [
+            "table",
+            "matrix",
+            "model",
+            "scalar",
+            "unknown"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "format": {
+          "pattern": "^[A-Za-z0-9_+-]{1,32}$",
+          "title": "Format",
+          "type": "string"
+        },
+        "dimensions": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "scalar": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scalar"
+        },
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/ColumnDescription"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "observation_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observation Unit"
+        },
+        "description_origin": {
+          "default": "parser",
+          "enum": [
+            "source",
+            "parser",
+            "inferred",
+            "user"
+          ],
+          "title": "Description Origin",
+          "type": "string"
+        },
+        "readiness": {
+          "default": "ready",
+          "enum": [
+            "ready",
+            "unsupported",
+            "unavailable",
+            "failed"
+          ],
+          "title": "Readiness",
+          "type": "string"
+        },
+        "limitations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "capabilities": {
+          "items": {
+            "enum": [
+              "inspect",
+              "materialize"
+            ],
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "content_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content Hash"
+        },
+        "extensions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "artifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ArtifactReference"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "format"
+      ],
+      "title": "SourceObjectDescription",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contains_demo_data": {
+      "default": false,
+      "title": "Contains Demo Data",
+      "type": "boolean"
+    },
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "revision": {
+      "title": "Revision",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "objects": {
+      "items": {
+        "$ref": "#/$defs/SourceObject"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Objects",
+      "type": "array"
+    },
+    "relationships": {
+      "items": {
+        "$ref": "#/$defs/ObjectRelationship"
+      },
+      "title": "Relationships",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_id",
+    "revision",
+    "name",
+    "objects"
+  ],
+  "title": "SourceManifest",
+  "type": "object"
+}

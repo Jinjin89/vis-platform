@@ -1,0 +1,466 @@
+.resizable-panels.report-editor-layout {
+  --panel-default-size: 370px;
+  flex: 1;
+  min-height: 0;
+  background: #f7f3f5;
+}
+.resizable-panels.report-editor-layout.assistant-closed {
+  grid-template-columns: minmax(0, 1fr) 0 0;
+}
+.report-editor-layout > .panel-resize-handle {
+  border-radius: 0;
+}
+.report-toolbar .dataset-selection-label {
+  display: none;
+}
+.report-toolbar
+  button[aria-label="Toggle report assistant"][aria-pressed="true"] {
+  color: var(--color-primary);
+  background: var(--color-primary-faint);
+}
+.report-assistant {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: white;
+  border-left: 1px solid var(--color-border);
+  font-family: var(--font-ui);
+}
+.report-assistant-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  padding: 18px 17px 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+.report-assistant-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--color-primary);
+  border-radius: 9px;
+  background: var(--color-primary-soft);
+}
+.report-assistant-mark svg {
+  width: 19px;
+  height: 19px;
+}
+.report-assistant-heading > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.report-assistant-heading strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.report-assistant-heading span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--color-muted);
+}
+.report-assistant-heading > button {
+  padding: 0;
+  width: 25px;
+  height: 25px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 22px;
+}
+.report-assistant-heading > button:hover {
+  background: var(--color-primary-faint);
+}
+.report-assistant-scope {
+  padding: 12px 17px;
+  border-bottom: 1px solid #f0e9ed;
+}
+.report-assistant-scope > label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-faint);
+}
+.report-assistant-scope select {
+  width: 100%;
+  margin-top: 3px;
+  padding: 4px 0;
+  border: 0;
+  background: white;
+  color: var(--color-ink);
+  font-size: 12px;
+}
+.report-assistant-selection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 7px;
+  margin-top: 6px;
+  border-radius: 5px;
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+  font-size: 10px;
+}
+.report-assistant-selection button {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  padding: 0 2px;
+}
+.report-assistant-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 18px;
+}
+.report-assistant-welcome {
+  padding: 8px 0;
+}
+.report-assistant-welcome .section-kicker {
+  color: var(--color-faint);
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.report-assistant-welcome h2 {
+  margin: 13px 0 9px;
+  color: var(--color-ink);
+  font-size: 21px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+}
+.report-assistant-welcome p {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+.report-assistant-starters {
+  display: grid;
+  gap: 8px;
+  margin-top: 23px;
+}
+.report-assistant-starters button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: white;
+  font-size: 11px;
+  text-align: left;
+  color: var(--color-text);
+}
+.report-assistant-starters button:hover {
+  background: var(--color-primary-faint);
+  border-color: var(--color-border-strong);
+}
+.report-assistant-starters span {
+  color: var(--color-primary);
+}
+.report-assistant-turn {
+  margin-bottom: 25px;
+}
+.report-assistant .conversation-message {
+  padding: 0;
+  margin: 0 0 18px;
+  border: 0;
+  background: transparent;
+}
+.report-assistant .message-author {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 600;
+}
+.report-assistant .message-user .message-author {
+  color: var(--color-muted);
+}
+.report-assistant .message-user .message-content {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #f7f3f6;
+}
+.report-assistant .message-content {
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.report-assistant .message-content p {
+  margin: 0 0 10px;
+}
+.report-assistant .message-content p:last-child {
+  margin-bottom: 0;
+}
+.report-assistant .message-content h1,
+.report-assistant .message-content h2,
+.report-assistant .message-content h3 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.report-assistant .message-content pre {
+  overflow: auto;
+  font-size: 11px;
+}
+.report-assistant .message-user > small {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-faint);
+  font-size: 9px;
+}
+.report-assistant-compose {
+  flex: none;
+  padding: 12px 16px 15px;
+  border-top: 1px solid var(--color-border);
+  background: white;
+  max-height: 48%;
+  overflow-y: auto;
+}
+.report-assistant-modes {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.report-assistant-modes button {
+  padding: 4px 9px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.report-assistant-modes button[aria-pressed="true"] {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-weight: 500;
+}
+.report-assistant-destination {
+  font-size: 10px;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+.report-assistant-compose > textarea {
+  display: block;
+  width: 100%;
+  padding: 10px 11px;
+  min-height: 88px;
+  max-height: 180px;
+  resize: vertical;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: white;
+  color: var(--color-ink);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.report-assistant-compose > textarea::placeholder {
+  color: var(--color-faint);
+}
+.report-assistant-compose footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 10px;
+}
+.report-assistant-compose footer > div {
+  min-width: 0;
+  font-size: 9px;
+  color: var(--color-faint);
+}
+.report-assistant-compose .report-manual-edit {
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 10px;
+}
+.report-assistant-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  color: white;
+  background: var(--color-primary);
+  font-size: 11px;
+}
+.report-assistant-send svg {
+  width: 15px;
+  height: 15px;
+}
+.report-assistant-send:disabled {
+  color: #a08c99;
+  background: #eee5eb;
+}
+.report-assistant-notice {
+  color: var(--color-muted);
+  font-size: 11px;
+  margin-block: 8px;
+}
+@media screen and (max-width: 1150px) {
+  .report-toolbar-actions {
+    gap: 6px !important;
+  }
+  .report-toolbar .report-save-status {
+    display: none;
+  }
+  .report-toolbar .report-current-title {
+    max-width: 125px;
+  }
+  .report-editor-layout .report-outline {
+    display: none;
+  }
+  .report-editor-layout .report-paper-scroll {
+    padding: 20px 14px;
+  }
+  .report-editor-layout .report-paper {
+    padding-inline: 32px;
+  }
+}
+@media screen and (max-width: 959px) {
+  .resizable-panels.report-editor-layout {
+    display: block;
+    position: relative;
+  }
+  .report-editor-layout > .panel-resize-handle {
+    display: none;
+  }
+  .report-editor-layout.assistant-open > .report-layout {
+    display: none;
+  }
+  .report-editor-layout.assistant-open > .report-assistant {
+    display: flex;
+  }
+  .report-editor-layout .report-outline {
+    display: flex;
+  }
+  .report-editor-layout .report-layout {
+    flex-direction: column;
+    height: 100%;
+  }
+  .report-editor-layout .report-outline {
+    flex: none;
+    width: 100%;
+    overflow-x: auto;
+    align-items: center;
+    padding: 6px 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .report-editor-layout .report-outline-title {
+    display: none;
+  }
+  .report-editor-layout .report-outline > button {
+    width: auto;
+    flex: none;
+    margin: 0;
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .report-editor-layout .report-outline .report-add-topic {
+    margin: 0;
+  }
+  .report-editor-layout .report-paper-scroll {
+    padding: 16px 10px;
+  }
+  .report-editor-layout .report-paper {
+    padding: 32px 25px;
+  }
+  .report-assistant-heading {
+    padding: 14px 18px;
+  }
+  .report-assistant-compose {
+    padding-bottom: 18px;
+  }
+  .report-toolbar-actions {
+    flex-wrap: wrap;
+  }
+}
+@media screen and (max-width: 540px) {
+  .report-toolbar .report-current-title {
+    max-width: 95px;
+  }
+  .report-toolbar > div {
+    gap: 6px;
+  }
+  .report-toolbar .report-library-back {
+    padding-right: 0;
+  }
+  .report-editor-layout .report-paper {
+    padding: 27px 20px;
+  }
+  .report-editor-layout .report-document-header h1 {
+    font-size: 26px;
+  }
+  .report-editor-layout .report-topic-heading h2 {
+    font-size: 18px;
+  }
+  .report-editor-layout .report-paper {
+    font-size: 14px;
+  }
+}
+@media (hover: none) {
+  .report-figure-toolbar,
+  .report-add-content {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@media print {
+  .resizable-panels.report-editor-layout {
+    display: block !important;
+    height: auto;
+    overflow: visible;
+  }
+  .report-editor-layout > .panel-resize-handle,
+  .report-assistant {
+    display: none !important;
+  }
+  .report-editor-layout .report-layout {
+    display: block !important;
+    height: auto;
+  }
+  .report-paper .report-editing-tools,
+  .report-paper .report-empty-topic,
+  .report-paper .report-editable-field {
+    display: none !important;
+  }
+  .report-paper .report-print-field {
+    display: block;
+  }
+  .report-block[data-selected="true"]::before {
+    display: none;
+  }
+  .report-paper-scroll > .report-paper-add-topic {
+    display: none;
+  }
+}
+
+.report-selection-hint {
+  margin: 10px 16px 0;
+  padding: 7px 9px;
+  flex: none;
+}
+.report-message-working {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--color-muted);
+  font-size: 12px;
+  margin: 12px 0;
+}

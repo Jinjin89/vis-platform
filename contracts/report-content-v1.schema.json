@@ -1,0 +1,276 @@
+{
+  "$defs": {
+    "LegacyFigureBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "figure",
+          "default": "figure",
+          "title": "Type",
+          "type": "string"
+        },
+        "version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Id"
+        },
+        "image_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Id"
+        },
+        "caption": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Caption",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "LegacyFigureBlock",
+      "type": "object"
+    },
+    "LegacyReportTopic": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "blocks": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "figure": "#/$defs/LegacyFigureBlock",
+                "table": "#/$defs/ReportTableBlock",
+                "text": "#/$defs/ReportTextBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ReportTextBlock"
+              },
+              {
+                "$ref": "#/$defs/LegacyFigureBlock"
+              },
+              {
+                "$ref": "#/$defs/ReportTableBlock"
+              }
+            ]
+          },
+          "maxItems": 100,
+          "title": "Blocks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "LegacyReportTopic",
+      "type": "object"
+    },
+    "ReportDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision Id"
+        }
+      },
+      "required": [
+        "dataset_id"
+      ],
+      "title": "ReportDataset",
+      "type": "object"
+    },
+    "ReportTableBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "table",
+          "default": "table",
+          "title": "Type",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Title",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "maxItems": 200,
+          "title": "Rows",
+          "type": "array"
+        },
+        "source_description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Source Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "columns"
+      ],
+      "title": "ReportTableBlock",
+      "type": "object"
+    },
+    "ReportTextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "text",
+          "default": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "maxLength": 30000,
+          "title": "Body",
+          "type": "string"
+        },
+        "evidence_version_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Evidence Version Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ReportTextBlock",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "datasets": {
+      "items": {
+        "$ref": "#/$defs/ReportDataset"
+      },
+      "maxItems": 50,
+      "title": "Datasets",
+      "type": "array"
+    },
+    "topics": {
+      "items": {
+        "$ref": "#/$defs/LegacyReportTopic"
+      },
+      "maxItems": 100,
+      "title": "Topics",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "LegacyReportContent",
+  "type": "object"
+}

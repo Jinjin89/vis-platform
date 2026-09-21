@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="560" viewBox="0 0 1280 560" role="img" aria-labelledby="title desc">
+  <title id="title">领域模型：三层解耦与版本血缘</title>
+  <desc id="desc">数据、统计、视觉三层解耦，改外观零重算</desc>
+
+  <defs>
+    <marker id="m-b3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+    </marker>
+    <marker id="m-g3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+    </marker>
+    <filter id="sh3" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .h1 { font-size: 22px; font-weight: 800; fill: #0f172a; }
+      .h2 { font-size: 13px; fill: #64748b; }
+      .ct { font-size: 16px; font-weight: 700; fill: #0f172a; }
+      .key { font-size: 12px; font-weight: 700; }
+      .code { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; font-weight: 600; fill: #94a3b8; }
+      .txt { font-size: 12.5px; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="560" rx="16" fill="#f8fafc"/>
+
+  <!-- 顶部标题 -->
+  <text x="40" y="44" class="h1">数据与版本模型</text>
+  <text x="40" y="68" class="h2">Dataset - AnalysisResult - PlotVersion 三层解耦</text>
+
+  <!-- ==================== 第一排：三层解耦核心实体 ==================== -->
+  <!-- 1. Dataset -->
+  <g transform="translate(40, 95)">
+    <rect width="360" height="205" rx="10" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" filter="url(#sh3)"/>
+    <rect width="360" height="32" rx="10" fill="#eff6ff"/>
+    <rect y="22" width="360" height="10" fill="#eff6ff"/>
+    <text x="18" y="22" class="ct" fill="#1d4ed8">1. Dataset 只读数据源</text>
+
+    <text x="18" y="62" class="code">files / objects / profile</text>
+
+    <rect x="16" y="80" width="328" height="100" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="26" y="108" class="key" fill="#1d4ed8">Agent-friendly Profile</text>
+    <text x="26" y="136" class="txt">变量语义 / 观测单元</text>
+    <text x="26" y="160" class="txt">分布与缺失率</text>
+  </g>
+
+  <!-- 2. AnalysisResult -->
+  <g transform="translate(450, 95)">
+    <rect width="370" height="205" rx="10" fill="#ffffff" stroke="#f59e0b" stroke-width="1.8" filter="url(#sh3)"/>
+    <rect width="370" height="32" rx="10" fill="#fef3c7"/>
+    <rect y="22" width="370" height="10" fill="#fef3c7"/>
+    <text x="18" y="22" class="ct" fill="#b45309">2. AnalysisResult 统计中间态</text>
+
+    <text x="18" y="62" class="code">computed_data / model</text>
+
+    <rect x="16" y="80" width="338" height="100" rx="6" fill="#fffbeb" stroke="#fde68a"/>
+    <text x="26" y="108" class="key" fill="#b45309">计算与视觉彻底解耦</text>
+    <text x="26" y="136" class="txt" font-weight="700" fill="#92400e">改外观复用结果，0 重算</text>
+    <text x="26" y="160" class="txt">仅换统计假设才重算</text>
+  </g>
+
+  <!-- 3. PlotVersion -->
+  <g transform="translate(870, 95)">
+    <rect width="370" height="205" rx="10" fill="#ffffff" stroke="#059669" stroke-width="1.5" filter="url(#sh3)"/>
+    <rect width="370" height="32" rx="10" fill="#ecfdf5"/>
+    <rect y="22" width="370" height="10" fill="#ecfdf5"/>
+    <text x="18" y="22" class="ct" fill="#047857">3. PlotVersion 不可变图版本</text>
+
+    <text x="18" y="62" class="code">parameters / artifacts / code</text>
+
+    <rect x="16" y="80" width="338" height="100" rx="6" fill="#f0fdf4" stroke="#bbf7d0"/>
+    <text x="26" y="108" class="key" fill="#047857">可复现证据链</text>
+    <text x="26" y="136" class="txt">R 源码 / 随机种子 / 图注</text>
+    <text x="26" y="160" class="txt">SVG + 300 DPI PDF-PNG</text>
+  </g>
+
+  <!-- 连接箭头 -->
+  <path d="M 400 197 L 448 197" stroke="#2563eb" stroke-width="2.5" marker-end="url(#m-b3)"/>
+  <text x="404" y="185" font-size="11" font-weight="700" fill="#2563eb">统计计算</text>
+
+  <path d="M 820 197 L 868 197" stroke="#059669" stroke-width="2.5" marker-end="url(#m-g3)"/>
+  <text x="824" y="185" font-size="11" font-weight="700" fill="#059669">视觉渲染</text>
+
+  <!-- ==================== 第二排：消费与演进 ==================== -->
+  <!-- 4. VersionGraph -->
+  <g transform="translate(40, 330)">
+    <rect width="590" height="190" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4" filter="url(#sh3)"/>
+    <rect width="590" height="32" rx="10" fill="#f3e8ff"/>
+    <rect y="22" width="590" height="10" fill="#f3e8ff"/>
+    <text x="18" y="22" class="ct" fill="#6b21a8">4. VersionGraph 版本血缘树</text>
+
+    <g transform="translate(20, 52)">
+      <rect width="265" height="120" rx="6" fill="#faf5ff" stroke="#e9d5ff"/>
+      <text x="16" y="30" class="key" fill="#6b21a8">Workspace 线性时间轴</text>
+      <text x="16" y="60" class="code" fill="#7e22ce">v1 -&gt; v2 -&gt; v3</text>
+      <text x="16" y="90" class="txt">撤销 / 重做 / 还原</text>
+    </g>
+
+    <g transform="translate(305, 52)">
+      <rect width="265" height="120" rx="6" fill="#faf5ff" stroke="#e9d5ff"/>
+      <text x="16" y="30" class="key" fill="#6b21a8">Canvas 二维分支树</text>
+      <text x="16" y="60" class="code" fill="#7e22ce">Data -&gt; 分支A / 分支B</text>
+      <text x="16" y="90" class="txt">分支状态互相隔离</text>
+    </g>
+  </g>
+
+  <!-- 5. FigureLink -->
+  <g transform="translate(650, 330)">
+    <rect width="590" height="190" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4" filter="url(#sh3)"/>
+    <rect width="590" height="32" rx="10" fill="#fff7ed"/>
+    <rect y="22" width="590" height="10" fill="#fff7ed"/>
+    <text x="18" y="22" class="ct" fill="#c2410c">5. FigureLink 跨端引用指针</text>
+
+    <g transform="translate(20, 52)">
+      <rect width="265" height="120" rx="6" fill="#fffaf5" stroke="#fed7aa"/>
+      <text x="16" y="30" class="key" fill="#ea580c">模式 A 跟随最新</text>
+      <text x="16" y="60" class="code" fill="#c2410c">follow_latest = true</text>
+      <text x="16" y="90" class="txt">上游改图，报告自动同步</text>
+    </g>
+
+    <g transform="translate(305, 52)">
+      <rect width="265" height="120" rx="6" fill="#fffaf5" stroke="#fed7aa"/>
+      <text x="16" y="30" class="key" fill="#ea580c">模式 B 定稿锁定</text>
+      <text x="16" y="60" class="code" fill="#c2410c">pinned_version = v2</text>
+      <text x="16" y="90" class="txt">上游试错不扰动成稿</text>
+    </g>
+  </g>
+</svg>

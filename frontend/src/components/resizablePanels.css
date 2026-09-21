@@ -1,0 +1,60 @@
+.resizable-panels {
+  --resized-panel-size: initial;
+  --panel-max-size: initial;
+  --panel-size: clamp(
+    var(--panel-min-size, 0px),
+    var(--resized-panel-size, var(--panel-default-size)),
+    var(--panel-max-size, 100%)
+  );
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.resizable-panels[data-direction="horizontal"] {
+  grid-template-columns: minmax(0, 1fr) 9px var(--panel-size);
+}
+.resizable-panels[data-direction="vertical"] {
+  grid-template-rows: minmax(0, 1fr) 12px var(--panel-size);
+}
+.panel-resize-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  touch-action: none;
+  user-select: none;
+  border-radius: 5px;
+  color: var(--color-border-strong);
+  outline: none;
+}
+.panel-resize-handle[aria-orientation="vertical"] {
+  cursor: col-resize;
+}
+.panel-resize-handle[aria-orientation="horizontal"] {
+  cursor: row-resize;
+}
+.panel-resize-handle > span {
+  width: 3px;
+  height: 30px;
+  border-radius: 3px;
+  background: currentColor;
+}
+.panel-resize-handle[aria-orientation="horizontal"] > span {
+  width: 30px;
+  height: 3px;
+}
+.panel-resize-handle:hover,
+.panel-resize-handle:focus-visible,
+.panel-resize-handle[data-dragging="true"] {
+  color: var(--color-primary);
+  background: var(--color-primary-faint);
+}
+.panel-resize-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.panel-resize-handle[aria-hidden="true"] {
+  visibility: hidden;
+}

@@ -1,0 +1,406 @@
+.dataset-selector-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  margin: 0 0 8px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font-size: 12px;
+}
+.dataset-selector-toggle svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--color-primary);
+}
+.dataset-selector-toggle > span:first-of-type {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.data-library-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(780px, calc(100dvh - 40px));
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.data-library-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.data-library-dialog::backdrop {
+  background: #30242e55;
+  backdrop-filter: blur(3px);
+}
+.data-library-dialog > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  flex: none;
+}
+.data-library-dialog h2 {
+  margin: 3px 0 0;
+  color: var(--color-ink);
+  font-size: 22px;
+  font-weight: 500;
+}
+.data-library-dialog > header > button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 24px;
+}
+.data-eyebrow {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.data-library-tabs {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+}
+.data-library-tabs button {
+  flex: none;
+  padding: 12px 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--color-muted);
+  background: transparent;
+  font-size: 13px;
+}
+.data-library-tabs button[aria-selected="true"] {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+.data-library-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 24px 24px;
+  min-height: 0;
+}
+.data-library-content p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+.data-library-intro {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+.data-library-intro p {
+  margin: 0;
+}
+.data-library-content button,
+.data-library-dialog > footer button {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+}
+.data-library-content button:disabled {
+  opacity: 0.6;
+}
+.data-library-content .data-primary,
+.data-library-dialog > footer .data-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+.data-library-intro button {
+  flex: none;
+}
+.data-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 35px 24px;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 10px;
+}
+.data-empty strong {
+  font-size: 17px;
+  font-weight: 500;
+}
+.data-empty p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--color-muted);
+}
+.dataset-card {
+  padding: 14px;
+  margin: 0 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+}
+.dataset-card[data-selected="true"] {
+  border-color: var(--color-primary);
+}
+.dataset-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  justify-content: space-between;
+}
+.dataset-card-heading label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.dataset-card input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--color-primary);
+}
+.dataset-card strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.dataset-card > p {
+  margin: 8px 0;
+}
+.dataset-card small {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.dataset-state {
+  flex: none;
+  padding: 3px 7px;
+  border-radius: 10px;
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.dataset-state[data-ready="true"] {
+  color: var(--color-success);
+}
+.dataset-card details {
+  margin: 12px 0;
+  font-size: 12px;
+}
+.dataset-card summary,
+.analysis-result-card summary {
+  cursor: pointer;
+  color: var(--color-primary);
+}
+.dataset-object {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.dataset-object p {
+  margin: 0;
+}
+.data-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+}
+.data-columns > span {
+  display: grid;
+  gap: 2px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--color-surface-soft);
+  font-size: 12px;
+}
+.data-upload-form,
+.data-description-form {
+  display: grid;
+  gap: 16px;
+}
+.data-upload-form label,
+.data-description-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+}
+.data-upload-form input:not([type="file"]),
+.data-upload-form textarea,
+.data-description-form input,
+.data-description-form textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 9px 11px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+.data-upload-form textarea,
+.data-description-form textarea {
+  resize: vertical;
+  min-height: 78px;
+  max-height: 180px;
+}
+.data-upload-target {
+  padding: 22px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 9px;
+  background: var(--color-surface);
+}
+.data-upload-target input {
+  max-width: 100%;
+  font-size: 12px;
+}
+.data-upload-target span,
+.data-help {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.data-description-form {
+  margin-top: 15px;
+}
+.data-error {
+  color: var(--color-danger);
+}
+.data-library-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--color-border);
+  flex: none;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+.data-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+.analysis-result-card {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+}
+.analysis-result-card > strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.analysis-result-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.analysis-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  align-items: center;
+}
+.analysis-result-actions button {
+  padding: 6px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+  font-size: 12px;
+}
+.analysis-result-card a {
+  color: var(--color-primary);
+  font-size: 12px;
+}
+.analysis-result-card details {
+  margin-top: 5px;
+  font-size: 12px;
+}
+.analysis-result-card details p {
+  margin: 8px 0;
+}
+.analysis-result-card details > a {
+  display: block;
+  margin-top: 7px;
+}
+.analysis-result-card small {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+@media (max-width: 600px) {
+  .data-library-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 20px);
+  }
+  .data-library-dialog > header {
+    padding: 16px;
+  }
+  .data-library-content {
+    padding: 14px;
+  }
+  .data-library-tabs {
+    padding: 0 8px;
+    gap: 0;
+  }
+  .data-library-tabs button {
+    padding: 11px 8px;
+    font-size: 12px;
+  }
+  .data-library-intro {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dataset-card-heading {
+    flex-wrap: wrap;
+  }
+}
+
+.analysis-statistic {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding: 7px 0;
+  font-size: 13px;
+}
+.analysis-statistic output {
+  color: var(--color-primary);
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-demo-badge {
+  display: block;
+  width: fit-content;
+  margin: 7px 0;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+  font-size: 11px;
+}

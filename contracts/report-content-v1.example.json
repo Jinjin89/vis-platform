@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "title": "Research report",
+  "datasets": [],
+  "topics": [
+    {
+      "id": "overview",
+      "title": "Study overview",
+      "blocks": [
+        {
+          "id": "introduction",
+          "type": "text",
+          "body": "Describe the study, its data, and the scientific question."
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "title": "Prepared results",
+      "blocks": [
+        {
+          "id": "summary",
+          "type": "table",
+          "title": "Example summary structure",
+          "columns": [
+            "Measure",
+            "Status"
+          ],
+          "rows": [
+            [
+              "Data selection",
+              "Pending"
+            ],
+            [
+              "Analysis",
+              "Pending"
+            ]
+          ],
+          "source_description": "Template placeholders; no scientific results have been calculated."
+        }
+      ]
+    },
+    {
+      "id": "next_question",
+      "title": "Next scientific question",
+      "blocks": []
+    }
+  ]
+}

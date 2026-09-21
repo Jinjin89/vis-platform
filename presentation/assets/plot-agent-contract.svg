@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="600" viewBox="0 0 1280 600" role="img" aria-labelledby="title desc">
+  <title id="title">共享绘图管线的结构化输入与结构化输出</title>
+  <desc id="desc">四个界面提交结构化请求，绘图管线返回结构化结果与不可变图版本</desc>
+
+  <defs>
+    <marker id="a-con" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M1 1 L7 4 L1 7" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+    </marker>
+    <filter id="sh-con" x="-2%" y="-3%" width="104%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .h1 { font-size: 22px; font-weight: 800; fill: #0f172a; }
+      .h2 { font-size: 13px; fill: #64748b; }
+      .card-t { font-size: 15px; font-weight: 700; fill: #0f172a; }
+      .grp { font-size: 12px; font-weight: 800; fill: #64748b; letter-spacing: 0.6px; }
+      .field { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; font-weight: 700; fill: #1d4ed8; }
+      .gloss { font-size: 12.5px; fill: #475569; }
+      .note { font-size: 12px; fill: #64748b; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="600" rx="16" fill="#f8fafc"/>
+
+  <text x="40" y="44" class="h1">共享绘图管线的结构化输入与输出</text>
+  <text x="40" y="68" class="h2">四个界面只提交结构化请求，管线返回结构化结果与一个不可变图版本</text>
+
+  <!-- ==================== 左：结构化输入 ==================== -->
+  <g transform="translate(40, 95)">
+    <rect width="570" height="430" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="1.5" filter="url(#sh-con)"/>
+    <rect width="570" height="34" rx="12" fill="#eff6ff"/>
+    <rect y="20" width="570" height="14" fill="#eff6ff"/>
+    <text x="20" y="23" class="card-t" fill="#1d4ed8">结构化输入</text>
+
+    <text x="26" y="76" class="grp">请求 PlotRequest</text>
+    <text x="26" y="102" class="field">text</text>
+    <text x="230" y="102" class="gloss">自然语言科研请求</text>
+    <text x="26" y="126" class="field">reference_image_ids[]</text>
+    <text x="230" y="126" class="gloss">参考图，最多 3 张</text>
+    <text x="26" y="150" class="field">generation_mode</text>
+    <text x="230" y="150" class="gloss">auto / skill / raw_code</text>
+    <text x="26" y="174" class="field">controls_mode</text>
+    <text x="230" y="174" class="gloss">language / panel / hybrid</text>
+
+    <line x1="26" y1="196" x2="544" y2="196" stroke="#e2e8f0" stroke-width="1.2"/>
+
+    <text x="26" y="222" class="grp">数据范围 data_scope</text>
+    <text x="26" y="248" class="field">auto / selected / demo</text>
+    <text x="230" y="248" class="gloss">由意图发现，或显式指定数据集</text>
+
+    <line x1="26" y1="270" x2="544" y2="270" stroke="#e2e8f0" stroke-width="1.2"/>
+
+    <text x="26" y="296" class="grp">解析后的意图 IntentDecision</text>
+    <text x="26" y="322" class="field">goal</text>
+    <text x="230" y="322" class="gloss">归一化后的作图目标</text>
+    <text x="26" y="346" class="field">variable_mentions</text>
+    <text x="230" y="346" class="gloss">x / y / group / color / facet</text>
+    <text x="26" y="370" class="field">confidence / next_action</text>
+    <text x="230" y="370" class="gloss">置信度与下一步路由</text>
+
+    <text x="26" y="406" class="note">请求缺省的信息由意图解析补全；无法安全判定的歧义以结构化问题返回，不进入执行。</text>
+  </g>
+
+  <!-- 中间箭头 -->
+  <path d="M 615 310 L 648 310" stroke="#2563eb" stroke-width="2.5" marker-end="url(#a-con)"/>
+
+  <!-- ==================== 右：结构化输出 ==================== -->
+  <g transform="translate(650, 95)">
+    <rect width="590" height="430" rx="12" fill="#ffffff" stroke="#86efac" stroke-width="1.5" filter="url(#sh-con)"/>
+    <rect width="590" height="34" rx="12" fill="#f0fdf4"/>
+    <rect y="20" width="590" height="14" fill="#f0fdf4"/>
+    <text x="20" y="23" class="card-t" fill="#047857">结构化输出</text>
+
+    <text x="26" y="76" class="grp">图版本 PlotVersion</text>
+    <text x="26" y="102" class="field">plot_id / version_id</text>
+    <text x="240" y="102" class="gloss">不可变版本标识</text>
+    <text x="26" y="126" class="field">execution_mode</text>
+    <text x="240" y="126" class="gloss">真实数据执行或演示数据</text>
+
+    <line x1="26" y1="148" x2="564" y2="148" stroke="#e2e8f0" stroke-width="1.2"/>
+
+    <text x="26" y="174" class="grp">产物与可调参数</text>
+    <text x="26" y="200" class="field">preview / exports</text>
+    <text x="240" y="200" class="gloss">矢量 SVG 与 300 DPI PNG / PDF</text>
+    <text x="26" y="224" class="field">controls[] / control_groups[]</text>
+    <text x="240" y="224" class="gloss">动态参数定义与分组</text>
+
+    <line x1="26" y1="246" x2="564" y2="246" stroke="#e2e8f0" stroke-width="1.2"/>
+
+    <text x="26" y="272" class="grp">数据来源与统计结果</text>
+    <text x="26" y="298" class="field">data_used[] / input_objects[]</text>
+    <text x="240" y="298" class="gloss">实际使用的对象与变量映射</text>
+    <text x="26" y="322" class="field">analysis_results[]</text>
+    <text x="240" y="322" class="gloss">可复用的统计计算中间态</text>
+
+    <line x1="26" y1="344" x2="564" y2="344" stroke="#e2e8f0" stroke-width="1.2"/>
+
+    <text x="26" y="370" class="grp">学术文本与校验</text>
+    <text x="26" y="396" class="field">caption / title</text>
+    <text x="240" y="396" class="gloss">伴生图注与图表标题</text>
+    <text x="26" y="420" class="field">validation</text>
+    <text x="240" y="420" class="gloss">校验状态与警告</text>
+  </g>
+</svg>

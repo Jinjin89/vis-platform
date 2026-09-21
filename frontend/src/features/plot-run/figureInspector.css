@@ -1,0 +1,566 @@
+.figure-inspector {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: var(--color-surface-raised);
+  container-type: inline-size;
+}
+.inspector-top {
+  display: flex;
+  flex: none;
+  height: 43px;
+  border-bottom: 1px solid var(--color-border);
+  padding-right: 9px;
+}
+.inspector-tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  padding: 0 12px;
+}
+.inspector-tabs button {
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.inspector-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.inspector-collapse {
+  flex: none;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 20px;
+}
+.inspector-collapse:hover {
+  background: var(--color-surface-soft);
+}
+.figure-inspector[data-collapsed="true"] .inspector-top {
+  border-bottom: 0;
+}
+.inspector-content {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  padding: 12px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.inspector-parameters {
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.inspector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.inspector-heading strong {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.parameter-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.parameter-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.parameter-size-rail {
+  flex: 0 0 216px;
+  min-width: 0;
+  padding: 14px 16px;
+  overflow-y: auto;
+  background: var(--color-primary-faint);
+  border-right: 1px solid var(--color-border);
+}
+.parameter-settings {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.parameter-section-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px 0;
+  flex: none;
+  overflow-x: auto;
+}
+.parameter-section-tabs button {
+  white-space: nowrap;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.parameter-section-tabs button[aria-selected="true"] {
+  border-color: var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+}
+.parameter-fields-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px;
+  scrollbar-gutter: stable;
+}
+.parameter-groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 18px 24px;
+}
+.parameter-group {
+  flex: 1 1 280px;
+  min-width: 0;
+  max-width: 480px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.parameter-group[data-toggles-only="true"] {
+  flex-basis: 200px;
+  max-width: 320px;
+}
+.parameter-group legend {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 0 0 7px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.parameter-size legend {
+  color: var(--color-primary);
+}
+.parameter-size legend svg {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 7px;
+  vertical-align: -4px;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.parameter-group-description {
+  margin: 0 0 9px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.parameter-grid,
+.parameter-size-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 9px 12px;
+}
+.parameter-size-grid {
+  gap: 9px 10px;
+}
+.parameter-field {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.parameter-field-text,
+.parameter-field-boolean {
+  grid-column: 1 / -1;
+}
+.parameter-field small {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.parameter-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.parameter-label > span {
+  overflow-wrap: anywhere;
+}
+.parameter-label output {
+  color: var(--color-primary);
+  font-size: 11px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-field input[type="text"],
+.parameter-field select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 5px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+}
+.parameter-field input[type="text"]:hover,
+.parameter-field select:hover,
+.parameter-number-input:hover {
+  border-color: var(--color-border-strong);
+}
+.parameter-field input[type="range"] {
+  width: 100%;
+  height: 28px;
+  margin: 3px 0;
+  accent-color: var(--color-primary);
+}
+.parameter-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  cursor: pointer;
+}
+.parameter-checkbox > span {
+  order: -1;
+  overflow-wrap: anywhere;
+}
+.parameter-checkbox input {
+  position: relative;
+  appearance: none;
+  flex: none;
+  width: 30px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  background: var(--color-border-strong);
+  cursor: pointer;
+}
+.parameter-checkbox input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  box-shadow: 0 1px 2px #342b3226;
+  transition: transform 140ms;
+}
+.parameter-checkbox input:checked {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+.parameter-checkbox input:checked::before {
+  transform: translateX(12px);
+}
+.parameter-field[data-changed="true"] .parameter-label,
+.parameter-field[data-changed="true"] .parameter-checkbox > span {
+  color: var(--color-primary);
+}
+.parameter-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 7px 16px;
+  border-top: 1px solid var(--color-border);
+  flex: none;
+}
+.parameter-save-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.parameter-save-status::before {
+  content: "";
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+.parameter-save-status[data-dirty="true"]::before {
+  background: var(--color-primary);
+}
+.parameter-actions > div {
+  display: flex;
+  gap: 7px;
+}
+.parameter-actions button {
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+.parameter-actions .parameter-apply {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.parameter-actions button:disabled {
+  background: var(--color-surface-soft);
+  border-color: var(--color-border);
+  color: var(--color-muted);
+  opacity: 1;
+}
+.parameter-group:disabled,
+.parameter-group input:disabled,
+.parameter-group select:disabled {
+  opacity: 0.65;
+}
+.parameter-group:disabled .parameter-checkbox,
+.parameter-checkbox input:disabled {
+  cursor: default;
+}
+.parameter-number-input {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface-raised);
+}
+.parameter-number-input input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.parameter-number-input span {
+  flex: none;
+  padding: 0 8px 0 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.parameter-number-input:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+.parameter-number-input input:focus-visible {
+  outline: none;
+}
+.inspector-empty,
+.inspector-description {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--color-muted);
+  line-height: 1.55;
+}
+.inspector-parameters > .inspector-empty {
+  padding: 15px;
+}
+.parameter-form > .inspector-empty {
+  margin: 0;
+  padding: 8px 16px;
+  flex: none;
+  font-size: 12px;
+}
+.inspector-error {
+  margin: 0;
+  padding: 7px 15px;
+  color: var(--color-danger);
+  font-size: 12px;
+  flex: none;
+}
+.inspector-metadata {
+  margin: 0;
+}
+.inspector-metadata > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.35fr) minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+}
+.inspector-metadata > div:last-child {
+  border-bottom: 0;
+}
+.inspector-metadata dt {
+  color: var(--color-muted);
+}
+.inspector-metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.inspector-metadata a {
+  color: var(--color-primary);
+}
+.inspector-data-object {
+  padding: 9px 0;
+  border-top: 1px solid var(--color-border);
+  font-size: 13px;
+}
+.inspector-data-object p {
+  margin: 5px 0 8px;
+  color: var(--color-muted);
+}
+.inspector-warnings {
+  color: var(--color-danger);
+  font-size: 12px;
+}
+@container (max-width:640px) {
+  .parameter-layout {
+    flex-direction: column;
+  }
+  .parameter-size-rail {
+    flex: none;
+    padding: 9px 14px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .parameter-size {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: none;
+  }
+  .parameter-size legend {
+    float: left;
+    width: 100px;
+    flex: none;
+    padding: 0;
+    margin: 20px 0 0;
+    border: 0;
+    font-size: 12px;
+  }
+  .parameter-size legend svg {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    vertical-align: -3px;
+  }
+  .parameter-size-grid {
+    flex: 1;
+    max-width: 260px;
+  }
+  .parameter-fields-scroll {
+    padding: 12px 14px;
+  }
+  .parameter-groups {
+    gap: 16px;
+  }
+  .parameter-group {
+    max-width: none;
+  }
+  .parameter-group[data-toggles-only="true"] {
+    max-width: none;
+  }
+}
+@container (max-width:560px) {
+  .parameter-actions {
+    gap: 7px;
+    padding-inline: 12px;
+  }
+  .parameter-actions button {
+    padding: 6px 8px;
+  }
+  .inspector-tabs {
+    gap: 0;
+    padding: 0 8px;
+  }
+}
+@container (max-width:350px) {
+  .parameter-size-rail {
+    padding-inline: 10px;
+  }
+  .parameter-size {
+    gap: 8px;
+  }
+  .parameter-size legend {
+    width: 72px;
+  }
+  .parameter-size legend svg {
+    display: none;
+  }
+  .parameter-size-grid {
+    gap: 8px;
+  }
+  .parameter-label {
+    font-size: 11px;
+  }
+  .parameter-actions > span {
+    max-width: 76px;
+  }
+  .parameter-actions button {
+    padding: 7px;
+  }
+}
+@media (pointer: coarse) {
+  .inspector-tabs button,
+  .parameter-actions button,
+  .parameter-checkbox {
+    min-height: 40px;
+  }
+  .parameter-field input[type="text"],
+  .parameter-field select,
+  .parameter-number-input input {
+    font-size: 16px;
+  }
+}
+@media (forced-colors: active) {
+  .parameter-checkbox input {
+    appearance: auto;
+  }
+  .parameter-checkbox input::before {
+    display: none;
+  }
+}
+.inspector-tabs button {
+  font-size: 14px;
+}

@@ -1,0 +1,389 @@
+{
+  "$defs": {
+    "PresentationSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "aspect_ratio": {
+          "const": "16:9",
+          "default": "16:9",
+          "title": "Aspect Ratio",
+          "type": "string"
+        },
+        "theme": {
+          "default": "paper",
+          "enum": [
+            "paper",
+            "midnight"
+          ],
+          "title": "Theme",
+          "type": "string"
+        }
+      },
+      "title": "PresentationSettings",
+      "type": "object"
+    },
+    "ReportDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revision Id"
+        }
+      },
+      "required": [
+        "dataset_id"
+      ],
+      "title": "ReportDataset",
+      "type": "object"
+    },
+    "ReportFigureBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "figure",
+          "default": "figure",
+          "title": "Type",
+          "type": "string"
+        },
+        "version_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version Id"
+        },
+        "follow_plot_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Follow Plot Id"
+        },
+        "image_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image Id"
+        },
+        "caption": {
+          "default": "",
+          "description": "Caption for a standalone image only. Plot captions come from the shared version.",
+          "maxLength": 4000,
+          "title": "Caption",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ReportFigureBlock",
+      "type": "object"
+    },
+    "ReportTableBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "table",
+          "default": "table",
+          "title": "Type",
+          "type": "string"
+        },
+        "title": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Title",
+          "type": "string"
+        },
+        "columns": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "minItems": 1,
+          "title": "Columns",
+          "type": "array"
+        },
+        "rows": {
+          "items": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "maxItems": 200,
+          "title": "Rows",
+          "type": "array"
+        },
+        "source_description": {
+          "default": "",
+          "maxLength": 2000,
+          "title": "Source Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "columns"
+      ],
+      "title": "ReportTableBlock",
+      "type": "object"
+    },
+    "ReportTextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "text",
+          "default": "text",
+          "title": "Type",
+          "type": "string"
+        },
+        "body": {
+          "default": "",
+          "maxLength": 30000,
+          "title": "Body",
+          "type": "string"
+        },
+        "evidence_version_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "title": "Evidence Version Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ReportTextBlock",
+      "type": "object"
+    },
+    "Slide": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "elements": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "figure": "#/$defs/ReportFigureBlock",
+                "table": "#/$defs/ReportTableBlock",
+                "text": "#/$defs/ReportTextBlock"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ReportTextBlock"
+              },
+              {
+                "$ref": "#/$defs/ReportFigureBlock"
+              },
+              {
+                "$ref": "#/$defs/ReportTableBlock"
+              }
+            ]
+          },
+          "maxItems": 200,
+          "title": "Elements",
+          "type": "array"
+        },
+        "settings": {
+          "$ref": "#/$defs/SlideSettings"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "Slide",
+      "type": "object"
+    },
+    "SlideFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Height",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "SlideFrame",
+      "type": "object"
+    },
+    "SlideSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "layout": {
+          "default": "figure-summary",
+          "enum": [
+            "title",
+            "figure-summary",
+            "two-column",
+            "statement",
+            "table"
+          ],
+          "title": "Layout",
+          "type": "string"
+        },
+        "notes": {
+          "default": "",
+          "maxLength": 12000,
+          "title": "Notes",
+          "type": "string"
+        },
+        "frames": {
+          "additionalProperties": {
+            "$ref": "#/$defs/SlideFrame"
+          },
+          "maxProperties": 200,
+          "title": "Frames",
+          "type": "object"
+        }
+      },
+      "title": "SlideSettings",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "datasets": {
+      "items": {
+        "$ref": "#/$defs/ReportDataset"
+      },
+      "maxItems": 50,
+      "title": "Datasets",
+      "type": "array"
+    },
+    "presentation": {
+      "$ref": "#/$defs/PresentationSettings"
+    },
+    "slides": {
+      "items": {
+        "$ref": "#/$defs/Slide"
+      },
+      "maxItems": 100,
+      "title": "Slides",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "title": "SlideDeckContent",
+  "type": "object"
+}

@@ -20,12 +20,18 @@ def export_url(snapshot, format):
 
 def check_export(response, format, width, height):
     assert response.status_code == 200, response.text[:300]
-    media = {"png": "image/png", "pdf": "application/pdf", "svg": "image/svg+xml"}[format]
+    media = {
+        "png": "image/png",
+        "pdf": "application/pdf",
+        "svg": "image/svg+xml",
+        "tiff": "image/tiff",
+    }[format]
     assert response.headers["content-type"].split(";")[0] == media
     assert "attachment;" in response.headers["content-disposition"]
     assert f".{format}" in response.headers["content-disposition"]
-    if format == "png":
+    if format in {"png", "tiff"}:
         with Image.open(io.BytesIO(response.content)) as image:
+            assert image.format == format.upper()
             assert image.size == (round(width * 300), round(height * 300))
             assert image.info["dpi"] == pytest.approx((300, 300), abs=0.1)
             assert image.convert("RGB").getpixel((0, 0)) == (255, 255, 255)
@@ -55,7 +61,7 @@ def check_export(response, format, width, height):
         assert b"VIS PLATFORM" not in response.content
 
 
-@pytest.mark.parametrize("format", ["png", "pdf", "svg"])
+@pytest.mark.parametrize("format", ["png", "pdf", "svg", "tiff"])
 def test_demo_exports_have_clean_backgrounds_and_correct_dimensions(client, format):
     saved = create(client)
     response = client.get(export_url(saved, format))

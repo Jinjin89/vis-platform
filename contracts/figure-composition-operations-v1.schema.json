@@ -1,0 +1,539 @@
+{
+  "$defs": {
+    "AddPanel": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "add_panel",
+          "title": "Op",
+          "type": "string"
+        },
+        "panel": {
+          "$ref": "#/$defs/FigurePanel"
+        },
+        "before_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Draw below this panel. Omit to draw on top of all panels.",
+          "title": "Before Id"
+        }
+      },
+      "required": [
+        "op",
+        "panel"
+      ],
+      "title": "AddPanel",
+      "type": "object"
+    },
+    "FigureLegend": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "default": "",
+          "maxLength": 1000,
+          "title": "Title",
+          "type": "string"
+        },
+        "entries": {
+          "additionalProperties": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "description": "Legend text keyed by panel ID.",
+          "maxProperties": 40,
+          "propertyNames": {
+            "maxLength": 160,
+            "minLength": 1
+          },
+          "title": "Entries",
+          "type": "object"
+        }
+      },
+      "title": "FigureLegend",
+      "type": "object"
+    },
+    "FigurePage": {
+      "additionalProperties": false,
+      "properties": {
+        "width_mm": {
+          "maximum": 500,
+          "minimum": 20,
+          "title": "Width Mm",
+          "type": "number"
+        },
+        "height_mm": {
+          "description": "The fixed page height, or the maximum height when height_mode is auto.",
+          "maximum": 1000,
+          "minimum": 20,
+          "title": "Height Mm",
+          "type": "number"
+        },
+        "height_mode": {
+          "default": "auto",
+          "description": "Auto ends the page one margin below the lowest panel.",
+          "enum": [
+            "fixed",
+            "auto"
+          ],
+          "title": "Height Mode",
+          "type": "string"
+        },
+        "margin_mm": {
+          "default": 5,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Margin Mm",
+          "type": "number"
+        }
+      },
+      "required": [
+        "width_mm",
+        "height_mm"
+      ],
+      "title": "FigurePage",
+      "type": "object"
+    },
+    "FigurePanel": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "content": {
+          "discriminator": {
+            "mapping": {
+              "image": "#/$defs/ImagePanelContent",
+              "plot": "#/$defs/PlotPanelContent"
+            },
+            "propertyName": "type"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PlotPanelContent"
+            },
+            {
+              "$ref": "#/$defs/ImagePanelContent"
+            }
+          ],
+          "title": "Content"
+        },
+        "x_mm": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "X Mm",
+          "type": "number"
+        },
+        "y_mm": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Y Mm",
+          "type": "number"
+        },
+        "scale": {
+          "default": 1,
+          "description": "Displayed size relative to the content's natural size; 1 keeps it unscaled.",
+          "maximum": 10,
+          "minimum": 0.05,
+          "title": "Scale",
+          "type": "number"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 8,
+              "minLength": 1,
+              "pattern": "^\\S(.*\\S)?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A custom label. Null assigns the next letter in reading order.",
+          "title": "Label"
+        },
+        "show_label": {
+          "default": true,
+          "title": "Show Label",
+          "type": "boolean"
+        },
+        "locked": {
+          "default": false,
+          "description": "Automatic arrangement keeps this panel fixed.",
+          "title": "Locked",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "x_mm",
+        "y_mm"
+      ],
+      "title": "FigurePanel",
+      "type": "object"
+    },
+    "ImagePanelContent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "image",
+          "default": "image",
+          "title": "Type",
+          "type": "string"
+        },
+        "image_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Image Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_id"
+      ],
+      "title": "ImagePanelContent",
+      "type": "object"
+    },
+    "PanelGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "x_mm": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "X Mm",
+          "type": "number"
+        },
+        "y_mm": {
+          "maximum": 1000,
+          "minimum": 0,
+          "title": "Y Mm",
+          "type": "number"
+        },
+        "scale": {
+          "maximum": 10,
+          "minimum": 0.05,
+          "title": "Scale",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_mm",
+        "y_mm",
+        "scale"
+      ],
+      "title": "PanelGeometry",
+      "type": "object"
+    },
+    "PanelLabelStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "case": {
+          "default": "upper",
+          "enum": [
+            "upper",
+            "lower"
+          ],
+          "title": "Case",
+          "type": "string"
+        },
+        "size_pt": {
+          "default": 10,
+          "maximum": 24,
+          "minimum": 5,
+          "title": "Size Pt",
+          "type": "number"
+        },
+        "bold": {
+          "default": true,
+          "title": "Bold",
+          "type": "boolean"
+        },
+        "font_family": {
+          "default": "Arial",
+          "maxLength": 80,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 \\-]*$",
+          "title": "Font Family",
+          "type": "string"
+        }
+      },
+      "title": "PanelLabelStyle",
+      "type": "object"
+    },
+    "PlotPanelContent": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "plot",
+          "default": "plot",
+          "title": "Type",
+          "type": "string"
+        },
+        "version_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Version Id",
+          "type": "string"
+        },
+        "ignored_version_id": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A newer version of this plot that the user chose not to apply.",
+          "title": "Ignored Version Id"
+        }
+      },
+      "required": [
+        "version_id"
+      ],
+      "title": "PlotPanelContent",
+      "type": "object"
+    },
+    "RemovePanel": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "remove_panel",
+          "title": "Op",
+          "type": "string"
+        },
+        "panel_id": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Panel Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "panel_id"
+      ],
+      "title": "RemovePanel",
+      "type": "object"
+    },
+    "ReplacePanel": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "replace_panel",
+          "title": "Op",
+          "type": "string"
+        },
+        "panel": {
+          "$ref": "#/$defs/FigurePanel"
+        }
+      },
+      "required": [
+        "op",
+        "panel"
+      ],
+      "title": "ReplacePanel",
+      "type": "object"
+    },
+    "SetFigurePage": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_page",
+          "title": "Op",
+          "type": "string"
+        },
+        "page": {
+          "$ref": "#/$defs/FigurePage"
+        }
+      },
+      "required": [
+        "op",
+        "page"
+      ],
+      "title": "SetFigurePage",
+      "type": "object"
+    },
+    "SetFigureTitle": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_title",
+          "title": "Op",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "title"
+      ],
+      "title": "SetFigureTitle",
+      "type": "object"
+    },
+    "SetLabelStyle": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_label_style",
+          "title": "Op",
+          "type": "string"
+        },
+        "labels": {
+          "$ref": "#/$defs/PanelLabelStyle"
+        }
+      },
+      "required": [
+        "op",
+        "labels"
+      ],
+      "title": "SetLabelStyle",
+      "type": "object"
+    },
+    "SetLegend": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_legend",
+          "title": "Op",
+          "type": "string"
+        },
+        "legend": {
+          "$ref": "#/$defs/FigureLegend"
+        }
+      },
+      "required": [
+        "op",
+        "legend"
+      ],
+      "title": "SetLegend",
+      "type": "object"
+    },
+    "SetPanelGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "const": "set_panel_geometry",
+          "title": "Op",
+          "type": "string"
+        },
+        "panels": {
+          "additionalProperties": {
+            "$ref": "#/$defs/PanelGeometry"
+          },
+          "maxProperties": 40,
+          "minProperties": 1,
+          "propertyNames": {
+            "maxLength": 160,
+            "minLength": 1
+          },
+          "title": "Panels",
+          "type": "object"
+        }
+      },
+      "required": [
+        "op",
+        "panels"
+      ],
+      "title": "SetPanelGeometry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "request_id": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Request Id",
+      "type": "string"
+    },
+    "base_revision": {
+      "minimum": 1,
+      "title": "Base Revision",
+      "type": "integer"
+    },
+    "operations": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "add_panel": "#/$defs/AddPanel",
+            "remove_panel": "#/$defs/RemovePanel",
+            "replace_panel": "#/$defs/ReplacePanel",
+            "set_label_style": "#/$defs/SetLabelStyle",
+            "set_legend": "#/$defs/SetLegend",
+            "set_page": "#/$defs/SetFigurePage",
+            "set_panel_geometry": "#/$defs/SetPanelGeometry",
+            "set_title": "#/$defs/SetFigureTitle"
+          },
+          "propertyName": "op"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/SetFigureTitle"
+          },
+          {
+            "$ref": "#/$defs/SetFigurePage"
+          },
+          {
+            "$ref": "#/$defs/SetLabelStyle"
+          },
+          {
+            "$ref": "#/$defs/AddPanel"
+          },
+          {
+            "$ref": "#/$defs/ReplacePanel"
+          },
+          {
+            "$ref": "#/$defs/RemovePanel"
+          },
+          {
+            "$ref": "#/$defs/SetPanelGeometry"
+          },
+          {
+            "$ref": "#/$defs/SetLegend"
+          }
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Operations",
+      "type": "array"
+    },
+    "summary": {
+      "default": "Edited figure",
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "base_revision",
+    "operations"
+  ],
+  "title": "FigureOperationsRequest",
+  "type": "object"
+}

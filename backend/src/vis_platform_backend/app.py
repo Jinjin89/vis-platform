@@ -24,6 +24,7 @@ from vis_platform_backend.domain.parameters import InvalidParameterError
 from vis_platform_backend.domain.questions import InvalidPlannerAnswer
 from vis_platform_backend.execution.runner import RWorker
 from vis_platform_backend.infrastructure.database import Repository
+from vis_platform_backend.infrastructure.figure_compositions import FigureCompositionRepository
 from vis_platform_backend.infrastructure.reference_images import ReferenceImageRepository
 from vis_platform_backend.infrastructure.reports import ReportRepository
 from vis_platform_backend.services.assistant_turns import (
@@ -31,6 +32,7 @@ from vis_platform_backend.services.assistant_turns import (
     AssistantTurnService,
     DeveloperTraceAccessError,
 )
+from vis_platform_backend.services.figure_compositions import FigureCompositionService
 from vis_platform_backend.services.figure_exports import FigureExporter
 from vis_platform_backend.services.plot_runs import (
     DeterministicPlotRunCoordinator,
@@ -110,7 +112,8 @@ def create_app(
         assistant_turn_service.runtime.recover()
         app.state.settings = resolved_settings
         app.state.repository = repository
-        app.state.figure_exporter = FigureExporter(repository, resolved_settings.artifact_root)
+        figure_exporter = FigureExporter(repository, resolved_settings.artifact_root)
+        app.state.figure_exporter = figure_exporter
         app.state.coordinator = coordinator
         app.state.assistant_turn_service = assistant_turn_service
         report_store = ReportRepository(resolved_settings.database_path)
@@ -130,7 +133,13 @@ def create_app(
         )
         app.state.report_messages = report_messages
         report_messages.recover()
+        # Created after the report store, which owns the shared figure selection table.
+        composition_store = FigureCompositionRepository(resolved_settings.database_path)
+        app.state.figure_compositions = FigureCompositionService(
+            composition_store, repository, reference_images, figure_exporter
+        )
         yield
+        composition_store.close()
         await report_messages.shutdown()
         await report_service.shutdown()
         report_store.close()

@@ -826,10 +826,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/figure-compositions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Compositions */
+        get: operations["list_compositions_api_v1_projects__project_id__figure_compositions_get"];
+        put?: never;
+        /** Create Composition */
+        post: operations["create_composition_api_v1_projects__project_id__figure_compositions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Composition */
+        get: operations["get_composition_api_v1_projects__project_id__figure_compositions__composition_id__get"];
+        /** Save Composition */
+        put: operations["save_composition_api_v1_projects__project_id__figure_compositions__composition_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Composition Operations */
+        post: operations["apply_composition_operations_api_v1_projects__project_id__figure_compositions__composition_id__operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Composition History */
+        get: operations["composition_history_api_v1_projects__project_id__figure_compositions__composition_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/revisions/{revision}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Composition Revision */
+        get: operations["composition_revision_api_v1_projects__project_id__figure_compositions__composition_id__revisions__revision__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Composition Content */
+        get: operations["export_composition_content_api_v1_projects__project_id__figure_compositions__composition_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/exports/{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Composition */
+        get: operations["export_composition_api_v1_projects__project_id__figure_compositions__composition_id__exports__format__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddPanel */
+        AddPanel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "add_panel";
+            panel: components["schemas"]["FigurePanel"];
+            /**
+             * Before Id
+             * @description Draw below this panel. Omit to draw on top of all panels.
+             */
+            before_id?: string | null;
+        };
         /** AgentActivity */
         AgentActivity: {
             /** Sequence */
@@ -1318,6 +1453,12 @@ export interface components {
             /** Source Id */
             source_id?: string | null;
         };
+        /** CreateFigureComposition */
+        CreateFigureComposition: {
+            /** Request Id */
+            request_id: string;
+            content: components["schemas"]["FigureCompositionContent"];
+        };
         /** CreatePlotRunRequest */
         CreatePlotRunRequest: {
             /**
@@ -1531,11 +1672,228 @@ export interface components {
              */
             reasoning_content_exposed: false;
         };
+        /** FigureCompositionContent */
+        FigureCompositionContent: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Title */
+            title: string;
+            page: components["schemas"]["FigurePage"];
+            labels?: components["schemas"]["PanelLabelStyle"];
+            /**
+             * Panels
+             * @description Drawing order: later panels are drawn on top.
+             */
+            panels?: components["schemas"]["FigurePanel"][];
+            legend?: components["schemas"]["FigureLegend"];
+        };
+        /** FigureCompositionDocument */
+        FigureCompositionDocument: {
+            /** Composition Id */
+            composition_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Title */
+            title: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            content: components["schemas"]["FigureCompositionContent"];
+            /**
+             * Page Height Mm
+             * @description The resolved page height.
+             */
+            page_height_mm: number;
+            /**
+             * Panels
+             * @description Resolved geometry keyed by panel ID.
+             */
+            panels: {
+                [key: string]: components["schemas"]["ResolvedPanel"];
+            };
+            /**
+             * Figures
+             * @description Plot versions used by panels or offered as updates, keyed by version ID.
+             */
+            figures: {
+                [key: string]: components["schemas"]["PlotResultSummary"];
+            };
+            /** Images */
+            images: {
+                [key: string]: components["schemas"]["ReferenceImage"];
+            };
+            /**
+             * Updates
+             * @description Newer plot versions available, keyed by panel ID.
+             */
+            updates?: {
+                [key: string]: string;
+            };
+        };
+        /** FigureCompositionHistory */
+        FigureCompositionHistory: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Revisions */
+            revisions: components["schemas"]["FigureCompositionRevision"][];
+            /** Total */
+            total: number;
+        };
+        /** FigureCompositionList */
+        FigureCompositionList: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Compositions */
+            compositions: components["schemas"]["FigureCompositionSummary"][];
+            /** Total */
+            total: number;
+            /** Offset */
+            offset: number;
+        };
+        /** FigureCompositionRevision */
+        FigureCompositionRevision: {
+            /** Revision */
+            revision: number;
+            /** Summary */
+            summary: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** FigureCompositionSummary */
+        FigureCompositionSummary: {
+            /** Composition Id */
+            composition_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Title */
+            title: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /**
          * FigureExportFormat
          * @enum {string}
          */
-        FigureExportFormat: "png" | "pdf" | "svg";
+        FigureExportFormat: "png" | "pdf" | "svg" | "tiff";
+        /** FigureLegend */
+        FigureLegend: {
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Entries
+             * @description Legend text keyed by panel ID.
+             */
+            entries?: {
+                [key: string]: string;
+            };
+        };
+        /** FigureOperationsRequest */
+        FigureOperationsRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Base Revision */
+            base_revision: number;
+            /** Operations */
+            operations: (components["schemas"]["SetFigureTitle"] | components["schemas"]["SetFigurePage"] | components["schemas"]["SetLabelStyle"] | components["schemas"]["AddPanel"] | components["schemas"]["ReplacePanel"] | components["schemas"]["RemovePanel"] | components["schemas"]["SetPanelGeometry"] | components["schemas"]["SetLegend"])[];
+            /**
+             * Summary
+             * @default Edited figure
+             */
+            summary: string;
+        };
+        /** FigurePage */
+        FigurePage: {
+            /** Width Mm */
+            width_mm: number;
+            /**
+             * Height Mm
+             * @description The fixed page height, or the maximum height when height_mode is auto.
+             */
+            height_mm: number;
+            /**
+             * Height Mode
+             * @description Auto ends the page one margin below the lowest panel.
+             * @default auto
+             * @enum {string}
+             */
+            height_mode: "fixed" | "auto";
+            /**
+             * Margin Mm
+             * @default 5
+             */
+            margin_mm: number;
+        };
+        /** FigurePanel */
+        FigurePanel: {
+            /** Id */
+            id: string;
+            /** Content */
+            content: components["schemas"]["PlotPanelContent"] | components["schemas"]["ImagePanelContent"];
+            /** X Mm */
+            x_mm: number;
+            /** Y Mm */
+            y_mm: number;
+            /**
+             * Scale
+             * @description Displayed size relative to the content's natural size; 1 keeps it unscaled.
+             * @default 1
+             */
+            scale: number;
+            /**
+             * Label
+             * @description A custom label. Null assigns the next letter in reading order.
+             */
+            label?: string | null;
+            /**
+             * Show Label
+             * @default true
+             */
+            show_label: boolean;
+            /**
+             * Locked
+             * @description Automatic arrangement keeps this panel fixed.
+             * @default false
+             */
+            locked: boolean;
+        };
         /** FigureSize */
         FigureSize: {
             /** Width */
@@ -1583,6 +1941,16 @@ export interface components {
             /** Developer Trace Enabled */
             developer_trace_enabled: boolean;
             llm: components["schemas"]["LlmConfigurationResponse"];
+        };
+        /** ImagePanelContent */
+        ImagePanelContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "image";
+            /** Image Id */
+            image_id: string;
         };
         /** InsertBlock */
         InsertBlock: {
@@ -1960,6 +2328,50 @@ export interface components {
             /** Limitations */
             limitations?: string[];
         };
+        /** PanelFrame */
+        PanelFrame: {
+            /** X Mm */
+            x_mm: number;
+            /** Y Mm */
+            y_mm: number;
+            /** Width Mm */
+            width_mm: number;
+            /** Height Mm */
+            height_mm: number;
+        };
+        /** PanelGeometry */
+        PanelGeometry: {
+            /** X Mm */
+            x_mm: number;
+            /** Y Mm */
+            y_mm: number;
+            /** Scale */
+            scale: number;
+        };
+        /** PanelLabelStyle */
+        PanelLabelStyle: {
+            /**
+             * Case
+             * @default upper
+             * @enum {string}
+             */
+            case: "upper" | "lower";
+            /**
+             * Size Pt
+             * @default 10
+             */
+            size_pt: number;
+            /**
+             * Bold
+             * @default true
+             */
+            bold: boolean;
+            /**
+             * Font Family
+             * @default Arial
+             */
+            font_family: string;
+        };
         /** ParameterUpdateRequest */
         ParameterUpdateRequest: {
             /**
@@ -2069,6 +2481,21 @@ export interface components {
             statistics?: string[];
             /** Appearance */
             appearance?: string[];
+        };
+        /** PlotPanelContent */
+        PlotPanelContent: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "plot";
+            /** Version Id */
+            version_id: string;
+            /**
+             * Ignored Version Id
+             * @description A newer version of this plot that the user chose not to apply.
+             */
+            ignored_version_id?: string | null;
         };
         /** PlotRequest */
         PlotRequest: {
@@ -2394,6 +2821,16 @@ export interface components {
             /** Block Id */
             block_id: string;
         };
+        /** RemovePanel */
+        RemovePanel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "remove_panel";
+            /** Panel Id */
+            panel_id: string;
+        };
         /** RemoveSection */
         RemoveSection: {
             /**
@@ -2571,6 +3008,15 @@ export interface components {
             section_id: string;
             /** Block */
             block: components["schemas"]["ReportTextBlock"] | components["schemas"]["ReportFigureBlock"] | components["schemas"]["ReportTableBlock"];
+        };
+        /** ReplacePanel */
+        ReplacePanel: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "replace_panel";
+            panel: components["schemas"]["FigurePanel"];
         };
         /** ReportContent */
         ReportContent: {
@@ -3001,6 +3447,19 @@ export interface components {
              */
             random_seed: number;
         };
+        /** ResolvedPanel */
+        ResolvedPanel: {
+            /**
+             * Label
+             * @description The displayed label; null when the label is hidden.
+             */
+            label: string | null;
+            frame: components["schemas"]["PanelFrame"];
+            /** Natural Width Mm */
+            natural_width_mm: number;
+            /** Natural Height Mm */
+            natural_height_mm: number;
+        };
         /** RestoreVersionRequest */
         RestoreVersionRequest: {
             /**
@@ -3049,6 +3508,17 @@ export interface components {
          * @enum {string}
          */
         RunStatus: "queued" | "running" | "awaiting_input" | "awaiting_approval" | "completed" | "failed" | "cancelled";
+        /** SaveFigureComposition */
+        SaveFigureComposition: {
+            /** Base Revision */
+            base_revision: number;
+            content: components["schemas"]["FigureCompositionContent"];
+            /**
+             * Summary
+             * @default Edited figure
+             */
+            summary: string;
+        };
         /** SaveReportRequest */
         SaveReportRequest: {
             /** Base Revision */
@@ -3070,6 +3540,55 @@ export interface components {
             mode: "selected";
             /** Bundle Ids */
             bundle_ids: string[];
+        };
+        /** SetFigurePage */
+        SetFigurePage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_page";
+            page: components["schemas"]["FigurePage"];
+        };
+        /** SetFigureTitle */
+        SetFigureTitle: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_title";
+            /** Title */
+            title: string;
+        };
+        /** SetLabelStyle */
+        SetLabelStyle: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_label_style";
+            labels: components["schemas"]["PanelLabelStyle"];
+        };
+        /** SetLegend */
+        SetLegend: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_legend";
+            legend: components["schemas"]["FigureLegend"];
+        };
+        /** SetPanelGeometry */
+        SetPanelGeometry: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            op: "set_panel_geometry";
+            /** Panels */
+            panels: {
+                [key: string]: components["schemas"]["PanelGeometry"];
+            };
         };
         /** SetPresentationSettings */
         SetPresentationSettings: {
@@ -4361,7 +4880,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The saved figure at its recorded size. PNG uses 300 dpi; PDF and SVG retain vectors. */
+            /** @description The saved figure at its recorded size. PNG and TIFF use 300 dpi; PDF and SVG retain vectors. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4370,6 +4889,7 @@ export interface operations {
                     "image/png": string;
                     "application/pdf": string;
                     "image/svg+xml": string;
+                    "image/tiff": string;
                 };
             };
             /** @description The requested resource was not found. */
@@ -5619,6 +6139,475 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_compositions_api_v1_projects__project_id__figure_compositions_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionList"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_composition_api_v1_projects__project_id__figure_compositions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFigureComposition"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_composition_api_v1_projects__project_id__figure_compositions__composition_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    save_composition_api_v1_projects__project_id__figure_compositions__composition_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveFigureComposition"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    apply_composition_operations_api_v1_projects__project_id__figure_compositions__composition_id__operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FigureOperationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    composition_history_api_v1_projects__project_id__figure_compositions__composition_id__history_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionHistory"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    composition_revision_api_v1_projects__project_id__figure_compositions__composition_id__revisions__revision__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+                revision: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionContent"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    export_composition_content_api_v1_projects__project_id__figure_compositions__composition_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FigureCompositionContent"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    export_composition_api_v1_projects__project_id__figure_compositions__composition_id__exports__format__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                composition_id: string;
+                format: components["schemas"]["FigureExportFormat"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The composed page at its physical size. PNG and TIFF use 300 dpi; PDF and SVG retain vectors. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "application/pdf": string;
+                    "image/svg+xml": string;
+                    "image/tiff": string;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
                 };
             };
         };

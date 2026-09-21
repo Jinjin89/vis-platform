@@ -587,3 +587,14 @@ with a separate slide-deck import/export contract, flat slide ordering, layout f
 and speaker notes. Explicit shared figure selections are separate from plot branch
 history. Per-block bindings resolve linked placements while pinned references and
 revision snapshots retain immutable versions. See [SLIDES_UI.md](SLIDES_UI.md).
+
+
+### Figure compositions
+
+A figure composition is a separate versioned document that places shared plot
+versions and uploaded images on a publication page. Panels store millimetre
+positions and a scale over each content's natural size; the backend resolves
+geometry, reading-order labels, and page height, and composes exports from the
+saved drawings without re-execution. Panels stay pinned to their versions and
+report newer ones as available updates. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md)
+for the contract, API, and the planned editor and figure agent.

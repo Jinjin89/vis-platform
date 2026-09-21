@@ -19,7 +19,7 @@ The collection structure follows familiar [single-cell expression/embedding conv
 
 ## Figure dimensions
 
-Every newly rendered figure exposes **Figure width** and **Figure height**. They use inches, accept hundredth-inch increments, and support 2–30 inches per side. Both controls are supplied by the backend even when the model returns no other controls.
+Every newly rendered figure exposes **Figure width** and **Figure height**. They use inches, accept hundredth-inch increments, and support 1–30 inches per side. Both controls are supplied by the backend even when the model returns no other controls.
 
 `ResearchPlan.figure_size` supplies explicit initial width and height chosen by the model for the requested plot, its panels, and its labels and legends. It is required for rendering; width and height have no shared default. Analysis-only plans may omit it. The model also chooses the relevant presentation controls, initial values, bounds, choices, and named groups. The original request and current figure settings are included in its planning context. The renderer owns the reserved `figure_width` and `figure_height` controls. Changes rerun rendering at the requested R device dimensions, reuse the saved analysis result, and create a new figure version. SVG output declares physical inch dimensions explicitly while retaining the renderer's coordinate viewBox. History restores the saved dimensions along with the figure and its inputs.
 

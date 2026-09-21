@@ -4,8 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
-from .common import StrictModel
-from .report_content import Identifier, ReportBlock, ReportDataset, ReportSection
+from .common import Identifier, StrictModel
+from .report_content import ReportBlock, ReportDataset, ReportSection
 from .slide_layout import PresentationSettings, SlideSettings
 
 

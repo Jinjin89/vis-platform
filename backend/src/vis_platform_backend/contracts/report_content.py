@@ -8,13 +8,11 @@ from uuid import NAMESPACE_URL, uuid5
 
 from pydantic import Field, model_validator
 
-from .common import StrictModel
+from .common import Identifier, StrictModel
 from .parameters import ParameterValue
 from .slide_layout import PresentationSettings, SlideSettings
 
 MAX_SECTION_BLOCKS = 200
-
-Identifier = Annotated[str, Field(min_length=1, max_length=160)]
 
 
 class ReportDataset(StrictModel):

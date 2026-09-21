@@ -22,7 +22,7 @@ def figure_controls(
             label=f"Figure {dimension}",
             group="figure_size",
             value=getattr(size, dimension),
-            minimum=2,
+            minimum=1,
             maximum=30,
             step=0.01,
             unit="in",

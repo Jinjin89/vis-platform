@@ -16,12 +16,12 @@ router = APIRouter(tags=["figure exports"])
         **VALIDATION_RESPONSE,
         200: {
             "description": (
-                "The saved figure at its recorded size. PNG uses 300 dpi; "
+                "The saved figure at its recorded size. PNG and TIFF use 300 dpi; "
                 "PDF and SVG retain vectors."
             ),
             "content": {
                 media: {"schema": {"type": "string", "format": "binary"}}
-                for media in ("image/png", "application/pdf", "image/svg+xml")
+                for media in ("image/png", "application/pdf", "image/svg+xml", "image/tiff")
             },
         },
     },

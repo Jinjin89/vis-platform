@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import AliasChoices, Field, model_validator
 
 from .assistant_turns import AssistantTurnAccepted, AssistantTurnSnapshot
-from .common import StrictModel
+from .common import Identifier, StrictModel
 from .datasets import Dataset
 from .parameters import ParameterValue
 from .plot_runs import PlotResultSummary, PlotRunAccepted, PlotRunSnapshot
@@ -26,7 +26,6 @@ __all__ = [
 ]
 
 from .report_content import (
-    Identifier,
     ReportBlock,
     ReportContent,
     ReportContentInput,

@@ -5,9 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
-from .common import StrictModel
+from .common import Identifier, StrictModel
 from .questions import ClarificationAnswer, ClarificationQuestion, PlannerQuestions
-from .report_content import Identifier
 from .report_operations import Placement, ReportOperation
 
 

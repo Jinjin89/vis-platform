@@ -18,6 +18,8 @@ The infinite canvas supports dataset-to-plot branches, immutable refinements, an
 
 The [Slides MVP](docs/SLIDES_UI.md) adds an online presentation editor with shared figures, layouts, speaker notes, presentation mode, and JSON/PDF export. Linked figures update across Report and Slides; pinned versions remain unchanged.
 
+A fifth interface, **Figure**, will compose saved plots and images into publication figures on an A4 or journal-width page. Its [design](docs/FIGURE_UI_DESIGN.md) is agreed; the backend contract, API, and page exports are implemented, and the editor and figure agent follow.
+
 ## Current implementation
 
 The foundation slice is runnable and includes:

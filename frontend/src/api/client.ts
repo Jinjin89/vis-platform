@@ -321,6 +321,7 @@ export async function getFigureExport(
     png: "image/png",
     pdf: "application/pdf",
     svg: "image/svg+xml",
+    tiff: "image/tiff",
   }[format];
   if (response.headers.get("Content-Type")?.split(";")[0] !== expected)
     throw new ApiClientError(

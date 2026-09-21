@@ -1,8 +1,10 @@
-from typing import Any, Final, Literal
+from typing import Annotated, Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 SCHEMA_VERSION: Final[Literal["1.0"]] = "1.0"
+
+Identifier = Annotated[str, Field(min_length=1, max_length=160)]
 
 
 class StrictModel(BaseModel):

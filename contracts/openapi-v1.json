@@ -1647,7 +1647,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The saved figure at its recorded size. PNG uses 300 dpi; PDF and SVG retain vectors.",
+            "description": "The saved figure at its recorded size. PNG and TIFF use 300 dpi; PDF and SVG retain vectors.",
             "content": {
               "image/png": {
                 "schema": {
@@ -1662,6 +1662,12 @@
                 }
               },
               "image/svg+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/tiff": {
                 "schema": {
                   "type": "string",
                   "format": "binary"
@@ -3646,10 +3652,748 @@
           }
         }
       }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "List Compositions",
+        "operationId": "list_compositions_api_v1_projects__project_id__figure_compositions_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionList"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Create Composition",
+        "operationId": "create_composition_api_v1_projects__project_id__figure_compositions_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFigureComposition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Get Composition",
+        "operationId": "get_composition_api_v1_projects__project_id__figure_compositions__composition_id__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Save Composition",
+        "operationId": "save_composition_api_v1_projects__project_id__figure_compositions__composition_id__put",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFigureComposition"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/operations": {
+      "post": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Apply Composition Operations",
+        "operationId": "apply_composition_operations_api_v1_projects__project_id__figure_compositions__composition_id__operations_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FigureOperationsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/history": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Composition History",
+        "operationId": "composition_history_api_v1_projects__project_id__figure_compositions__composition_id__history_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionHistory"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/revisions/{revision}": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Composition Revision",
+        "operationId": "composition_revision_api_v1_projects__project_id__figure_compositions__composition_id__revisions__revision__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          },
+          {
+            "name": "revision",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Revision"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionContent"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/content": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Export Composition Content",
+        "operationId": "export_composition_content_api_v1_projects__project_id__figure_compositions__composition_id__content_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FigureCompositionContent"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/figure-compositions/{composition_id}/exports/{format}": {
+      "get": {
+        "tags": [
+          "figure compositions"
+        ],
+        "summary": "Export Composition",
+        "operationId": "export_composition_api_v1_projects__project_id__figure_compositions__composition_id__exports__format__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "composition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Composition Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/FigureExportFormat"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The composed page at its physical size. PNG and TIFF use 300 dpi; PDF and SVG retain vectors.",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/svg+xml": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/tiff": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddPanel": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "add_panel",
+            "title": "Op"
+          },
+          "panel": {
+            "$ref": "#/components/schemas/FigurePanel"
+          },
+          "before_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before Id",
+            "description": "Draw below this panel. Omit to draw on top of all panels."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "panel"
+        ],
+        "title": "AddPanel"
+      },
       "AgentActivity": {
         "properties": {
           "sequence": {
@@ -4962,6 +5706,26 @@
         ],
         "title": "CreateDatasetRequest"
       },
+      "CreateFigureComposition": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "content": {
+            "$ref": "#/components/schemas/FigureCompositionContent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "content"
+        ],
+        "title": "CreateFigureComposition"
+      },
       "CreatePlotRunRequest": {
         "properties": {
           "schema_version": {
@@ -5497,14 +6261,496 @@
         ],
         "title": "DeveloperTraceResponse"
       },
+      "FigureCompositionContent": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "page": {
+            "$ref": "#/components/schemas/FigurePage"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/PanelLabelStyle"
+          },
+          "panels": {
+            "items": {
+              "$ref": "#/components/schemas/FigurePanel"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "title": "Panels",
+            "description": "Drawing order: later panels are drawn on top."
+          },
+          "legend": {
+            "$ref": "#/components/schemas/FigureLegend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "page"
+        ],
+        "title": "FigureCompositionContent"
+      },
+      "FigureCompositionDocument": {
+        "properties": {
+          "composition_id": {
+            "type": "string",
+            "title": "Composition Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "content": {
+            "$ref": "#/components/schemas/FigureCompositionContent"
+          },
+          "page_height_mm": {
+            "type": "number",
+            "title": "Page Height Mm",
+            "description": "The resolved page height."
+          },
+          "panels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ResolvedPanel"
+            },
+            "type": "object",
+            "title": "Panels",
+            "description": "Resolved geometry keyed by panel ID."
+          },
+          "figures": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PlotResultSummary"
+            },
+            "type": "object",
+            "title": "Figures",
+            "description": "Plot versions used by panels or offered as updates, keyed by version ID."
+          },
+          "images": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReferenceImage"
+            },
+            "type": "object",
+            "title": "Images"
+          },
+          "updates": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Updates",
+            "description": "Newer plot versions available, keyed by panel ID."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "composition_id",
+          "project_id",
+          "title",
+          "revision",
+          "updated_at",
+          "created_at",
+          "content",
+          "page_height_mm",
+          "panels",
+          "figures",
+          "images"
+        ],
+        "title": "FigureCompositionDocument"
+      },
+      "FigureCompositionHistory": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "revisions": {
+            "items": {
+              "$ref": "#/components/schemas/FigureCompositionRevision"
+            },
+            "type": "array",
+            "title": "Revisions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revisions",
+          "total"
+        ],
+        "title": "FigureCompositionHistory"
+      },
+      "FigureCompositionList": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "compositions": {
+            "items": {
+              "$ref": "#/components/schemas/FigureCompositionSummary"
+            },
+            "type": "array",
+            "title": "Compositions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "compositions",
+          "total",
+          "offset"
+        ],
+        "title": "FigureCompositionList"
+      },
+      "FigureCompositionRevision": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "revision",
+          "summary",
+          "created_at"
+        ],
+        "title": "FigureCompositionRevision"
+      },
+      "FigureCompositionSummary": {
+        "properties": {
+          "composition_id": {
+            "type": "string",
+            "title": "Composition Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "composition_id",
+          "project_id",
+          "title",
+          "revision",
+          "updated_at"
+        ],
+        "title": "FigureCompositionSummary"
+      },
       "FigureExportFormat": {
         "type": "string",
         "enum": [
           "png",
           "pdf",
-          "svg"
+          "svg",
+          "tiff"
         ],
         "title": "FigureExportFormat"
+      },
+      "FigureLegend": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Title",
+            "default": ""
+          },
+          "entries": {
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 4000
+            },
+            "propertyNames": {
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 40,
+            "title": "Entries",
+            "description": "Legend text keyed by panel ID."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FigureLegend"
+      },
+      "FigureOperationsRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Revision"
+          },
+          "operations": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SetFigureTitle"
+                },
+                {
+                  "$ref": "#/components/schemas/SetFigurePage"
+                },
+                {
+                  "$ref": "#/components/schemas/SetLabelStyle"
+                },
+                {
+                  "$ref": "#/components/schemas/AddPanel"
+                },
+                {
+                  "$ref": "#/components/schemas/ReplacePanel"
+                },
+                {
+                  "$ref": "#/components/schemas/RemovePanel"
+                },
+                {
+                  "$ref": "#/components/schemas/SetPanelGeometry"
+                },
+                {
+                  "$ref": "#/components/schemas/SetLegend"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "op",
+                "mapping": {
+                  "add_panel": "#/components/schemas/AddPanel",
+                  "remove_panel": "#/components/schemas/RemovePanel",
+                  "replace_panel": "#/components/schemas/ReplacePanel",
+                  "set_label_style": "#/components/schemas/SetLabelStyle",
+                  "set_legend": "#/components/schemas/SetLegend",
+                  "set_page": "#/components/schemas/SetFigurePage",
+                  "set_panel_geometry": "#/components/schemas/SetPanelGeometry",
+                  "set_title": "#/components/schemas/SetFigureTitle"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Operations"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Summary",
+            "default": "Edited figure"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "base_revision",
+          "operations"
+        ],
+        "title": "FigureOperationsRequest"
+      },
+      "FigurePage": {
+        "properties": {
+          "width_mm": {
+            "type": "number",
+            "maximum": 500.0,
+            "minimum": 20.0,
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 20.0,
+            "title": "Height Mm",
+            "description": "The fixed page height, or the maximum height when height_mode is auto."
+          },
+          "height_mode": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "auto"
+            ],
+            "title": "Height Mode",
+            "description": "Auto ends the page one margin below the lowest panel.",
+            "default": "auto"
+          },
+          "margin_mm": {
+            "type": "number",
+            "maximum": 50.0,
+            "minimum": 0.0,
+            "title": "Margin Mm",
+            "default": 5
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "width_mm",
+          "height_mm"
+        ],
+        "title": "FigurePage"
+      },
+      "FigurePanel": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Id"
+          },
+          "content": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlotPanelContent"
+              },
+              {
+                "$ref": "#/components/schemas/ImagePanelContent"
+              }
+            ],
+            "title": "Content",
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "image": "#/components/schemas/ImagePanelContent",
+                "plot": "#/components/schemas/PlotPanelContent"
+              }
+            }
+          },
+          "x_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "X Mm"
+          },
+          "y_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Y Mm"
+          },
+          "scale": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 0.05,
+            "title": "Scale",
+            "description": "Displayed size relative to the content's natural size; 1 keeps it unscaled.",
+            "default": 1
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 8,
+                "minLength": 1,
+                "pattern": "^\\S(.*\\S)?$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "A custom label. Null assigns the next letter in reading order."
+          },
+          "show_label": {
+            "type": "boolean",
+            "title": "Show Label",
+            "default": true
+          },
+          "locked": {
+            "type": "boolean",
+            "title": "Locked",
+            "description": "Automatic arrangement keeps this panel fixed.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "content",
+          "x_mm",
+          "y_mm"
+        ],
+        "title": "FigurePanel"
       },
       "FigureSize": {
         "properties": {
@@ -5512,14 +6758,14 @@
             "type": "number",
             "multipleOf": 0.01,
             "maximum": 30.0,
-            "minimum": 2.0,
+            "minimum": 1.0,
             "title": "Width"
           },
           "height": {
             "type": "number",
             "multipleOf": 0.01,
             "maximum": 30.0,
-            "minimum": 2.0,
+            "minimum": 1.0,
             "title": "Height"
           },
           "unit": {
@@ -5602,6 +6848,28 @@
           "llm"
         ],
         "title": "HealthResponse"
+      },
+      "ImagePanelContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "image",
+            "title": "Type",
+            "default": "image"
+          },
+          "image_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Image Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_id"
+        ],
+        "title": "ImagePanelContent"
       },
       "InsertBlock": {
         "properties": {
@@ -6982,6 +8250,101 @@
         ],
         "title": "ObjectRelationship"
       },
+      "PanelFrame": {
+        "properties": {
+          "x_mm": {
+            "type": "number",
+            "title": "X Mm"
+          },
+          "y_mm": {
+            "type": "number",
+            "title": "Y Mm"
+          },
+          "width_mm": {
+            "type": "number",
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "type": "number",
+            "title": "Height Mm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x_mm",
+          "y_mm",
+          "width_mm",
+          "height_mm"
+        ],
+        "title": "PanelFrame"
+      },
+      "PanelGeometry": {
+        "properties": {
+          "x_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "X Mm"
+          },
+          "y_mm": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Y Mm"
+          },
+          "scale": {
+            "type": "number",
+            "maximum": 10.0,
+            "minimum": 0.05,
+            "title": "Scale"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x_mm",
+          "y_mm",
+          "scale"
+        ],
+        "title": "PanelGeometry"
+      },
+      "PanelLabelStyle": {
+        "properties": {
+          "case": {
+            "type": "string",
+            "enum": [
+              "upper",
+              "lower"
+            ],
+            "title": "Case",
+            "default": "upper"
+          },
+          "size_pt": {
+            "type": "number",
+            "maximum": 24.0,
+            "minimum": 5.0,
+            "title": "Size Pt",
+            "default": 10
+          },
+          "bold": {
+            "type": "boolean",
+            "title": "Bold",
+            "default": true
+          },
+          "font_family": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9 \\-]*$",
+            "title": "Font Family",
+            "default": "Arial"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PanelLabelStyle"
+      },
       "ParameterUpdateRequest": {
         "properties": {
           "schema_version": {
@@ -7266,6 +8629,42 @@
           "goal"
         ],
         "title": "PlotIntent"
+      },
+      "PlotPanelContent": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "plot",
+            "title": "Type",
+            "default": "plot"
+          },
+          "version_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Version Id"
+          },
+          "ignored_version_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ignored Version Id",
+            "description": "A newer version of this plot that the user chose not to apply."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version_id"
+        ],
+        "title": "PlotPanelContent"
       },
       "PlotRequest": {
         "properties": {
@@ -8135,6 +9534,28 @@
         ],
         "title": "RemoveBlock"
       },
+      "RemovePanel": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "remove_panel",
+            "title": "Op"
+          },
+          "panel_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Panel Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "panel_id"
+        ],
+        "title": "RemovePanel"
+      },
       "RemoveSection": {
         "properties": {
           "op": {
@@ -8580,6 +10001,25 @@
           "block"
         ],
         "title": "ReplaceBlock"
+      },
+      "ReplacePanel": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "replace_panel",
+            "title": "Op"
+          },
+          "panel": {
+            "$ref": "#/components/schemas/FigurePanel"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "panel"
+        ],
+        "title": "ReplacePanel"
       },
       "ReportContent": {
         "properties": {
@@ -9922,6 +11362,42 @@
         ],
         "title": "ResearchPlan"
       },
+      "ResolvedPanel": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label",
+            "description": "The displayed label; null when the label is hidden."
+          },
+          "frame": {
+            "$ref": "#/components/schemas/PanelFrame"
+          },
+          "natural_width_mm": {
+            "type": "number",
+            "title": "Natural Width Mm"
+          },
+          "natural_height_mm": {
+            "type": "number",
+            "title": "Natural Height Mm"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "frame",
+          "natural_width_mm",
+          "natural_height_mm"
+        ],
+        "title": "ResolvedPanel"
+      },
       "RestoreVersionRequest": {
         "properties": {
           "schema_version": {
@@ -10046,6 +11522,32 @@
         ],
         "title": "RunStatus"
       },
+      "SaveFigureComposition": {
+        "properties": {
+          "base_revision": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Revision"
+          },
+          "content": {
+            "$ref": "#/components/schemas/FigureCompositionContent"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Summary",
+            "default": "Edited figure"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "base_revision",
+          "content"
+        ],
+        "title": "SaveFigureComposition"
+      },
       "SaveReportRequest": {
         "properties": {
           "base_revision": {
@@ -10103,6 +11605,114 @@
           "bundle_ids"
         ],
         "title": "SelectedDataScope"
+      },
+      "SetFigurePage": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_page",
+            "title": "Op"
+          },
+          "page": {
+            "$ref": "#/components/schemas/FigurePage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "page"
+        ],
+        "title": "SetFigurePage"
+      },
+      "SetFigureTitle": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_title",
+            "title": "Op"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "title"
+        ],
+        "title": "SetFigureTitle"
+      },
+      "SetLabelStyle": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_label_style",
+            "title": "Op"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/PanelLabelStyle"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "labels"
+        ],
+        "title": "SetLabelStyle"
+      },
+      "SetLegend": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_legend",
+            "title": "Op"
+          },
+          "legend": {
+            "$ref": "#/components/schemas/FigureLegend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "legend"
+        ],
+        "title": "SetLegend"
+      },
+      "SetPanelGeometry": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "set_panel_geometry",
+            "title": "Op"
+          },
+          "panels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PanelGeometry"
+            },
+            "propertyNames": {
+              "maxLength": 160,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 40,
+            "minProperties": 1,
+            "title": "Panels"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "op",
+          "panels"
+        ],
+        "title": "SetPanelGeometry"
       },
       "SetPresentationSettings": {
         "properties": {

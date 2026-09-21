@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "title": "Figure 2",
+  "page": { "width_mm": 210, "height_mm": 297, "height_mode": "auto", "margin_mm": 5 },
+  "labels": { "case": "upper", "size_pt": 10, "bold": true, "font_family": "Arial" },
+  "panels": [
+    {
+      "id": "umap",
+      "content": { "type": "plot", "version_id": "version_replace_with_project_version" },
+      "x_mm": 5,
+      "y_mm": 5,
+      "scale": 1,
+      "label": null,
+      "show_label": true,
+      "locked": false
+    },
+    {
+      "id": "micrograph",
+      "content": { "type": "image", "image_id": "ref_replace_with_project_image" },
+      "x_mm": 110,
+      "y_mm": 5,
+      "scale": 0.4,
+      "label": null,
+      "show_label": true,
+      "locked": false
+    }
+  ],
+  "legend": {
+    "title": "Cell populations in treated samples.",
+    "entries": {
+      "umap": "UMAP of all cells coloured by cluster.",
+      "micrograph": "Representative micrograph of a treated sample."
+    }
+  }
+}

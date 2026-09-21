@@ -5,6 +5,7 @@ from vis_platform_backend.api.routes.datasets import router as datasets_router
 from .routes import (
     artifacts,
     assistant_turns,
+    figure_compositions,
     figure_exports,
     health,
     plot_runs,
@@ -33,3 +34,5 @@ api_router.include_router(datasets_router)
 api_router.include_router(slides.router)
 
 api_router.include_router(shared_figures.router)
+
+api_router.include_router(figure_compositions.router)

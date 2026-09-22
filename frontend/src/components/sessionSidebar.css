@@ -1,0 +1,164 @@
+.session-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.session-layout > :last-child {
+  grid-column: 2;
+  min-width: 0;
+  min-height: 0;
+}
+.session-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 232px;
+  min-height: 0;
+  padding: 12px 10px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-workbench);
+}
+.session-sidebar[data-open="false"] {
+  width: 52px;
+  align-items: center;
+}
+.session-sidebar-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+.session-sidebar-head strong {
+  color: var(--color-ink);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.session-sidebar-toggle,
+.session-sidebar-new {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-muted);
+}
+.session-sidebar-toggle {
+  width: 32px;
+  flex: none;
+}
+.session-sidebar-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+.session-sidebar-toggle:hover,
+.session-sidebar-new:hover {
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+.session-sidebar-new {
+  justify-content: flex-start;
+  padding: 0 10px;
+  border-color: var(--color-border);
+  background: white;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+.session-sidebar[data-open="false"] .session-sidebar-new {
+  width: 32px;
+  justify-content: center;
+  padding: 0;
+}
+.session-sidebar-new span {
+  font-size: 16px;
+  line-height: 1;
+}
+.session-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px -2px 0;
+  padding: 0 2px;
+  overflow-y: auto;
+  list-style: none;
+}
+.session-sidebar-list button {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+}
+.session-sidebar-list button:hover {
+  background: var(--color-surface-soft);
+}
+.session-sidebar-list button[aria-current="page"] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-hover);
+}
+.session-sidebar-list span {
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session-sidebar-list small {
+  color: var(--color-faint);
+  font-size: 11px;
+}
+.session-sidebar-note {
+  padding: 6px 10px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.session-sidebar-note button {
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.session-sidebar-pages {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+.session-sidebar-pages button {
+  flex: 1;
+  min-height: 28px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: white;
+  font-size: 11px;
+}
+@media (max-width: 959px) {
+  /* Open on a narrow screen, the list covers the work instead of squeezing it. */
+  .session-sidebar[data-open="true"] {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    box-shadow: var(--shadow-float);
+  }
+  .session-layout:has(.session-sidebar[data-open="true"]) {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+}
+@media print {
+  .session-layout {
+    display: block;
+    overflow: visible;
+  }
+  .session-sidebar {
+    display: none;
+  }
+}

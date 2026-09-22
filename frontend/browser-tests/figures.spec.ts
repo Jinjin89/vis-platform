@@ -4,11 +4,11 @@ import type { FigureDocument } from "../src/api/schemas/figureCompositions";
 async function projectId(page: Page): Promise<string> {
   await expect
     .poll(() =>
-      page.evaluate(() => sessionStorage.getItem("vis-platform.project-id")),
+      page.evaluate(() => localStorage.getItem("vis-platform.project-id")),
     )
     .not.toBeNull();
   return (await page.evaluate(() =>
-    sessionStorage.getItem("vis-platform.project-id"),
+    localStorage.getItem("vis-platform.project-id"),
   ))!;
 }
 
@@ -126,7 +126,10 @@ test("compose, arrange, label, and export a figure", async ({ page }) => {
 
   // The figure is saved and reopens from the library.
   await page.getByRole("button", { name: /Figures/ }).click();
-  await page.getByRole("button", { name: /Figure 3/ }).click();
+  await page
+    .locator(".composition-grid")
+    .getByRole("button", { name: /Figure 3/ })
+    .click();
   await expect(sheet.getByRole("button", { name: /^Panel a:/ })).toBeVisible();
 });
 

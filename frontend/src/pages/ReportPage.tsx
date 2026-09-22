@@ -5,7 +5,9 @@ import { FigureWorkspace } from "../features/figures/FigureWorkspace";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
-import { createMutationId, createProject } from "../api/client";
+import { createMutationId } from "../api/client";
+import { listFigures } from "../api/figureCompositions";
+import { listSlideDecks } from "../api/slides";
 import {
   createReport,
   generateReportContent,
@@ -25,6 +27,8 @@ import {
   type ReportMessageRequest,
   type ReportOperation,
 } from "../api/schemas/reports";
+import { useProject } from "../app/useProject";
+import { SessionSidebar, editedOn } from "../components/SessionSidebar";
 import { WorkspaceSwitcher } from "../components/WorkspaceSwitcher";
 import { ResizablePanels } from "../components/ResizablePanels";
 import { DatasetSelector } from "../features/datasets/DatasetSelector";
@@ -51,46 +55,11 @@ import {
 import { downloadReportFile } from "../features/reports/ReportDialog";
 import "../features/reports/reports.css";
 
-export function ReportPage({
-  format = "report",
-}: {
-  format?: "report" | "slides" | "figure";
-}) {
-  const [projectId, setProjectId] = useState<string | null>(() => {
-    try {
-      return window.sessionStorage.getItem("vis-platform.project-id");
-    } catch {
-      return null;
-    }
-  });
-  const [error, setError] = useState<string | null>(null);
-  const creation = useRef<Promise<string> | null>(null);
-  const ensure = useCallback(async () => {
-    if (projectId) return projectId;
-    if (!creation.current)
-      creation.current = createProject()
-        .then((project) => {
-          try {
-            window.sessionStorage.setItem(
-              "vis-platform.project-id",
-              project.project_id,
-            );
-          } catch {
-            /* Storage is optional. */
-          }
-          setProjectId(project.project_id);
-          setError(null);
-          return project.project_id;
-        })
-        .catch((reason) => {
-          creation.current = null;
-          throw reason;
-        });
-    return creation.current;
-  }, [projectId]);
-  useEffect(() => {
-    void ensure().catch((reason) => setError(reason.message));
-  }, [ensure]);
+type DocumentFormat = "report" | "slides" | "figure";
+
+export function ReportPage({ format = "report" }: { format?: DocumentFormat }) {
+  const project = useProject(true);
+  const projectId = project.projectId;
   return (
     <main className="app-shell report-shell">
       <header className="top-bar">
@@ -104,24 +73,26 @@ export function ReportPage({
         <WorkspaceSwitcher />
       </header>
       {projectId ? (
-        format === "slides" ? (
-          <SlidesWorkspace key={projectId} projectId={projectId} />
-        ) : format === "figure" ? (
-          <FigureWorkspace key={projectId} projectId={projectId} />
-        ) : (
-          <ReportWorkspace key={projectId} projectId={projectId} />
-        )
+        <div className="session-layout">
+          <DocumentSessions
+            key={format}
+            format={format}
+            projectId={projectId}
+          />
+          {format === "slides" ? (
+            <SlidesWorkspace key={projectId} projectId={projectId} />
+          ) : format === "figure" ? (
+            <FigureWorkspace key={projectId} projectId={projectId} />
+          ) : (
+            <ReportWorkspace key={projectId} projectId={projectId} />
+          )}
+        </div>
       ) : (
         <div className="report-loading">
-          {error ? (
+          {project.error ? (
             <>
-              <p role="alert">{error}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  void ensure().catch((reason) => setError(reason.message))
-                }
-              >
+              <p role="alert">{project.error}</p>
+              <button type="button" onClick={project.retry}>
                 Retry
               </button>
             </>
@@ -131,6 +102,95 @@ export function ReportPage({
         </div>
       )}
     </main>
+  );
+}
+
+const DOCUMENTS = {
+  report: { label: "Reports", newLabel: "New report" },
+  slides: { label: "Presentations", newLabel: "New presentation" },
+  figure: { label: "Figures", newLabel: "New figure" },
+} as const;
+
+/**
+ * The saved reports, presentations, or figures, beside the open one. "New" opens the
+ * library's create dialog through the `new` search parameter.
+ */
+function DocumentSessions({
+  format,
+  projectId,
+}: {
+  format: DocumentFormat;
+  projectId: string;
+}) {
+  const [params, setParams] = useSearchParams();
+  const [offset, setOffset] = useState(0);
+  // The keys are shared with each library, so its changes refresh this list too.
+  const reports = useQuery({
+    queryKey: ["reports", projectId, offset],
+    queryFn: () => listReports(projectId, offset),
+    enabled: format === "report",
+  });
+  const slides = useQuery({
+    queryKey: ["slides", projectId, offset],
+    queryFn: () => listSlideDecks(projectId, offset),
+    enabled: format === "slides",
+  });
+  const figures = useQuery({
+    queryKey: ["figures", projectId, offset],
+    queryFn: () => listFigures(projectId, offset),
+    enabled: format === "figure",
+  });
+  const list =
+    format === "figure" ? figures : format === "slides" ? slides : reports;
+  const items =
+    format === "figure"
+      ? (figures.data?.compositions ?? []).map((item) => ({
+          id: item.composition_id,
+          title: item.title,
+          detail: editedOn(item.updated_at),
+        }))
+      : ((format === "slides" ? slides : reports).data?.reports ?? []).map(
+          (item) => ({
+            id: item.report_id,
+            title: item.title,
+            detail: editedOn(item.updated_at),
+          }),
+        );
+  const total = list.data?.total ?? 0;
+  const { label, newLabel } = DOCUMENTS[format];
+  return (
+    <SessionSidebar
+      label={label}
+      newLabel={newLabel}
+      items={items}
+      activeId={params.get("id")}
+      loading={list.isPending}
+      error={list.error?.message}
+      emptyText={`Your ${label.toLowerCase()} will appear here.`}
+      onSelect={(id) => setParams({ id })}
+      onNew={() => setParams({ new: "1" })}
+      onRetry={() => void list.refetch()}
+      footer={
+        total > 30 ? (
+          <div className="session-sidebar-pages">
+            <button
+              type="button"
+              disabled={!offset}
+              onClick={() => setOffset(offset - 30)}
+            >
+              Newer
+            </button>
+            <button
+              type="button"
+              disabled={offset + 30 >= total}
+              onClick={() => setOffset(offset + 30)}
+            >
+              Older
+            </button>
+          </div>
+        ) : null
+      }
+    />
   );
 }
 
@@ -174,6 +234,11 @@ function ReportWorkspace({ projectId }: { projectId: string }) {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  useEffect(() => {
+    if (!params.has("new")) return;
+    setCreateMode("new");
+    setParams({}, { replace: true });
+  }, [params]);
   const list = useQuery({
     queryKey: ["reports", projectId, offset],
     queryFn: () => listReports(projectId, offset),

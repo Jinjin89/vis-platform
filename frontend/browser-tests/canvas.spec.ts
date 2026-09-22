@@ -5,14 +5,15 @@ import type { CanvasGraph } from "../src/features/infinite-canvas/model";
 test.use({ actionTimeout: 10000 });
 
 async function graph(page: Page): Promise<CanvasGraph> {
-  return page.evaluate(() =>
-    JSON.parse(
-      localStorage.getItem(
-        "vis-platform.canvas.v1." +
-          sessionStorage.getItem("vis-platform.project-id"),
-      )!,
-    ),
-  );
+  return page.evaluate(() => {
+    const project = localStorage.getItem("vis-platform.project-id");
+    const [canvas] = JSON.parse(
+      localStorage.getItem(`vis-platform.canvases.v1.${project}`)!,
+    );
+    return JSON.parse(
+      localStorage.getItem(`vis-platform.canvas.v1.${project}.${canvas.id}`)!,
+    );
+  });
 }
 async function addDataset(page: Page) {
   await page.goto("/canvas");
@@ -161,6 +162,30 @@ test("canvas creates independent R branches, preserves drafts and parents, and e
   await page.getByRole("button", { name: "Fit all nodes" }).click();
   await page.screenshot({ path: info.outputPath("plot-canvas.png") });
   expect(errors).toEqual([]);
+});
+
+test("each canvas is kept and listed separately", async ({ page }) => {
+  await addDataset(page);
+  const list = page.getByRole("navigation", { name: "Canvases", exact: true });
+  await expect(list.getByRole("button", { name: /Canvas 1/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await list.getByRole("button", { name: "New canvas" }).click();
+  await expect(list.getByRole("button", { name: /Canvas 2/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.locator(".canvas-heading")).toContainText("0 nodes");
+  await page.reload();
+  await expect(list.getByRole("button", { name: /Canvas 2/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.locator(".canvas-heading")).toContainText("0 nodes");
+  await list.getByRole("button", { name: /Canvas 1/ }).click();
+  await expect(page.locator(".canvas-node[data-kind=data]")).toBeVisible();
+  await expect(page.locator(".canvas-heading")).toContainText("1 nodes");
 });
 
 test("canvas drag, pan, zoom, and refresh retain positions", async ({

@@ -5,7 +5,7 @@ test.use({ actionTimeout: 10000 });
 async function currentReport(page: Page): Promise<ReportDocument> {
   const reportId = new URL(page.url()).searchParams.get("id")!;
   const project = await page.evaluate(() =>
-    sessionStorage.getItem("vis-platform.project-id"),
+    localStorage.getItem("vis-platform.project-id"),
   );
   return (
     await page.request.get(`/api/v1/projects/${project}/reports/${reportId}`)
@@ -72,6 +72,32 @@ async function showPaper(page: Page) {
     if (await close.isVisible()) await close.click();
   }
 }
+
+test("reports stay listed beside the open report and on a later visit", async ({
+  page,
+  context,
+}) => {
+  await createReport(page, false);
+  const list = page.getByRole("navigation", { name: "Reports", exact: true });
+  await expect(
+    list.getByRole("button", { name: /Treatment study report/ }),
+  ).toHaveAttribute("aria-current", "page");
+  await list.getByRole("button", { name: "New report" }).click();
+  const dialog = page.getByRole("dialog", { name: "New report", exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+
+  const later = await context.newPage();
+  await later.goto("/report");
+  await later
+    .getByRole("navigation", { name: "Reports", exact: true })
+    .getByRole("button", { name: /Treatment study report/ })
+    .click();
+  await expect(
+    later.getByRole("article", { name: "Report document" }),
+  ).toBeVisible();
+  await later.close();
+});
 
 test("one composer routes plots and paragraphs, chooses placement, and preserves shared figure metadata", async ({
   page,

@@ -12,7 +12,9 @@ The implemented plot reference image workflow is documented in [docs/REFERENCE_I
 
 ## Interfaces
 
-Choose **Workspace**, **Canvas**, **Report**, **Slides**, or **Figure** in the header. The [Report interface](docs/REPORT_UI.md) organizes figures, tables, and prose into sections and subsections. Its single assistant input chooses whether to plot, write, or reorganize the report and where to place the changes. Report content v2 supports targeted edits, saved history, and legacy pre-report import.
+Choose **Workspace**, **Canvas**, **Report**, **Slides**, or **Figure** in the header. Each interface lists its saved work in a fixed sidebar beside the open item: conversations, canvases, reports, presentations, or figures. The browser remembers your study, so a later visit continues where you left off; the Workspace reopens your latest conversation. See [saved work and sessions](docs/ARCHITECTURE.md#saved-work-and-sessions).
+
+The [Report interface](docs/REPORT_UI.md) organizes figures, tables, and prose into sections and subsections. Its single assistant input chooses whether to plot, write, or reorganize the report and where to place the changes. Report content v2 supports targeted edits, saved history, and legacy pre-report import.
 
 The infinite canvas supports dataset-to-plot branches, immutable refinements, and the existing parameter controls. All interfaces use the same plot agent and figure records. See [the canvas guide](docs/CANVAS_UI.md) for navigation, persistence, and code export.
 
@@ -30,7 +32,8 @@ The foundation slice is runnable and includes:
 - A viewport-sized workspace with a fitted figure, compact grouped controls, and a fixed message composer
 - Inline, collapsible agent activity backed by actual context checks, planning, routing, and rendering events
 - Structured planner questions with choices, custom answers, cancellation, and recovery after refresh or server restart
-- A DeepSeek assistant with project-scoped conversation history and saved figure context
+- A DeepSeek assistant with conversation-scoped history and saved figure context
+- Saved Workspace conversations and several canvases per study, listed beside each interface and kept across visits
 - Structured routing for conversation, plot creation, refinement, data questions, plot questions, workspace actions, unclear requests, and blocked requests
 - Token-protected developer traces with sanitized LLM turns and routing decisions
 - Versioned OpenAPI and typed progress-event contracts

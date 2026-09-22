@@ -73,9 +73,29 @@
 .mobile-workspace-tabs {
   display: none;
 }
+.workspace-conversation {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+.workspace-opening {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: var(--color-muted);
+  background: var(--color-workbench);
+}
+.workspace-opening button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: white;
+  color: var(--color-primary);
+}
 .workspace-layout {
   display: grid;
-  --panel-default-size: clamp(350px, 35vw, 460px);
+  /* The conversation gives up the width of the collapsed conversation list. */
+  --panel-default-size: clamp(350px, calc(35vw - 52px), 460px);
   background: var(--color-workbench);
   min-height: 0;
   min-width: 0;
@@ -892,7 +912,10 @@
     height: 100dvh;
     border: 0;
     border-radius: 0;
-    grid-template-rows: 60px 42px minmax(0, 1fr);
+    grid-template-rows: 60px minmax(0, 1fr);
+  }
+  .workspace-conversation {
+    grid-template-rows: 42px minmax(0, 1fr);
   }
   .top-bar {
     padding: 0 17px;
@@ -939,10 +962,10 @@
   .conversation-panel {
     height: 100%;
   }
-  .app-shell[data-workspace-view="figure"] .conversation-panel {
+  .workspace-conversation[data-workspace-view="figure"] .conversation-panel {
     display: none;
   }
-  .app-shell[data-workspace-view="conversation"] .plot-area {
+  .workspace-conversation[data-workspace-view="conversation"] .plot-area {
     display: none;
   }
   .plot-area {

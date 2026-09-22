@@ -26,7 +26,7 @@ The committed backend/.env.example contains all supported settings:
 
 The API key is never included in health responses, public API contracts, logs, or frontend bundles.
 
-The configured model handles conversation, intent planning, data interpretation, and R-code planning using persisted project history, saved figure context, and backend capability information. Plot reference images are sent as image content blocks to both intent and code planning. The same references survive clarification and schema retries. Automated visual/publication review remains unconnected. See [REFERENCE_IMAGES.md](REFERENCE_IMAGES.md) for the implemented image workflow.
+The configured model handles conversation, intent planning, data interpretation, and R-code planning using the persisted history of the current conversation, saved figure context, and backend capability information. Plot reference images are sent as image content blocks to both intent and code planning. The same references survive clarification and schema retries. Automated visual/publication review remains unconnected. See [REFERENCE_IMAGES.md](REFERENCE_IMAGES.md) for the implemented image workflow.
 
 The model accepts JPEG, PNG, GIF, and WebP image input. Before visual review, render the plot to PNG; do not send SVG directly. Only the plot image and compact plot context are sent, never the raw research dataset.
 

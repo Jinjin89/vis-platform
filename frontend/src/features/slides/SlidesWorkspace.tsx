@@ -93,6 +93,12 @@ export function SlidesWorkspace({ projectId }: { projectId: string }) {
   const imported = useRef<HTMLInputElement>(null);
   const mutationLock = useRef(false),
     createKey = useRef(createMutationId());
+  useEffect(() => {
+    if (!params.has("new")) return;
+    setCreating(true);
+    createKey.current = createMutationId();
+    setParams({}, { replace: true });
+  }, [params]);
   const list = useQuery({
     queryKey: ["slides", projectId, offset],
     queryFn: () => listSlideDecks(projectId, offset),

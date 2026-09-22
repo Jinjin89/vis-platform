@@ -22,6 +22,10 @@ from vis_platform_backend.infrastructure.reference_images import (
     REFERENCE_IMAGE_SCHEMA,
     pin_reference_images,
 )
+from vis_platform_backend.infrastructure.workspace_sessions import (
+    WORKSPACE_SESSION_SCHEMA,
+    link_session_turn,
+)
 
 
 def utc_now() -> datetime:
@@ -160,6 +164,7 @@ class Repository:
             )
 
             self._connection.executescript(REFERENCE_IMAGE_SCHEMA)
+            self._connection.executescript(WORKSPACE_SESSION_SCHEMA)
 
     def close(self) -> None:
         with self._lock:
@@ -171,6 +176,13 @@ class Repository:
                 "INSERT INTO projects (project_id, name, created_at) VALUES (?, ?, ?)",
                 (project.project_id, project.name, project.created_at.isoformat()),
             )
+
+    def get_project(self, project_id: str) -> Project | None:
+        with self._lock:
+            row = self._connection.execute(
+                "SELECT * FROM projects WHERE project_id = ?", (project_id,)
+            ).fetchone()
+        return Project.model_validate(dict(row)) if row is not None else None
 
     def project_exists(self, project_id: str) -> bool:
         with self._lock:
@@ -394,6 +406,17 @@ class Repository:
             ).fetchone()
         return str(row["run_id"]) if row else None
 
+    def current_run_id(self, project_id: str, plot_id: str) -> str | None:
+        """The run that produced the plot's current version."""
+        with self._lock:
+            row = self._connection.execute(
+                """SELECT version.run_id FROM plots AS plot
+                   JOIN plot_versions AS version ON version.version_id = plot.current_version_id
+                   WHERE plot.project_id = ? AND plot.plot_id = ?""",
+                (project_id, plot_id),
+            ).fetchone()
+        return str(row["run_id"]) if row else None
+
     def plot_versions(self, project_id: str, plot_id: str) -> dict[str, Any] | None:
         with self._lock:
             plot = self._connection.execute(
@@ -503,6 +526,8 @@ class Repository:
                     timestamp,
                 ),
             )
+            if request.get("session_id"):
+                link_session_turn(self._connection, project_id, request["session_id"], turn_id)
             if idempotency_key is not None:
                 self._connection.execute(
                     "INSERT INTO assistant_request_keys VALUES (?, ?, ?, ?)",
@@ -552,19 +577,26 @@ class Repository:
     def assistant_history(
         self, project_id: str, *, before_turn_id: str, limit: int = 12
     ) -> list[dict[str, Any]]:
-        """Read completed prior turns in this project, oldest first within a bounded window."""
+        """Read completed prior turns of the same conversation, oldest first, in a bounded window.
+
+        Turns outside a workspace conversation share one history, as before conversations existed.
+        """
         with self._lock:
             rows = self._connection.execute(
                 """
                 SELECT turn.request_json, turn.message, run.status AS run_status, run.result_json
                 FROM assistant_turns AS turn
                 LEFT JOIN plot_runs AS run ON run.run_id = turn.run_id
+                LEFT JOIN workspace_session_turns AS link ON link.turn_id = turn.turn_id
                 WHERE turn.project_id = ? AND turn.outcome IS NOT NULL
                   AND turn.rowid < (SELECT rowid FROM assistant_turns WHERE turn_id = ?)
+                  AND link.session_id IS (
+                      SELECT session_id FROM workspace_session_turns WHERE turn_id = ?
+                  )
                 ORDER BY turn.rowid DESC
                 LIMIT ?
                 """,
-                (project_id, before_turn_id, limit),
+                (project_id, before_turn_id, before_turn_id, limit),
             ).fetchall()
         return [
             {

@@ -94,6 +94,13 @@ export function createProject(name = "Untitled study"): Promise<Project> {
   });
 }
 
+export function getProject(projectId: string): Promise<Project> {
+  return request(
+    `/api/v1/projects/${encodeURIComponent(projectId)}`,
+    projectSchema,
+  );
+}
+
 export function createAssistantTurn(
   projectId: string,
   text: string,
@@ -247,6 +254,7 @@ export function startAssistantTurn(
   referenceImageIds?: string[],
   requestId?: string,
   parameterChanges?: ParameterValues,
+  sessionId?: string,
 ): Promise<AssistantTurnResponse | AssistantTurnAccepted> {
   return request("/api/v1/assistant-turns", assistantSubmissionSchema, {
     method: "POST",
@@ -274,6 +282,7 @@ export function startAssistantTurn(
       ...(parameterChanges && Object.keys(parameterChanges).length
         ? { parameter_changes: parameterChanges }
         : {}),
+      ...(sessionId ? { session_id: sessionId } : {}),
     }),
   });
 }

@@ -5,15 +5,16 @@ import {
 } from "../api/referenceImages";
 import type { ReferenceImage } from "../api/schemas/referenceImages";
 import type { AnalysisResult } from "../api/schemas/datasets";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 
 import {
   ApiClientError,
   answerQuestion,
   cancelPlotRun,
   startAssistantTurn,
-  createProject,
+  createMutationId,
   createRunEventSource,
   decideApproval,
   getPlotRun,
@@ -30,10 +31,23 @@ import {
   type PlotRunSnapshot,
   runEventSchema,
 } from "../api/schemas/plotRun";
+import type { WorkspaceSessionDocument } from "../api/schemas/workspaceSessions";
+import {
+  createWorkspaceSession,
+  getWorkspaceSession,
+  listWorkspaceSessions,
+} from "../api/workspaceSessions";
+import { useProject } from "../app/useProject";
 import { ResizablePanels } from "../components/ResizablePanels";
 import { LogoMark } from "../components/Icons";
+import { SessionSidebar, editedOn } from "../components/SessionSidebar";
 import { WorkspaceSwitcher } from "../components/WorkspaceSwitcher";
 import { ConversationPanel } from "../features/plot-run/ConversationPanel";
+import {
+  answeredQuestions,
+  restoreConversation,
+  runMessage,
+} from "../features/plot-run/conversationHistory";
 import { PlotCanvas } from "../features/plot-run/PlotCanvas";
 import { useAssistantPlanner } from "../features/plot-run/useAssistantPlanner";
 import type { PlannerAnswer } from "../api/schemas/planner";
@@ -56,14 +70,187 @@ const EVENT_TYPES = [
 const TERMINAL_STATUSES = new Set(["completed", "failed", "cancelled"]);
 const MAX_POLL_FAILURES = 5;
 
+const NEW_CONVERSATION = "new";
+
+/**
+ * Conversations are listed beside the workspace and saved as they happen. Opening the
+ * Workspace continues the latest one.
+ */
 export function WorkspacePage() {
-  const [projectId, setProjectId] = useState<string | null>(() => {
-    try {
-      return window.sessionStorage.getItem("vis-platform.project-id");
-    } catch {
-      return null;
-    }
+  const project = useProject(false);
+  const projectId = project.projectId;
+  const queryClient = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const requested = params.get("session");
+  const [offset, setOffset] = useState(0);
+  const sessions = useQuery({
+    queryKey: ["workspace-sessions", projectId, offset],
+    queryFn: () => listWorkspaceSessions(projectId!, offset),
+    enabled: !!projectId,
   });
+  // Only opening the page continues the latest conversation; a study created later does not.
+  const [landing, setLanding] = useState(requested === null);
+  const latest = sessions.data?.sessions[0]?.session_id;
+  useEffect(() => {
+    if (!landing || project.opening) return;
+    if (requested !== null) setLanding(false);
+    else if (latest) setParams({ session: latest }, { replace: true });
+    else if (!projectId || !sessions.isPending) setLanding(false);
+  }, [
+    landing,
+    requested,
+    latest,
+    project.opening,
+    projectId,
+    sessions.isPending,
+  ]);
+  const sessionId =
+    requested && requested !== NEW_CONVERSATION ? requested : null;
+  // A new conversation gets its ID with its first message and stays on screen as it is.
+  // Only the mounted conversation that saved itself is kept; later visits reopen it.
+  const created = useRef<{ key: number; sessionId: string } | null>(null);
+  const [mount, setMount] = useState({
+    key: 0,
+    sessionId,
+    restore: sessionId !== null,
+  });
+  if (mount.sessionId !== sessionId)
+    setMount(
+      mount.sessionId === null &&
+        created.current?.key === mount.key &&
+        created.current.sessionId === sessionId
+        ? { ...mount, sessionId }
+        : { key: mount.key + 1, sessionId, restore: sessionId !== null },
+    );
+  const opened = useQuery({
+    queryKey: ["workspace-session", projectId, mount.sessionId, mount.key],
+    queryFn: () => getWorkspaceSession(projectId!, mount.sessionId!),
+    enabled: mount.restore && !!projectId,
+    gcTime: 0,
+    staleTime: Infinity,
+    retry: false,
+  });
+  const opening =
+    project.opening ||
+    (landing && !!projectId && (sessions.isPending || latest !== undefined)) ||
+    (mount.restore && !!projectId && opened.isPending);
+  const unavailable = opened.isError
+    ? opened.error.message
+    : mount.restore && !projectId && !project.opening
+      ? "This conversation belongs to a study that is not open in this browser."
+      : null;
+  // A first message may start the study too, so every conversation list is refreshed.
+  const refreshList = () =>
+    void queryClient.invalidateQueries({ queryKey: ["workspace-sessions"] });
+  return (
+    <main className="app-shell">
+      <header className="top-bar">
+        <div className="brand" aria-label="Vis Platform">
+          <span className="brand-mark">
+            <LogoMark />
+          </span>
+          <span className="brand-name">vis.</span>
+        </div>
+        <div className="project-title">
+          <span className="project-kicker">Research studio</span>
+          <strong>Untitled study</strong>
+        </div>
+        <WorkspaceSwitcher />
+      </header>
+      <div className="session-layout">
+        <SessionSidebar
+          label="Conversations"
+          newLabel="New conversation"
+          // The figure, its controls, and the conversation need the width of a large screen.
+          openFrom={1600}
+          items={(sessions.data?.sessions ?? []).map((session) => ({
+            id: session.session_id,
+            title: session.title,
+            detail: editedOn(session.updated_at),
+          }))}
+          activeId={sessionId}
+          loading={!!projectId && sessions.isPending}
+          error={sessions.error?.message}
+          emptyText="Your conversations will appear here."
+          onSelect={(id) => setParams({ session: id })}
+          onNew={() => setParams({ session: NEW_CONVERSATION })}
+          onRetry={() => void sessions.refetch()}
+          footer={
+            (sessions.data?.total ?? 0) > 30 ? (
+              <div className="session-sidebar-pages">
+                <button
+                  type="button"
+                  disabled={!offset}
+                  onClick={() => setOffset(offset - 30)}
+                >
+                  Newer
+                </button>
+                <button
+                  type="button"
+                  disabled={offset + 30 >= (sessions.data?.total ?? 0)}
+                  onClick={() => setOffset(offset + 30)}
+                >
+                  Older
+                </button>
+              </div>
+            ) : null
+          }
+        />
+        {project.error ? (
+          <div className="workspace-opening" role="alert">
+            <p>{project.error}</p>
+            <button type="button" onClick={project.retry}>
+              Retry
+            </button>
+          </div>
+        ) : unavailable ? (
+          <div className="workspace-opening" role="alert">
+            <p>{unavailable}</p>
+            <button
+              type="button"
+              onClick={() => setParams({ session: NEW_CONVERSATION })}
+            >
+              Start a new conversation
+            </button>
+          </div>
+        ) : opening ? (
+          <div className="workspace-opening" role="status">
+            <p>Opening your conversation…</p>
+          </div>
+        ) : (
+          <WorkspaceConversation
+            key={mount.key}
+            projectId={projectId}
+            ensureProject={project.ensure}
+            session={mount.restore ? (opened.data ?? null) : null}
+            onSessionCreated={(id) => {
+              created.current = { key: mount.key, sessionId: id };
+              setParams({ session: id }, { replace: true });
+            }}
+            onActivity={refreshList}
+          />
+        )}
+      </div>
+    </main>
+  );
+}
+
+function WorkspaceConversation({
+  projectId,
+  ensureProject,
+  session,
+  onSessionCreated,
+  onActivity,
+}: {
+  projectId: string | null;
+  ensureProject: () => Promise<string>;
+  session: WorkspaceSessionDocument | null;
+  onSessionCreated: (sessionId: string) => void;
+  onActivity: () => void;
+}) {
+  const [restored] = useState(() =>
+    session ? restoreConversation(session) : null,
+  );
   const [selectedDatasetIds, setSelectedDatasetIds] = useState<string[]>(() =>
     readSessionIds("vis-platform.selected-datasets"),
   );
@@ -74,7 +261,11 @@ export function WorkspacePage() {
     text: string;
     key: number;
   }>();
-  const projectCreation = useRef<Promise<string> | null>(null);
+  const conversation = useRef({
+    sessionId: session?.session_id ?? null,
+    request: { title: "", key: createMutationId() },
+  });
+  const live = useRef(true);
   const submissionBusy = useRef(false);
   const lastSubmission = useRef<{ fingerprint: string; key: string } | null>(
     null,
@@ -82,8 +273,6 @@ export function WorkspacePage() {
   const queryClient = useQueryClient();
   useEffect(() => {
     try {
-      if (projectId)
-        window.sessionStorage.setItem("vis-platform.project-id", projectId);
       window.sessionStorage.setItem(
         "vis-platform.selected-datasets",
         JSON.stringify(selectedDatasetIds),
@@ -95,20 +284,23 @@ export function WorkspacePage() {
     } catch {
       /* The workspace also works when browser storage is disabled. */
     }
-  }, [projectId, selectedDatasetIds, selectedResultIds]);
-  async function ensureProject(): Promise<string> {
-    if (projectId) return projectId;
-    if (!projectCreation.current)
-      projectCreation.current = createProject()
-        .then((project) => {
-          setProjectId(project.project_id);
-          return project.project_id;
-        })
-        .catch((error) => {
-          projectCreation.current = null;
-          throw error;
-        });
-    return projectCreation.current;
+  }, [selectedDatasetIds, selectedResultIds]);
+  /** The conversation is saved with its first message. */
+  async function ensureSession(activeProjectId: string, text: string) {
+    const current = conversation.current;
+    if (current.sessionId) return current.sessionId;
+    const title = conversationTitle(text);
+    // A retry of the same first message must not start a second conversation.
+    if (current.request.title !== title)
+      current.request = { title, key: createMutationId() };
+    const created = await createWorkspaceSession(
+      activeProjectId,
+      title,
+      current.request.key,
+    );
+    current.sessionId = created.session_id;
+    if (live.current) onSessionCreated(created.session_id);
+    return created.session_id;
   }
   function useAnalysisResult(result: AnalysisResult) {
     setSelectedDatasetIds([]);
@@ -120,16 +312,22 @@ export function WorkspacePage() {
     setWorkspaceView("conversation");
   }
   const [committedSnapshot, setCommittedSnapshot] =
-    useState<PlotRunSnapshot | null>(null);
+    useState<PlotRunSnapshot | null>(restored?.figure ?? null);
   const [activeSnapshot, setActiveSnapshot] = useState<PlotRunSnapshot | null>(
     null,
   );
   const [activeRun, setActiveRun] = useState<PlotRunAccepted | null>(null);
   const [provisionalPreview, setProvisionalPreview] =
     useState<ArtifactReference | null>(null);
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [traceTargets, setTraceTargets] = useState<DeveloperTraceTarget[]>([]);
-  const [figureBrief, setFigureBrief] = useState<string | undefined>();
+  const [messages, setMessages] = useState<ConversationMessage[]>(
+    restored?.messages ?? [],
+  );
+  const [traceTargets, setTraceTargets] = useState<DeveloperTraceTarget[]>(
+    restored?.traceTargets ?? [],
+  );
+  const [figureBrief, setFigureBrief] = useState<string | undefined>(
+    restored?.figure?.result?.title ?? undefined,
+  );
   const [progressMessage, setProgressMessage] = useState("Ready to begin");
   const [progressValue, setProgressValue] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -140,21 +338,35 @@ export function WorkspacePage() {
   const plotMutationBusy = useRef(false);
   const eventSource = useRef<EventSource | null>(null);
   const pollTimer = useRef<number | null>(null);
-  const messageSequence = useRef(0);
+  const messageSequence = useRef(restored?.messages.length ?? 0);
   const finalizedRuns = useRef(new Set<string>());
-  const recordedInteractions = useRef(new Set<string>());
+  const recordedInteractions = useRef(new Set(restored?.interactions));
   const runTurns = useRef(new Map<string, string>());
-  const restoredRequests = useRef(new Set<string>());
   const [workspaceView, setWorkspaceView] = useState<"figure" | "conversation">(
     "conversation",
   );
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    live.current = true;
+    // A reopened conversation reconnects to the request or run it left unfinished.
+    if (restored?.pendingTurn && projectId)
+      planner.track(
+        restored.pendingTurn.accepted,
+        projectId,
+        restored.pendingTurn.text,
+      );
+    if (restored?.pendingRun) {
+      runTurns.current.set(
+        restored.pendingRun.accepted.run_id,
+        restored.pendingRun.turnId,
+      );
+      startListening(restored.pendingRun.accepted);
+    }
+    return () => {
+      live.current = false;
       stopListening();
-    },
-    [],
-  );
+    };
+  }, []);
 
   const turnMutation = useMutation({
     mutationFn: async ({
@@ -165,8 +377,10 @@ export function WorkspacePage() {
       images: ReferenceImage[];
     }) => {
       const activeProjectId = await ensureProject();
+      const sessionId = await ensureSession(activeProjectId, text);
       const fingerprint = JSON.stringify({
         activeProjectId,
+        sessionId,
         text,
         images: images.map((image) => image.image_id),
         baseVersion: committedSnapshot?.result?.version_id,
@@ -188,58 +402,45 @@ export function WorkspacePage() {
         selectedResultIds,
         images.length ? images.map((image) => image.image_id) : undefined,
         lastSubmission.current.key,
+        undefined,
+        sessionId,
       );
       lastSubmission.current = null;
+      onActivity();
       return { submission, projectId: activeProjectId };
     },
   });
 
-  const planner = useAssistantPlanner({
-    onResponse: handleTurnResponse,
-    onCancelled: (turnId) => {
-      appendMessage(
-        "assistant",
-        "I stopped this request. Your saved figure is unchanged.",
-        "default",
-        turnId,
-      );
-      setErrorMessage(null);
-      setProgressValue(0);
+  const planner = useAssistantPlanner(
+    {
+      onResponse: handleTurnResponse,
+      onCancelled: (turnId) => {
+        appendMessage(
+          "assistant",
+          "I stopped this request. Your saved figure is unchanged.",
+          "default",
+          turnId,
+        );
+        setErrorMessage(null);
+        setProgressValue(0);
+      },
+      onError: (message, turnId) => {
+        appendMessage("assistant", message, "error", turnId);
+        setErrorMessage(message);
+        setProgressValue(0);
+      },
+      onReferences: (turnId, images) => {
+        setMessages((current) =>
+          current.map((message) =>
+            message.role === "user" && message.turnId === turnId
+              ? { ...message, referenceImages: images }
+              : message,
+          ),
+        );
+      },
     },
-    onError: (message, turnId) => {
-      appendMessage("assistant", message, "error", turnId);
-      setErrorMessage(message);
-      setProgressValue(0);
-    },
-    onReferences: (turnId, images) => {
-      setMessages((current) =>
-        current.map((message) =>
-          message.role === "user" && message.turnId === turnId
-            ? { ...message, referenceImages: images }
-            : message,
-        ),
-      );
-    },
-    onRestore: (restoredProject, text, turnId, baseRunId, images) => {
-      setProjectId(restoredProject);
-      if (!restoredRequests.current.has(turnId)) {
-        restoredRequests.current.add(turnId);
-        appendMessage("user", text, "default", turnId, undefined, images);
-      }
-      if (baseRunId)
-        void getPlotRun(`/api/v1/plot-runs/${encodeURIComponent(baseRunId)}`)
-          .then((snapshot) => {
-            if (
-              snapshot.project_id === restoredProject &&
-              snapshot.status === "completed"
-            ) {
-              setCommittedSnapshot(snapshot);
-              setFigureBrief(snapshot.result?.title ?? undefined);
-            }
-          })
-          .catch(() => undefined);
-    },
-  });
+    restored?.activities,
+  );
   useEffect(() => {
     if (planner.pendingQuestion) setWorkspaceView("conversation");
   }, [planner.pendingQuestion?.question.interaction_id]);
@@ -271,22 +472,11 @@ export function WorkspacePage() {
     if (!pending) return false;
     const accepted = await planner.answer(answers);
     if (accepted) {
-      const labels = pending.question.questions.map((question) => {
-        const answer = answers.find(
-          (value) => value.question_id === question.question_id,
-        )!;
-        return (
-          answer.free_text ||
-          question.choices
-            .filter((choice) => answer.choice_ids.includes(choice.choice_id))
-            .map((choice) => choice.label)
-            .join(", ")
-        );
-      });
+      const exchange = answeredQuestions(pending.question, answers);
       recordInteraction(
         pending.question.interaction_id,
-        pending.question.questions.map((question) => question.prompt).join(" "),
-        labels.join("; "),
+        exchange.prompt,
+        exchange.answer,
       );
     }
     return accepted;
@@ -371,13 +561,7 @@ export function WorkspacePage() {
         undefined,
         images,
       );
-      planner.track(
-        result.submission,
-        result.projectId,
-        text,
-        committedSnapshot?.run_id,
-        images,
-      );
+      planner.track(result.submission, result.projectId, text);
       return true;
     } catch (error) {
       const traceTarget = traceTargetFromError(error, text);
@@ -646,60 +830,35 @@ export function WorkspacePage() {
         queryKey: ["analysis-results", projectId],
       });
 
+    const message = runMessage(snapshot);
+    if (message)
+      appendMessage(
+        "assistant",
+        message.content,
+        message.tone,
+        runTurns.current.get(snapshot.run_id),
+        message.analysisResults,
+      );
     if (snapshot.status === "completed" && snapshot.result != null) {
       setCommittedSnapshot(snapshot);
       setWorkspaceView("figure");
       if (snapshot.result.title != null) setFigureBrief(snapshot.result.title);
       setErrorMessage(null);
-      if (snapshot.result.execution_mode === "demo") {
-        setProgressMessage("Demonstration figure ready");
-        appendMessage(
-          "assistant",
-          "The demonstration figure is ready. Fine-tune it below or export the figure.",
-          "default",
-          runTurns.current.get(snapshot.run_id),
-        );
-      } else {
-        setProgressMessage("Figure checked and saved");
-        appendMessage(
-          "assistant",
-          "Your figure is ready. Its data, analysis, and parameters are saved with this version.",
-          "default",
-          runTurns.current.get(snapshot.run_id),
-        );
-      }
+      setProgressMessage(
+        snapshot.result.execution_mode === "demo"
+          ? "Demonstration figure ready"
+          : "Figure checked and saved",
+      );
     } else if (
       snapshot.status === "completed" &&
       snapshot.analysis_results?.length
     ) {
       setErrorMessage(null);
       setProgressMessage("Analysis saved");
-      appendMessage(
-        "assistant",
-        "Your analysis is saved. You can inspect its outputs or use them in a figure.",
-        "default",
-        runTurns.current.get(snapshot.run_id),
-        snapshot.analysis_results,
-      );
     } else if (snapshot.status === "failed") {
-      const message = snapshot.failure?.message ?? "The figure run failed.";
-      appendMessage(
-        "assistant",
-        message +
-          (snapshot.analysis_results?.length
-            ? " Your completed analysis is saved below."
-            : ""),
-        "error",
-        runTurns.current.get(snapshot.run_id),
-        snapshot.analysis_results,
-      );
-      setErrorMessage(message);
+      setErrorMessage(snapshot.failure?.message ?? "The figure run failed.");
       setProgressValue(0);
     } else if (snapshot.status === "cancelled") {
-      appendMessage(
-        "assistant",
-        "I stopped this run. Your last saved figure is unchanged.",
-      );
       setProgressMessage("Run stopped");
       setProgressValue(0);
     }
@@ -821,21 +980,7 @@ export function WorkspacePage() {
             : "idle";
 
   return (
-    <main className="app-shell" data-workspace-view={workspaceView}>
-      <header className="top-bar">
-        <div className="brand" aria-label="Vis Platform">
-          <span className="brand-mark">
-            <LogoMark />
-          </span>
-          <span className="brand-name">vis.</span>
-        </div>
-        <div className="project-title">
-          <span className="project-kicker">Research studio</span>
-          <strong>Untitled study</strong>
-        </div>
-        <WorkspaceSwitcher />
-      </header>
-
+    <div className="workspace-conversation" data-workspace-view={workspaceView}>
       <nav className="mobile-workspace-tabs" aria-label="Workspace panels">
         <button
           type="button"
@@ -927,7 +1072,7 @@ export function WorkspacePage() {
           onDecideApproval={handleApprovalDecision}
         />
       </ResizablePanels>
-    </main>
+    </div>
   );
 }
 
@@ -951,6 +1096,13 @@ function messageForError(error: unknown): string {
     return error.message;
   }
   return "An unexpected error occurred.";
+}
+
+/** A conversation is named after its first message. */
+function conversationTitle(text: string): string {
+  const title = text.replace(/\s+/g, " ").trim();
+  if (!title) return "Plot reference";
+  return title.length > 80 ? title.slice(0, 79).trimEnd() + "…" : title;
 }
 
 function readSessionIds(key: string): string[] {

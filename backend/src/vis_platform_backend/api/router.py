@@ -15,6 +15,7 @@ from .routes import (
     reports,
     shared_figures,
     slides,
+    workspace_sessions,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -22,6 +23,7 @@ api_router.include_router(health.router)
 api_router.include_router(projects.router)
 api_router.include_router(reference_images.router)
 api_router.include_router(assistant_turns.router)
+api_router.include_router(workspace_sessions.router)
 api_router.include_router(plot_runs.router)
 api_router.include_router(plot_versions.router)
 api_router.include_router(artifacts.router)

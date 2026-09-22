@@ -67,6 +67,58 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Get Project",
+        "operationId": "get_project_api_v1_projects__project_id__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/{project_id}/plot-reference-images": {
       "post": {
         "tags": [
@@ -846,6 +898,220 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/workspace-sessions": {
+      "get": {
+        "tags": [
+          "workspace sessions"
+        ],
+        "summary": "List Sessions",
+        "operationId": "list_sessions_api_v1_projects__project_id__workspace_sessions_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSessionList"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "workspace sessions"
+        ],
+        "summary": "Create Session",
+        "operationId": "create_session_api_v1_projects__project_id__workspace_sessions_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceSession"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSession"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/workspace-sessions/{session_id}": {
+      "get": {
+        "tags": [
+          "workspace sessions"
+        ],
+        "summary": "Get Session",
+        "operationId": "get_session_api_v1_projects__project_id__workspace_sessions__session_id__get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSessionDocument"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
           }
         }
       }
@@ -5039,6 +5305,23 @@
         ],
         "title": "AnalysisResultList"
       },
+      "AnsweredQuestions": {
+        "properties": {
+          "question": {
+            "$ref": "#/components/schemas/PlannerQuestions"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/PlannerAnswerRequest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "AnsweredQuestions"
+      },
       "ApiError": {
         "properties": {
           "code": {
@@ -5522,6 +5805,19 @@
             "type": "object",
             "maxProperties": 100,
             "title": "Parameter Changes"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "The workspace conversation this turn belongs to. The assistant's conversation context is limited to earlier turns of the same conversation."
           }
         },
         "additionalProperties": false,
@@ -6422,6 +6718,35 @@
           "content"
         ],
         "title": "CreateSlideDeck"
+      },
+      "CreateWorkspaceSession": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Request Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "title"
+        ],
+        "title": "CreateWorkspaceSession"
       },
       "Dataset": {
         "properties": {
@@ -13491,6 +13816,178 @@
         "additionalProperties": false,
         "type": "object",
         "title": "VariableMentions"
+      },
+      "WorkspaceSession": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "When the conversation last received a message."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "project_id",
+          "title",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WorkspaceSession"
+      },
+      "WorkspaceSessionDocument": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "const": "1.0",
+            "title": "Schema Version",
+            "default": "1.0"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "project_id": {
+            "type": "string",
+            "title": "Project Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "When the conversation last received a message."
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceSessionTurn"
+            },
+            "type": "array",
+            "title": "Turns",
+            "description": "Oldest first."
+          },
+          "figure": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlotRunSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The current version of the latest figure this conversation created, including later parameter changes and restores."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "project_id",
+          "title",
+          "created_at",
+          "updated_at",
+          "turns",
+          "figure"
+        ],
+        "title": "WorkspaceSessionDocument"
+      },
+      "WorkspaceSessionList": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceSession"
+            },
+            "type": "array",
+            "title": "Sessions"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sessions",
+          "total",
+          "offset"
+        ],
+        "title": "WorkspaceSessionList"
+      },
+      "WorkspaceSessionTurn": {
+        "properties": {
+          "turn": {
+            "$ref": "#/components/schemas/AssistantTurnSnapshot"
+          },
+          "links": {
+            "$ref": "#/components/schemas/AssistantTurnLinks"
+          },
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/AnsweredQuestions"
+            },
+            "type": "array",
+            "title": "Answers",
+            "description": "Questions the assistant asked during this turn, with the answers given."
+          },
+          "run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlotRunSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The plot or analysis run the turn started."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "turn",
+          "links",
+          "answers",
+          "run"
+        ],
+        "title": "WorkspaceSessionTurn"
       }
     }
   }

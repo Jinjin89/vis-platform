@@ -53,6 +53,14 @@ Submit it to `POST /api/v1/plots/{plot_id}/parameters` with an optional `Idempot
 History is available at `GET /api/v1/projects/{project_id}/plots/{plot_id}/versions`. Selecting a returned run for viewing does not change the current saved version. `POST /api/v1/plots/{plot_id}/restore` accepts `project_id` and `source_version_id`, creates a new version, and also supports idempotency keys.
 
 
+## Projects and workspace conversations
+
+`GET /api/v1/projects/{project_id}` returns a saved project, or 404 when the backend no longer has it; clients use it to reopen a remembered study.
+
+A workspace conversation groups assistant turns. `POST /api/v1/projects/{project_id}/workspace-sessions` creates one from `request_id` and `title`; repeating a request ID returns the same conversation, and reusing it with another title returns 409. `GET .../workspace-sessions` lists conversations by latest activity, 30 at a time (`offset`). `AssistantTurnRequest.session_id` adds a turn to a conversation of the same project (otherwise 404) and limits the model's conversation context to that conversation's earlier turns; turns without one share their own history.
+
+`GET .../workspace-sessions/{session_id}` returns `WorkspaceSessionDocument`: the conversation's turns, oldest first, each with its `AssistantTurnSnapshot`, status links, answered questions, and the run it started; and `figure`, the current version of the latest figure the conversation made, including later parameter changes and restores.
+
 ## Assistant activity and questions
 
 Clients can request asynchronous execution with `Prefer: respond-async` on the existing assistant-turn POST. HTTP 202 returns `AssistantTurnAccepted`; the returned links identify scoped status, events, and cancellation endpoints. The synchronous route remains supported.

@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { WorkspacePage } from "../src/pages/WorkspacePage";
+import { workspaceSessionResponse } from "./workspaceSessionApi";
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
@@ -87,6 +88,8 @@ test("shows an event preview and preserves it after a failed refinement", async 
   const fetchMock = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
       const path = String(input);
+      const session = workspaceSessionResponse(path, init);
+      if (session) return session;
       if (path === "/api/v1/projects") {
         return jsonResponse({
           schema_version: "1.0",
@@ -258,6 +261,8 @@ test("recovers by polling when the cancel response is lost", async () => {
   const fetchMock = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
       const path = String(input);
+      const session = workspaceSessionResponse(path, init);
+      if (session) return session;
       if (path === "/api/v1/projects") {
         return jsonResponse(projectResponse());
       }
@@ -306,6 +311,8 @@ test("polls for the final snapshot after a transient completion fetch failure", 
   const fetchMock = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
       const path = String(input);
+      const session = workspaceSessionResponse(path, init);
+      if (session) return session;
       if (path === "/api/v1/projects") {
         return jsonResponse(projectResponse());
       }
@@ -374,6 +381,8 @@ test("recovers a required question after its first snapshot request fails", asyn
   const fetchMock = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
       const path = String(input);
+      const session = workspaceSessionResponse(path, init);
+      if (session) return session;
       if (path === "/api/v1/projects") {
         return jsonResponse(projectResponse());
       }
@@ -479,6 +488,8 @@ test("keeps a successful scientific approval decision in the conversation", asyn
   const fetchMock = vi.fn(
     async (input: string | URL | Request, init?: RequestInit) => {
       const path = String(input);
+      const session = workspaceSessionResponse(path, init);
+      if (session) return session;
       if (path === "/api/v1/projects") {
         return jsonResponse(projectResponse());
       }

@@ -74,7 +74,7 @@ test("stale polling cannot overwrite newer streamed activity or deliver a respon
   );
   const onResponse = vi.fn();
   const { result } = renderHook(() =>
-    useAssistantPlanner({ onResponse, onError: vi.fn(), onRestore: vi.fn() }),
+    useAssistantPlanner({ onResponse, onError: vi.fn() }),
   );
   act(() =>
     result.current.track(
@@ -117,7 +117,4 @@ test("stale polling cannot overwrite newer streamed activity or deliver a respon
   );
   await waitFor(() => expect(Events.instance.closed).toBe(true));
   expect(onResponse).toHaveBeenCalledTimes(1);
-  expect(
-    window.sessionStorage.getItem("vis-platform.pending-assistant"),
-  ).toBeNull();
 });

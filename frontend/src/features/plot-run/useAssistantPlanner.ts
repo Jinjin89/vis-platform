@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  referenceImageSchema,
-  type ReferenceImage,
-} from "../../api/schemas/referenceImages";
+import type { ReferenceImage } from "../../api/schemas/referenceImages";
 import {
   answerPlanner,
   cancelAssistant,
@@ -10,7 +7,6 @@ import {
   getAssistantState,
 } from "../../api/client";
 import {
-  assistantTurnAcceptedSchema,
   assistantTurnSnapshotSchema,
   type AssistantTurnAccepted,
   type AssistantTurnResponse,
@@ -22,32 +18,29 @@ import {
 } from "../../api/schemas/planner";
 import type { AssistantActivityTurn, PendingPlannerQuestion } from "./types";
 
-const STORAGE_KEY = "vis-platform.pending-assistant";
 type Tracked = {
   accepted: AssistantTurnAccepted;
   projectId: string;
   text: string;
-  baseRunId?: string;
-  referenceImages?: ReferenceImage[];
 };
 type Callbacks = {
   onResponse: (response: AssistantTurnResponse, text: string) => void;
   onError: (message: string, turnId?: string) => void;
   onCancelled?: (turnId: string) => void;
-  onRestore: (
-    projectId: string,
-    text: string,
-    turnId: string,
-    baseRunId?: string,
-    referenceImages?: ReferenceImage[],
-  ) => void;
   onReferences?: (turnId: string, images: ReferenceImage[]) => void;
 };
 
-export function useAssistantPlanner(callbacks: Callbacks) {
+/**
+ * Follows assistant requests as they are planned. A reopened conversation passes its earlier
+ * activity, and tracks its unfinished request again to reconnect to it.
+ */
+export function useAssistantPlanner(
+  callbacks: Callbacks,
+  initialTurns: AssistantActivityTurn[] = [],
+) {
   const handlers = useRef(callbacks);
   handlers.current = callbacks;
-  const [turns, setTurns] = useState<AssistantActivityTurn[]>([]);
+  const [turns, setTurns] = useState<AssistantActivityTurn[]>(initialTurns);
   const [pendingQuestion, setPendingQuestion] =
     useState<PendingPlannerQuestion | null>(null);
   const [working, setWorking] = useState(false);
@@ -64,15 +57,6 @@ export function useAssistantPlanner(callbacks: Callbacks) {
     source.current = null;
     if (timer.current !== null) clearTimeout(timer.current);
     timer.current = null;
-  }
-  function remember(record: Tracked | null) {
-    try {
-      if (record)
-        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-      else window.sessionStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* This session still works without browser storage. */
-    }
   }
   function upsert(turn: AssistantActivityTurn) {
     setTurns((current) =>
@@ -153,7 +137,6 @@ export function useAssistantPlanner(callbacks: Callbacks) {
       ["completed", "failed", "cancelled"].includes(snapshot.run_status)
     ) {
       stop();
-      remember(null);
       tracked.current = null;
     }
   }
@@ -194,7 +177,6 @@ export function useAssistantPlanner(callbacks: Callbacks) {
   function connect(record: Tracked) {
     stop();
     tracked.current = record;
-    remember(record);
     setConnectionError(null);
     if (!record.accepted.links.events || !record.accepted.links.status)
       throw new Error("Assistant activity links are missing.");
@@ -225,8 +207,6 @@ export function useAssistantPlanner(callbacks: Callbacks) {
     submission: AssistantTurnAccepted | AssistantTurnResponse,
     projectId: string,
     text: string,
-    baseRunId?: string,
-    referenceImages: ReferenceImage[] = [],
   ) {
     if ("outcome" in submission) {
       const waiting = submission.outcome === "question" && submission.question;
@@ -248,11 +228,8 @@ export function useAssistantPlanner(callbacks: Callbacks) {
           },
           projectId,
           text,
-          baseRunId,
-          referenceImages,
         };
         tracked.current = record;
-        remember(record);
         setPendingQuestion({
           turnId: submission.turn_id,
           projectId,
@@ -270,16 +247,13 @@ export function useAssistantPlanner(callbacks: Callbacks) {
       turnId: submission.turn_id,
       request: text,
       status: "running",
-      activity: [],
+      // A reopened request keeps its restored activity until the first update arrives.
+      activity:
+        turns.find((turn) => turn.turnId === submission.turn_id)?.activity ??
+        [],
       traceHref: submission.links.trace,
     });
-    connect({
-      accepted: submission,
-      projectId,
-      text,
-      baseRunId,
-      referenceImages,
-    });
+    connect({ accepted: submission, projectId, text });
   }
   async function answer(answers: PlannerAnswer[]) {
     if (!pendingQuestion || !tracked.current) return false;
@@ -304,28 +278,6 @@ export function useAssistantPlanner(callbacks: Callbacks) {
   }
   useEffect(() => {
     mounted.current = true;
-    try {
-      const encoded = window.sessionStorage.getItem(STORAGE_KEY);
-      if (encoded) {
-        const saved = JSON.parse(encoded) as Tracked;
-        const accepted = assistantTurnAcceptedSchema.parse(saved.accepted);
-        if (
-          typeof saved.projectId === "string" &&
-          typeof saved.text === "string"
-        ) {
-          handlers.current.onRestore(
-            saved.projectId,
-            saved.text,
-            accepted.turn_id,
-            saved.baseRunId,
-            referenceImageSchema.array().parse(saved.referenceImages ?? []),
-          );
-          connect({ ...saved, accepted });
-        }
-      }
-    } catch {
-      remember(null);
-    }
     return () => {
       mounted.current = false;
       stop();

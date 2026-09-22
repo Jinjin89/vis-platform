@@ -302,7 +302,7 @@ export const intentDecisionSchema: z.ZodType<IntentDecision> = z
   })
   .strict();
 
-const assistantLinksSchema = z
+export const assistantLinksSchema = z
   .object({
     trace: apiPathSchema,
     status: apiPathSchema.nullable().optional(),

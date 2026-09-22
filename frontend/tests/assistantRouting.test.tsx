@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router";
 import { expect, test, vi } from "vitest";
 
 import { WorkspacePage } from "../src/pages/WorkspacePage";
+import { workspaceSessionResponse } from "./workspaceSessionApi";
 
 test.each(["social", "plot_create"])(
   "a %s reply does not start plotting",
@@ -13,6 +14,8 @@ test.each(["social", "plot_create"])(
     const fetchMock = vi.fn(
       async (input: string | URL | Request, init?: RequestInit) => {
         const path = String(input);
+        const session = workspaceSessionResponse(path, init);
+        if (session) return session;
         if (path === "/api/v1/projects") {
           return jsonResponse({
             schema_version: "1.0",

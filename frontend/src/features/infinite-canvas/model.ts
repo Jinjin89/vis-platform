@@ -106,13 +106,79 @@ export function emptyGraph(projectId: string): CanvasGraph {
     drafts: {},
   };
 }
-export function storageKey(projectId: string) {
-  return `vis-platform.canvas.v1.${projectId}`;
+const canvasEntrySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  nodes: z.number().int().nonnegative(),
+  updatedAt: z.string(),
+});
+export type CanvasEntry = z.infer<typeof canvasEntrySchema>;
+
+export function canvasListKey(projectId: string) {
+  return `vis-platform.canvases.v1.${projectId}`;
 }
-export function readGraph(projectId: string): CanvasGraph {
+export function storageKey(projectId: string, canvasId: string) {
+  return `vis-platform.canvas.v1.${projectId}.${canvasId}`;
+}
+/**
+ * The project's canvases, most recently edited first. A project always has one; a canvas
+ * saved before canvases were listed becomes the first.
+ */
+export function readCanvases(projectId: string): CanvasEntry[] {
+  try {
+    const parsed = z
+      .array(canvasEntrySchema)
+      .min(1)
+      .safeParse(
+        JSON.parse(
+          window.localStorage.getItem(canvasListKey(projectId)) ?? "null",
+        ),
+      );
+    if (parsed.success) return sortCanvases(parsed.data);
+  } catch {
+    /* Storage is optional. */
+  }
+  const first = newCanvas([]);
+  try {
+    const earlier = `vis-platform.canvas.v1.${projectId}`;
+    const saved = window.localStorage.getItem(earlier);
+    if (saved !== null) {
+      window.localStorage.setItem(storageKey(projectId, first.id), saved);
+      window.localStorage.removeItem(earlier);
+      first.nodes = readGraph(projectId, first.id).nodes.length;
+    }
+  } catch {
+    /* Storage is optional. */
+  }
+  return [first];
+}
+export function writeCanvases(projectId: string, canvases: CanvasEntry[]) {
+  try {
+    window.localStorage.setItem(
+      canvasListKey(projectId),
+      JSON.stringify(canvases),
+    );
+  } catch {
+    /* The page keeps its canvases while open. */
+  }
+}
+export function newCanvas(canvases: CanvasEntry[]): CanvasEntry {
+  return {
+    id: createMutationId(),
+    title: `Canvas ${canvases.length + 1}`,
+    nodes: 0,
+    updatedAt: new Date().toISOString(),
+  };
+}
+export function sortCanvases(canvases: CanvasEntry[]): CanvasEntry[] {
+  return [...canvases].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+export function readGraph(projectId: string, canvasId: string): CanvasGraph {
   try {
     const parsed = graphSchema.safeParse(
-      JSON.parse(window.localStorage.getItem(storageKey(projectId)) ?? "null"),
+      JSON.parse(
+        window.localStorage.getItem(storageKey(projectId, canvasId)) ?? "null",
+      ),
     );
     if (parsed.success && parsed.data.projectId === projectId)
       return parsed.data;

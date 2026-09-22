@@ -175,3 +175,25 @@ export function MoreIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function SidebarIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect
+        x="2.5"
+        y="3.5"
+        width="15"
+        height="13"
+        rx="2"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path d="M7.5 3.5v13" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}

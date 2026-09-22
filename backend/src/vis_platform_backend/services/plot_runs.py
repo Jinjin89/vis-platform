@@ -90,6 +90,8 @@ class PlotRunCoordinator(Protocol):
 
     def create_project(self, request: CreateProjectRequest) -> Project: ...
 
+    def get_project(self, project_id: str) -> Project: ...
+
     def create_run(
         self, request: CreatePlotRunRequest, *, planned: bool = False
     ) -> PlotRunAccepted: ...
@@ -189,6 +191,12 @@ class DeterministicPlotRunCoordinator:
             created_at=utc_now(),
         )
         self._repository.create_project(project)
+        return project
+
+    def get_project(self, project_id: str) -> Project:
+        project = self._repository.get_project(project_id)
+        if project is None:
+            raise ResourceNotFoundError(f"Project {project_id} was not found")
         return project
 
     def create_run(

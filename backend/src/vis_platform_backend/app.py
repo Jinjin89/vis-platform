@@ -28,6 +28,7 @@ from vis_platform_backend.infrastructure.database import Repository
 from vis_platform_backend.infrastructure.figure_compositions import FigureCompositionRepository
 from vis_platform_backend.infrastructure.reference_images import ReferenceImageRepository
 from vis_platform_backend.infrastructure.reports import ReportRepository
+from vis_platform_backend.infrastructure.workspace_sessions import WorkspaceSessionRepository
 from vis_platform_backend.services.assistant_turns import (
     AssistantTurnError,
     AssistantTurnService,
@@ -47,6 +48,7 @@ from vis_platform_backend.services.reference_images import ReferenceImageService
 from vis_platform_backend.services.report_messages import ReportMessageRuntime
 from vis_platform_backend.services.reports import ReportService
 from vis_platform_backend.services.research_execution import ResearchExecutor
+from vis_platform_backend.services.workspace_sessions import WorkspaceSessionService
 
 
 def create_app(
@@ -114,6 +116,10 @@ def create_app(
             reference_images=reference_images,
         )
         assistant_turn_service.runtime.recover()
+        session_store = WorkspaceSessionRepository(resolved_settings.database_path)
+        app.state.workspace_sessions = WorkspaceSessionService(
+            session_store, repository, assistant_turn_service.runtime, coordinator
+        )
         app.state.settings = resolved_settings
         app.state.repository = repository
         figure_exporter = FigureExporter(repository, resolved_settings.artifact_root)
@@ -166,6 +172,7 @@ def create_app(
         await assistant_turn_service.runtime.shutdown()
         await coordinator.shutdown()
         await dataset_service.shutdown()
+        session_store.close()
         image_store.close()
         data_store.close()
         repository.close()

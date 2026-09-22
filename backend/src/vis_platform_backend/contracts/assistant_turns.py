@@ -29,6 +29,14 @@ class AssistantTurnRequest(StrictModel):
     result_ids: list[str] = Field(default_factory=list, max_length=20)
     base_version_id: str | None = None
     parameter_changes: dict[str, ParameterValue] = Field(default_factory=dict, max_length=100)
+    session_id: str | None = Field(
+        default=None,
+        max_length=200,
+        description=(
+            "The workspace conversation this turn belongs to. The assistant's conversation "
+            "context is limited to earlier turns of the same conversation."
+        ),
+    )
 
     @model_validator(mode="after")
     def require_parameter_base(self) -> AssistantTurnRequest:

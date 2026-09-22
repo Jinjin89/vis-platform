@@ -73,13 +73,19 @@ export function FigureWorkspace({ projectId }: { projectId: string }) {
 
 function FigureLibrary({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [offset, setOffset] = useState(0);
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const createKey = useRef(createMutationId());
   const imported = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!params.has("new")) return;
+    setError(null);
+    setCreating(true);
+    setParams({}, { replace: true });
+  }, [params]);
   const list = useQuery({
     queryKey: ["figures", projectId, offset],
     queryFn: () => listFigures(projectId, offset),

@@ -135,23 +135,20 @@ test("agent activity comes from the backend and questions resume after reload", 
   await expect(
     page.getByText("get_current_results", { exact: true }),
   ).toBeVisible();
-  const identity = await page.evaluate(
-    () =>
-      JSON.parse(sessionStorage.getItem("vis-platform.pending-assistant")!)
-        .accepted.turn_id,
-  );
+  // The conversation is saved, so a reload reopens it with the question still waiting.
+  await expect(page).toHaveURL(/session=session_/);
+  const conversation = page.url();
   await page.screenshot({ path: info.outputPath("planner-question.png") });
   await page.reload();
   await expect(
     page.getByRole("form", { name: "Question from the planner" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(
-      () =>
-        JSON.parse(sessionStorage.getItem("vis-platform.pending-assistant")!)
-          .accepted.turn_id,
-    ),
-  ).toBe(identity);
+  expect(page.url()).toBe(conversation);
+  await expect(
+    page.locator(".message-user", {
+      hasText: "Use demonstration data, but ask me about the comparison first",
+    }),
+  ).toBeVisible();
   const option = page.getByRole("radio", { name: /The full distribution/ });
   await expect(option).not.toBeChecked();
   await option.check();
@@ -164,6 +161,95 @@ test("agent activity comes from the backend and questions resume after reload", 
   ).toBeVisible();
   await fitsWindow(page);
   await page.screenshot({ path: info.outputPath("planner-completed.png") });
+});
+
+test("conversations are saved, listed, and continued on a later visit", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/workspace");
+  const composer = page.getByRole("textbox", {
+    name: "Describe the plot you want",
+  });
+  await composer.fill("Hello there");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    page.locator(".message-assistant", { hasText: "Shape and spread" }),
+  ).toBeVisible();
+  const list = page.getByRole("navigation", {
+    name: "Conversations",
+    exact: true,
+  });
+  // On a laptop-sized window the list starts collapsed beside the Workspace.
+  await list.getByRole("button", { name: "Show conversations" }).click();
+  await expect(
+    list.getByRole("button", { name: /Hello there/ }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await list.getByRole("button", { name: "New conversation" }).click();
+  await expect(page.locator(".message-user")).toHaveCount(0);
+  await composer.fill("Explain what a violin plot shows");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    list.getByRole("button", { name: /Explain what a violin plot shows/ }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(list.getByRole("listitem")).toHaveCount(2);
+
+  // A later visit continues the latest conversation; earlier ones stay one click away.
+  const later = await context.newPage();
+  await later.goto("/workspace");
+  await expect(
+    later.locator(".message-user", {
+      hasText: "Explain what a violin plot shows",
+    }),
+  ).toBeVisible();
+  await expect(
+    later.locator(".message-user", { hasText: "Hello there" }),
+  ).toHaveCount(0);
+  await later
+    .getByRole("navigation", { name: "Conversations", exact: true })
+    .getByRole("button", { name: /Hello there/ })
+    .click();
+  await expect(
+    later.locator(".message-user", { hasText: "Hello there" }),
+  ).toBeVisible();
+  await expect(
+    later.locator(".message-assistant", { hasText: "Shape and spread" }),
+  ).toBeVisible();
+  await later.close();
+});
+
+test("on a phone the conversation list opens over the work and closes after a choice", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/workspace");
+  await page
+    .getByRole("textbox", { name: "Describe the plot you want" })
+    .fill("Hello there");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(
+    page.locator(".message-assistant", { hasText: "Shape and spread" }),
+  ).toBeVisible();
+  const list = page.getByRole("navigation", {
+    name: "Conversations",
+    exact: true,
+  });
+  await list.getByRole("button", { name: "Show conversations" }).click();
+  await list.getByRole("button", { name: "New conversation" }).click();
+  await expect(
+    list.getByRole("button", { name: "Show conversations" }),
+  ).toBeVisible();
+  await expect(page.locator(".message-user")).toHaveCount(0);
+  await list.getByRole("button", { name: "Show conversations" }).click();
+  await list.getByRole("button", { name: /Hello there/ }).click();
+  await expect(
+    page.locator(".message-user", { hasText: "Hello there" }),
+  ).toBeVisible();
+  await expect(
+    list.getByRole("button", { name: "Show conversations" }),
+  ).toBeVisible();
+  await fitsWindow(page);
 });
 
 async function resize(page: Page, name: string, dx: number, dy: number) {
@@ -220,7 +306,8 @@ test("panel dividers resize independently, respect bounds, and retain preference
   await expect
     .poll(() => panelSize(page, ".conversation-panel", "width"))
     .toBeCloseTo(initialWidth + 100, 0);
-  await generate(page);
+  // The reload reopens the conversation with its figure.
+  await expect(page.locator(".plot-preview")).toBeVisible();
   expect(await panelSize(page, ".figure-inspector", "height")).toBeCloseTo(
     initialHeight + 80,
     0,
@@ -411,7 +498,7 @@ for (const width of [1440, 390]) {
     expect(await csv.text()).toContain('"A",2');
     expect(await csv.text()).toContain('"B",6');
     const projectId = await page.evaluate(() =>
-      sessionStorage.getItem("vis-platform.project-id"),
+      localStorage.getItem("vis-platform.project-id"),
     );
     const before = await (
       await page.request.get(`/api/v1/projects/${projectId}/analysis-results`)
@@ -509,7 +596,7 @@ for (const example of [
       }),
     ).toBeVisible();
     const projectId = await page.evaluate(() =>
-      sessionStorage.getItem("vis-platform.project-id"),
+      localStorage.getItem("vis-platform.project-id"),
     );
     const resultBefore = await (
       await page.request.get(`/api/v1/projects/${projectId}/analysis-results`)

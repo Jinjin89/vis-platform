@@ -28,7 +28,7 @@ Open `/figure` or choose **Figure** in the header to build a publication figure 
 
 ## Canvas interface
 
-The header switches between `/workspace` and `/canvas`. The canvas reuses the dataset picker and figure inspector, adds directional plotting branches and pan/zoom navigation, and keeps parameter edits as per-node drafts. Layout and pending request references persist in this browser. See [the canvas guide](../docs/CANVAS_UI.md) for details and API additions.
+The header switches between `/workspace` and `/canvas`. The canvas reuses the dataset picker and figure inspector, adds directional plotting branches and pan/zoom navigation, and keeps parameter edits as per-node drafts. A project can have several canvases; their layouts and pending request references persist in this browser. See [the canvas guide](../docs/CANVAS_UI.md) for details and API additions.
 
 ## Figure workspace
 
@@ -40,7 +40,11 @@ History loads saved versions for the current project and figure. Browsing a vers
 
 The main workspace fits the viewport. The figure scales within its canvas; the grouped parameter panel keeps Apply visible. Only long control lists or conversation history scroll. Smaller screens use Figure and Conversation tabs, while the message composer stays within the window.
 
-Each request displays an inline Activity block with real backend actor/tool information and brief decision summaries. Planner questions use explicit choices or custom text and resume the same request. Pending requests are saved in browser session storage and recovered through the backend's authoritative state after refresh. Developer diagnostics remain inside expanded Activity and require the server trace token.
+Each request displays an inline Activity block with real backend actor/tool information and brief decision summaries. Planner questions use explicit choices or custom text and resume the same request. After a refresh, the saved conversation is rebuilt from the backend's authoritative state and reconnects to a request still in progress. Developer diagnostics remain inside expanded Activity and require the server trace token.
+
+## Saved work
+
+`app/useProject.ts` remembers the study in browser local storage for every interface and checks that the backend still has it. `components/SessionSidebar.tsx` is the fixed, collapsible list of saved work beside each interface: Workspace conversations, canvases, reports, presentations, and figures. The open item is a search parameter (`session` in Workspace, `id` elsewhere); the document libraries open their create dialog for `new`. `features/plot-run/conversationHistory.ts` rebuilds a saved Workspace conversation, and `WorkspacePage` keeps a new conversation on screen when its first message saves it.
 
 ## Browser verification
 

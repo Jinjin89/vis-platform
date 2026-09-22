@@ -48,13 +48,18 @@ Interrupted polling exposes a reconnect action. Reusing a failed request's
 instructions returns them to the source node's draft for a new submission.
 Requests carry stable idempotency keys for recovery after navigation or refresh.
 
-Canvas layout, nodes, source snapshots, selections, and drafts are stored in
-browser local storage, keyed by the current project. The project selection uses
-the existing session storage key shared with Workspace. Reloading or switching
-interfaces resumes recorded requests. Canvas layouts are local to this browser;
-they are not synchronized to another browser and are not reconstructed from
-Workspace figure history. Clearing browser storage clears the local canvas.
-Dataset records and committed plot versions remain in backend storage.
+A project can have several canvases. The **Canvases** sidebar lists them, most
+recently edited first, with **New canvas** to start another; the open canvas is
+the `id` search parameter, and the latest one opens by default. Each canvas's
+layout, nodes, source snapshots, selections, and drafts are stored in browser local
+storage, keyed by the project and canvas. The project is remembered in local
+storage shared with the other interfaces, so a later visit reopens the same
+canvases. A canvas saved before canvases were listed becomes the project's first.
+Reloading or switching interfaces resumes recorded requests. Canvas layouts are
+local to this browser; they are not synchronized to another browser and are not
+reconstructed from Workspace figure history. Clearing browser storage clears the
+local canvases. Dataset records and committed plot versions remain in backend
+storage.
 
 ## Small API additions
 

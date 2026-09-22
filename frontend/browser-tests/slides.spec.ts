@@ -5,7 +5,7 @@ import type { ReportDocument } from "../src/api/schemas/reports";
 async function current(page: Page): Promise<ReportDocument> {
   const id = new URL(page.url()).searchParams.get("id");
   const project = await page.evaluate(() =>
-    sessionStorage.getItem("vis-platform.project-id"),
+    localStorage.getItem("vis-platform.project-id"),
   );
   return (
     await page.request.get(`/api/v1/projects/${project}/reports/${id}`)
@@ -260,7 +260,7 @@ test("a slide refinement updates a linked report figure while its pinned copy st
   const report = await response.json();
   const reportPage = await context.newPage();
   await reportPage.addInitScript(
-    (project) => sessionStorage.setItem("vis-platform.project-id", project),
+    (project) => localStorage.setItem("vis-platform.project-id", project),
     initial.project_id,
   );
   await reportPage.goto(`/report?id=${report.report_id}`);

@@ -125,6 +125,29 @@ def test_follow_up_receives_project_scoped_persisted_history(tmp_path) -> None:
     assert agent.inputs[-1].capabilities.data_discovery
 
 
+def test_each_workspace_conversation_has_its_own_history(tmp_path) -> None:
+    agent = RecordingAgent([reply("First answer."), reply("Other answer."), reply("Again.")] * 2)
+    with TestClient(create_app(settings(tmp_path), intent_agent=agent)) as client:
+        project_id = project(client)
+        first, second = (
+            client.post(
+                f"/api/v1/projects/{project_id}/workspace-sessions",
+                json={"request_id": key, "title": key},
+            ).json()["session_id"]
+            for key in ("first", "second")
+        )
+        turn(client, project_id, "Compare treatment groups", session_id=first)
+        turn(client, project_id, "Unrelated question", session_id=second)
+        turn(client, project_id, "Keep the same groups", session_id=first)
+        assert [message.content for message in agent.inputs[-1].conversation] == [
+            "Compare treatment groups",
+            "First answer.",
+        ]
+        # Turns outside a conversation, such as report and figure edits, keep their own history.
+        turn(client, project_id, "Report request")
+        assert agent.inputs[-1].conversation == ()
+
+
 def test_conversation_window_is_bounded_and_excludes_current_turn(tmp_path) -> None:
     agent = RecordingAgent([reply()] * 16)
     with TestClient(create_app(settings(tmp_path), intent_agent=agent)) as client:

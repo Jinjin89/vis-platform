@@ -1,7 +1,7 @@
 # Vis Platform Architecture
 
 Status: agreed MVP design baseline
-Last updated: 2026-09-11
+Last updated: 2026-09-21
 
 ## 1. Product goal
 
@@ -103,6 +103,7 @@ The frontend never accesses models, analysis-platform data, physical files, or R
 The desktop workspace uses:
 
 - Top: project, plot version, navigation, and export
+- Far left, collapsible: the saved conversations (see [Saved work and sessions](#saved-work-and-sessions))
 - Left, approximately 65%: plot canvas
 - Right, approximately 35%: conversation and contextual controls
 
@@ -441,6 +442,10 @@ POST /projects
 GET  /projects
 GET  /projects/{project_id}
 
+GET  /projects/{project_id}/workspace-sessions
+POST /projects/{project_id}/workspace-sessions
+GET  /projects/{project_id}/workspace-sessions/{session_id}
+
 POST /data-bundles
 POST /data-bundles/{bundle_id}/files
 POST /data-bundles/{bundle_id}/finalize
@@ -608,3 +613,31 @@ arrangement trees. To build from data, it lays out the whole page as slots; the
 runtime then fills them one at a time in reading order through the shared plot agent,
 at each slot's size, continuing past slots that fail. It reviews remaining warnings
 for at most two rounds. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).
+
+### Saved work and sessions
+
+All five interfaces work in one study (project). The browser remembers it in local
+storage, so a later visit reopens the same work; the frontend checks that the
+backend still has it and starts a new study only when it does not.
+
+Each interface lists its saved work in a fixed, collapsible sidebar beside the open
+item: conversations in Workspace, canvases in Canvas, and reports, presentations,
+or figures in the document interfaces. The selected item is part of the URL. Each
+interface remembers whether its list is open. By default it opens on wide windows;
+the Workspace, whose figure, controls, and conversation share the width, opens it
+from 1600 px and otherwise shows a narrow strip with the list and New buttons. On
+narrow screens the open list covers the work and closes after a choice.
+
+- **Workspace conversations** are backend records. A conversation is created with
+  its first message, named after it, and every assistant turn it sends carries its
+  `session_id`. The model's conversation context is limited to earlier turns of the
+  same conversation; turns sent outside one, such as report and figure plot steps,
+  keep their own shared history. Opening a conversation rebuilds its messages,
+  answered questions, activity, and figure from the saved turns and runs, and
+  reconnects to a request or run that is still in progress. Its figure is the
+  current version of the latest plot it made, so later parameter changes and
+  restores are included. Opening the Workspace continues the latest conversation.
+- **Canvases** stay browser-local presentation state, as before; a project can
+  now have several, and the latest one opens by default.
+- **Reports, presentations, and figures** were already separate backend documents;
+  the sidebar lists them next to the open one.

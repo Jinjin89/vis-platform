@@ -6,6 +6,7 @@ import {
   createPlotNode,
   emptyGraph,
   fitNodes,
+  readCanvases,
   readGraph,
   storageKey,
   zoomAt,
@@ -65,13 +66,37 @@ test("browser recovery retains drafts and positions and rejects corrupted or for
     prompt: "Compare groups",
     parameters: {},
   };
-  window.localStorage.setItem(storageKey("project_1"), JSON.stringify(graph));
-  expect(readGraph("project_1")).toEqual(graph);
-  expect(readGraph("project_2").nodes).toEqual([]);
-  window.localStorage.setItem(storageKey("project_2"), JSON.stringify(graph));
-  expect(readGraph("project_2").nodes).toEqual([]);
-  window.localStorage.setItem(storageKey("project_1"), "{broken");
-  expect(readGraph("project_1").nodes).toEqual([]);
+  window.localStorage.setItem(
+    storageKey("project_1", "canvas_1"),
+    JSON.stringify(graph),
+  );
+  expect(readGraph("project_1", "canvas_1")).toEqual(graph);
+  expect(readGraph("project_1", "canvas_2").nodes).toEqual([]);
+  expect(readGraph("project_2", "canvas_1").nodes).toEqual([]);
+  window.localStorage.setItem(
+    storageKey("project_2", "canvas_1"),
+    JSON.stringify(graph),
+  );
+  expect(readGraph("project_2", "canvas_1").nodes).toEqual([]);
+  window.localStorage.setItem(storageKey("project_1", "canvas_1"), "{broken");
+  expect(readGraph("project_1", "canvas_1").nodes).toEqual([]);
+});
+
+test("a project always has a canvas, and one saved before canvases were listed becomes the first", () => {
+  const [fresh] = readCanvases("project_2");
+  expect(fresh).toMatchObject({ title: "Canvas 1", nodes: 0 });
+  const graph = addDataNode(emptyGraph("project_1"), dataset);
+  window.localStorage.setItem(
+    "vis-platform.canvas.v1.project_1",
+    JSON.stringify(graph),
+  );
+  const canvases = readCanvases("project_1");
+  expect(canvases).toHaveLength(1);
+  expect(canvases[0]).toMatchObject({ title: "Canvas 1", nodes: 1 });
+  expect(readGraph("project_1", canvases[0]!.id)).toEqual(graph);
+  expect(
+    window.localStorage.getItem("vis-platform.canvas.v1.project_1"),
+  ).toBeNull();
 });
 
 test("zoom preserves the point under the pointer and fit includes negative coordinates", () => {

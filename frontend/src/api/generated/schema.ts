@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_api_v1_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{project_id}/plot-reference-images": {
         parameters: {
             query?: never;
@@ -203,6 +220,41 @@ export interface paths {
         put?: never;
         /** Cancel Assistant */
         post: operations["cancel_assistant_api_v1_assistant_turns__turn_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/workspace-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["list_sessions_api_v1_projects__project_id__workspace_sessions_get"];
+        put?: never;
+        /** Create Session */
+        post: operations["create_session_api_v1_projects__project_id__workspace_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/workspace-sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["get_session_api_v1_projects__project_id__workspace_sessions__session_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1145,6 +1197,11 @@ export interface components {
             /** Complete */
             complete: boolean;
         };
+        /** AnsweredQuestions */
+        AnsweredQuestions: {
+            question: components["schemas"]["PlannerQuestions"];
+            answer: components["schemas"]["PlannerAnswerRequest"];
+        };
         /** ApiError */
         ApiError: {
             /** Code */
@@ -1328,6 +1385,11 @@ export interface components {
             parameter_changes?: {
                 [key: string]: boolean | number | string;
             };
+            /**
+             * Session Id
+             * @description The workspace conversation this turn belongs to. The assistant's conversation context is limited to earlier turns of the same conversation.
+             */
+            session_id?: string | null;
         };
         /** AssistantTurnResponse */
         AssistantTurnResponse: {
@@ -1640,6 +1702,19 @@ export interface components {
             /** Request Id */
             request_id: string;
             content: components["schemas"]["SlideDeckContent"];
+        };
+        /** CreateWorkspaceSession */
+        CreateWorkspaceSession: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Request Id */
+            request_id: string;
+            /** Title */
+            title: string;
         };
         /** Dataset */
         Dataset: {
@@ -4183,6 +4258,86 @@ export interface components {
             /** Facet */
             facet?: string[];
         };
+        /** WorkspaceSession */
+        WorkspaceSession: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Session Id */
+            session_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description When the conversation last received a message.
+             */
+            updated_at: string;
+        };
+        /** WorkspaceSessionDocument */
+        WorkspaceSessionDocument: {
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Session Id */
+            session_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             * @description When the conversation last received a message.
+             */
+            updated_at: string;
+            /**
+             * Turns
+             * @description Oldest first.
+             */
+            turns: components["schemas"]["WorkspaceSessionTurn"][];
+            /** @description The current version of the latest figure this conversation created, including later parameter changes and restores. */
+            figure: components["schemas"]["PlotRunSnapshot"] | null;
+        };
+        /** WorkspaceSessionList */
+        WorkspaceSessionList: {
+            /** Sessions */
+            sessions: components["schemas"]["WorkspaceSession"][];
+            /** Total */
+            total: number;
+            /** Offset */
+            offset: number;
+        };
+        /** WorkspaceSessionTurn */
+        WorkspaceSessionTurn: {
+            turn: components["schemas"]["AssistantTurnSnapshot"];
+            links: components["schemas"]["AssistantTurnLinks"];
+            /**
+             * Answers
+             * @description Questions the assistant asked during this turn, with the answers given.
+             */
+            answers: components["schemas"]["AnsweredQuestions"][];
+            /** @description The plot or analysis run the turn started. */
+            run: components["schemas"]["PlotRunSnapshot"] | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -4241,6 +4396,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_project_api_v1_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            /** @description The requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4751,6 +4946,160 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_api_v1_projects__project_id__workspace_sessions_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceSessionList"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    create_session_api_v1_projects__project_id__workspace_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWorkspaceSession"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceSession"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_session_api_v1_projects__project_id__workspace_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceSessionDocument"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
                 };
             };
         };

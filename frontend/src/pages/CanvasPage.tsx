@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createProject, request } from "../api/client";
+import { useSearchParams } from "react-router";
+import { request } from "../api/client";
 import { datasetSchema } from "../api/schemas/datasets";
 import type { ParameterValues } from "../api/schemas/plotRun";
+import { useProject } from "../app/useProject";
+import { SessionSidebar } from "../components/SessionSidebar";
 import { WorkspaceSwitcher } from "../components/WorkspaceSwitcher";
 import { DatasetSelector } from "../features/datasets/DatasetSelector";
 import { validValue } from "../features/plot-run/ParameterForm";
@@ -14,12 +17,17 @@ import {
   createPlotNode,
   datasetSummary,
   isActive,
+  newCanvas,
   NODE_HEIGHT,
   NODE_WIDTH,
+  readCanvases,
   readGraph,
+  sortCanvases,
   storageKey,
+  writeCanvases,
 } from "../features/infinite-canvas/model";
 import type {
+  CanvasEntry,
   CanvasGraph,
   CanvasNode,
   NodeDraft,
@@ -28,41 +36,7 @@ import type {
 import "../features/infinite-canvas/infiniteCanvas.css";
 
 export function CanvasPage() {
-  const [projectId, setProjectId] = useState<string | null>(() => {
-    try {
-      return window.sessionStorage.getItem("vis-platform.project-id");
-    } catch {
-      return null;
-    }
-  });
-  const [error, setError] = useState<string | null>(null);
-  const creation = useRef<Promise<string> | null>(null);
-  const ensureProject = useCallback(async () => {
-    if (projectId) return projectId;
-    if (!creation.current)
-      creation.current = createProject()
-        .then((project) => {
-          try {
-            window.sessionStorage.setItem(
-              "vis-platform.project-id",
-              project.project_id,
-            );
-          } catch {
-            /* Storage is optional. */
-          }
-          setProjectId(project.project_id);
-          setError(null);
-          return project.project_id;
-        })
-        .catch((reason) => {
-          creation.current = null;
-          throw reason;
-        });
-    return creation.current;
-  }, [projectId]);
-  useEffect(() => {
-    void ensureProject().catch((reason) => setError(reason.message));
-  }, [ensureProject]);
+  const project = useProject(true);
   return (
     <main className="app-shell canvas-shell">
       <header className="top-bar">
@@ -75,21 +49,14 @@ export function CanvasPage() {
         </div>
         <WorkspaceSwitcher />
       </header>
-      {projectId ? (
-        <CanvasWorkspace key={projectId} projectId={projectId} />
+      {project.projectId ? (
+        <CanvasSessions key={project.projectId} projectId={project.projectId} />
       ) : (
         <div className="canvas-loading">
-          {error ? (
+          {project.error ? (
             <>
-              <p role="alert">{error}</p>
-              <button
-                type="button"
-                onClick={() =>
-                  void ensureProject().catch((reason) =>
-                    setError(reason.message),
-                  )
-                }
-              >
+              <p role="alert">{project.error}</p>
+              <button type="button" onClick={project.retry}>
                 Retry opening canvas
               </button>
             </>
@@ -102,10 +69,73 @@ export function CanvasPage() {
   );
 }
 
-function CanvasWorkspace({ projectId }: { projectId: string }) {
-  const [graph, setGraph] = useState<CanvasGraph>(() => readGraph(projectId));
+/** Each canvas is a separate exploration; the latest one opens by default. */
+function CanvasSessions({ projectId }: { projectId: string }) {
+  const [params, setParams] = useSearchParams();
+  const [canvases, setCanvases] = useState(() => readCanvases(projectId));
+  const active =
+    canvases.find((canvas) => canvas.id === params.get("id")) ?? canvases[0]!;
+  useEffect(() => writeCanvases(projectId, canvases), [projectId, canvases]);
+  const edited = useCallback(
+    (id: string, nodes: number) =>
+      setCanvases((current) =>
+        sortCanvases(
+          current.map((canvas) =>
+            canvas.id === id
+              ? { ...canvas, nodes, updatedAt: new Date().toISOString() }
+              : canvas,
+          ),
+        ),
+      ),
+    [],
+  );
+  return (
+    <div className="session-layout">
+      <SessionSidebar
+        label="Canvases"
+        newLabel="New canvas"
+        items={canvases.map((canvas: CanvasEntry) => ({
+          id: canvas.id,
+          title: canvas.title,
+          detail: `${canvas.nodes} ${canvas.nodes === 1 ? "node" : "nodes"} · ${new Date(canvas.updatedAt).toLocaleDateString()}`,
+        }))}
+        activeId={active.id}
+        emptyText="Your canvases will appear here."
+        onSelect={(id) => setParams({ id })}
+        onNew={() => {
+          const canvas = newCanvas(canvases);
+          setCanvases([canvas, ...canvases]);
+          setParams({ id: canvas.id });
+        }}
+      />
+      <CanvasWorkspace
+        key={active.id}
+        projectId={projectId}
+        canvasId={active.id}
+        onEdited={edited}
+      />
+    </div>
+  );
+}
+
+function CanvasWorkspace({
+  projectId,
+  canvasId,
+  onEdited,
+}: {
+  projectId: string;
+  canvasId: string;
+  onEdited: (canvasId: string, nodes: number) => void;
+}) {
+  const [graph, setGraph] = useState<CanvasGraph>(() =>
+    readGraph(projectId, canvasId),
+  );
   const graphRef = useRef(graph);
   graphRef.current = graph;
+  const opened = useRef(graph.nodes);
+  useEffect(() => {
+    if (graph.nodes !== opened.current) onEdited(canvasId, graph.nodes.length);
+  }, [graph.nodes, canvasId, onEdited]);
   const [storageError, setStorageError] = useState(false);
   const [datasetIds, setDatasetIds] = useState<string[]>(() =>
     graph.nodes.flatMap((node) =>
@@ -186,7 +216,7 @@ function CanvasWorkspace({ projectId }: { projectId: string }) {
     const timeout = window.setTimeout(() => {
       try {
         window.localStorage.setItem(
-          storageKey(projectId),
+          storageKey(projectId, canvasId),
           JSON.stringify(graph),
         );
         setStorageError(false);
@@ -195,12 +225,12 @@ function CanvasWorkspace({ projectId }: { projectId: string }) {
       }
     }, 180);
     return () => clearTimeout(timeout);
-  }, [graph, projectId]);
+  }, [graph, projectId, canvasId]);
   useEffect(() => {
     const save = () => {
       try {
         window.localStorage.setItem(
-          storageKey(projectId),
+          storageKey(projectId, canvasId),
           JSON.stringify(graphRef.current),
         );
       } catch {
@@ -212,7 +242,7 @@ function CanvasWorkspace({ projectId }: { projectId: string }) {
       save();
       window.removeEventListener("pagehide", save);
     };
-  }, [projectId]);
+  }, [projectId, canvasId]);
   const updatePlot = useCallback((id: string, update: Partial<PlotNode>) => {
     setGraph((current) => ({
       ...current,

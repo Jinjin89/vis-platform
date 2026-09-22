@@ -60,6 +60,7 @@ from vis_platform_backend.execution.runner import RExecutionError
 from vis_platform_backend.infrastructure.database import Repository, RequestConflictError, utc_now
 from vis_platform_backend.services.demo_figures import render_demo_figure
 from vis_platform_backend.services.demo_parameters import parameterize_demo
+from vis_platform_backend.services.plot_marks import PLOT_MAP
 from vis_platform_backend.services.plot_source import saved_plot_source
 from vis_platform_backend.services.reference_images import ReferenceImageService
 from vis_platform_backend.services.research_execution import ResearchExecutor
@@ -698,6 +699,9 @@ class DeterministicPlotRunCoordinator:
             path = self._settings.artifact_root / run_id / "preview.svg"
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(original["storage_path"], path)
+            plot_map = Path(original["storage_path"]).with_name(PLOT_MAP)
+            if plot_map.is_file():
+                shutil.copyfile(plot_map, path.with_name(PLOT_MAP))
             result.version_id = f"version_{uuid4().hex}"
             result.preview = result.preview.model_copy(
                 update={"artifact_id": f"artifact_{uuid4().hex}"}

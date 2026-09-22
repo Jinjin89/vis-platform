@@ -26,6 +26,10 @@ remain importable. See [the report guide](../docs/REPORT_UI.md).
 
 Open `/figure` or choose **Figure** in the header to build a publication figure from data, from saved plots and images, or both. `features/figures/` holds the page canvas (dragging, snapping, scaling, keyboard nudges, free reshaping of slots), the inspector, the legend editor, and dialogs; `figureGeometry.ts` holds the pure layout helpers. A slot's progress comes from the figure conversation, and **Create plot** or **Retry** sends a message that fills the slot without planning. Edits are sent as figure operations, and labels, bounds, and page height come from the backend. `FigureAssistantPanel` shows the figure conversation and reuses the report status card for plot-agent questions and approvals. See [the figure guide](../docs/FIGURE_UI.md).
 
+## Pinpoint interface
+
+Open `/pinpoint` or choose **Pinpoint** in the header to mark points and areas on a plot and talk about them. `features/pinpoint/` holds the stage (click to mark a point, drag to mark an area; positions are fractions of the image), the conversation, the request tracker, and the browser-local conversation per plot. Requests are assistant turns with `plot_marks` (`api/pinpoint.ts`); the report status card shows plot-agent questions and approvals. See [the Pinpoint guide](../docs/PINPOINT_UI.md).
+
 ## Canvas interface
 
 The header switches between `/workspace` and `/canvas`. The canvas reuses the dataset picker and figure inspector, adds directional plotting branches and pan/zoom navigation, and keeps parameter edits as per-node drafts. A project can have several canvases; their layouts and pending request references persist in this browser. See [the canvas guide](../docs/CANVAS_UI.md) for details and API additions.

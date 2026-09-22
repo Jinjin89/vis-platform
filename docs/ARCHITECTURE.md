@@ -614,15 +614,25 @@ runtime then fills them one at a time in reading order through the shared plot a
 at each slot's size, continuing past slots that fail. It reviews remaining warnings
 for at most two rounds. See [FIGURE_UI_DESIGN.md](FIGURE_UI_DESIGN.md).
 
+### Pointing at plots
+
+Pinpoint, a separate interface at `/pinpoint`, lets researchers mark numbered points
+and areas on a plot and refer to them in a request. Marks are fractions of the saved
+image and travel on the ordinary assistant turn as `plot_marks`. The backend draws
+them on a PNG of the plot for both planners and, from the plotting regions the R
+worker records while drawing, adds each mark's data coordinates. Requests without
+marks are unchanged. See [PINPOINT_UI.md](PINPOINT_UI.md).
+
 ### Saved work and sessions
 
-All five interfaces work in one study (project). The browser remembers it in local
+All six interfaces work in one study (project). The browser remembers it in local
 storage, so a later visit reopens the same work; the frontend checks that the
 backend still has it and starts a new study only when it does not.
 
 Each interface lists its saved work in a fixed, collapsible sidebar beside the open
 item: conversations in Workspace, canvases in Canvas, and reports, presentations,
-or figures in the document interfaces. The selected item is part of the URL. Each
+or figures in the document interfaces, and plots in Pinpoint. The selected item is
+part of the URL. Each
 interface remembers whether its list is open. By default it opens on wide windows;
 the Workspace, whose figure, controls, and conversation share the width, opens it
 from 1600 px and otherwise shows a narrow strip with the list and New buttons. On

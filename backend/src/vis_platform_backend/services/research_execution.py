@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,7 @@ from vis_platform_backend.execution.runner import RExecutionError, RWorker, outp
 from vis_platform_backend.infrastructure.database import Repository, utc_now
 from vis_platform_backend.services.figure_controls import figure_controls, resolve_figure_size
 from vis_platform_backend.services.figure_svg import validate_svg as validate_svg
+from vis_platform_backend.services.plot_marks import PLOT_MAP
 from vis_platform_backend.services.r_repair import RepairingRExecution
 
 
@@ -350,5 +352,8 @@ class ResearchExecutor:
         destination = self.artifact_root / run_id / "preview.svg"
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(preview, destination)
+        # Where the plotting regions are, so marks on the image can be read in data units.
+        with suppress(RExecutionError):
+            shutil.copyfile(output_file(rendered, PLOT_MAP), destination.with_name(PLOT_MAP))
         shutil.rmtree(rendered.directory.parent, ignore_errors=True)
         return ResearchExecution(result=result, preview=destination, spec=spec)

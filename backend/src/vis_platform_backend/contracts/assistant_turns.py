@@ -10,6 +10,7 @@ from .activity import AgentActivity
 from .common import SCHEMA_VERSION, StrictModel
 from .intent import IntentDecision
 from .parameters import ParameterValue
+from .plot_marks import MAX_PLOT_MARKS, PlotMark
 from .plot_runs import DataScope, PlotRequest, PlotRunAccepted
 from .questions import PlannerQuestions
 from .reference_images import ReferenceImage
@@ -37,11 +38,24 @@ class AssistantTurnRequest(StrictModel):
             "context is limited to earlier turns of the same conversation."
         ),
     )
+    plot_marks: list[PlotMark] = Field(
+        default_factory=list,
+        max_length=MAX_PLOT_MARKS,
+        description=(
+            "Numbered places the user marked on the base version's image; the request can "
+            "refer to them by number."
+        ),
+    )
 
     @model_validator(mode="after")
     def require_parameter_base(self) -> AssistantTurnRequest:
         if self.parameter_changes and self.base_version_id is None:
             raise ValueError("Parameter drafts require a base plot version.")
+        if self.plot_marks and self.base_version_id is None:
+            raise ValueError("Marks require the plot version they were placed on.")
+        numbers = [mark.number for mark in self.plot_marks]
+        if len(numbers) != len(set(numbers)):
+            raise ValueError("Number each mark once.")
         return self
 
 

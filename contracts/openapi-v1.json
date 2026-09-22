@@ -5818,6 +5818,15 @@
             ],
             "title": "Session Id",
             "description": "The workspace conversation this turn belongs to. The assistant's conversation context is limited to earlier turns of the same conversation."
+          },
+          "plot_marks": {
+            "items": {
+              "$ref": "#/components/schemas/PlotMark"
+            },
+            "type": "array",
+            "maxItems": 9,
+            "title": "Plot Marks",
+            "description": "Numbered places the user marked on the base version's image; the request can refer to them by number."
           }
         },
         "additionalProperties": false,
@@ -10154,6 +10163,64 @@
           "goal"
         ],
         "title": "PlotIntent"
+      },
+      "PlotMark": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "point",
+              "area"
+            ],
+            "title": "Kind"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "description": "The point, or the area's left edge, as a fraction of the width."
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "description": "The point, or the area's top edge, as a fraction of the height from the top."
+          },
+          "width": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Width",
+            "description": "An area's width; 0 for a point.",
+            "default": 0
+          },
+          "height": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Height",
+            "description": "An area's height; 0 for a point.",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "kind",
+          "x",
+          "y"
+        ],
+        "title": "PlotMark",
+        "description": "A place the user marked on a plot image, so a request can refer to it by number."
       },
       "PlotPanelContent": {
         "properties": {

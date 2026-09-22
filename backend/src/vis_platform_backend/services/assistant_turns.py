@@ -51,6 +51,7 @@ from vis_platform_backend.domain.parameters import InvalidParameterError, resolv
 from vis_platform_backend.infrastructure.database import Repository, RequestConflictError, utc_now
 from vis_platform_backend.services.assistant_runtime import AssistantRuntime
 from vis_platform_backend.services.figure_controls import figure_controls, resolve_figure_size
+from vis_platform_backend.services.plot_marks import MarkedPlot, PlotMarkService
 from vis_platform_backend.services.plot_runs import (
     PlotCapabilityError,
     PlotRunCoordinator,
@@ -92,6 +93,7 @@ class AssistantTurnService:
         self._trace_enabled = settings.developer_trace_enabled
         self._trace_token = settings.developer_trace_token
         self.runtime = AssistantRuntime(repository, self._execute_turn, reference_images)
+        self._plot_marks = PlotMarkService(repository, settings.artifact_root)
         self._context_tools = WorkspaceContextTools(repository, data)
         self._secrets = tuple(
             secret for secret in (settings.llm.api_key,) if secret is not None and secret.strip()
@@ -225,6 +227,9 @@ class AssistantTurnService:
                 "completed",
                 summary="Reference images are included in planning.",
             )
+        marked = self._marked_plot(turn_id, request, pass_id)
+        if marked:
+            context["plot_marks"] = marked.marks
         intent_step = "intent:" + pass_id
         intent_label = "Continue with your choices" if answers else "Understand and plan"
         self.runtime.activity(
@@ -253,7 +258,7 @@ class AssistantTurnService:
                 if active_plot
                 else "Create a plot like this reference using available data."
             ),
-            reference_images=model_images,
+            reference_images=model_images + ((marked.image,) if marked else ()),
             has_active_plot=request.base_version_id is not None,
             generation_mode=request.request.generation_mode.value,
             gallery_mode=request.request.gallery_mode.value,
@@ -362,7 +367,7 @@ class AssistantTurnService:
             or real_refinement
         ):
             return await self._start_research(
-                turn_id, created_at, request, decision, context, answers, active_plot
+                turn_id, created_at, request, decision, context, answers, active_plot, marked
             )
 
         if decision.next_action in {IntentAction.BUILD_CONTEXT, IntentAction.REFINE_CONTEXT}:
@@ -620,6 +625,7 @@ class AssistantTurnService:
         context: dict[str, Any],
         answers: tuple[dict[str, Any], ...],
         active_plot: ActivePlotContext | None,
+        marked: MarkedPlot | None = None,
     ) -> AssistantTurnResponse:
         if self._data is None or self._data_agent is None:
             return self._reply(
@@ -727,12 +733,16 @@ class AssistantTurnService:
                         }
                         if active_plot
                         else None,
+                        **({"plot_marks": marked.marks} if marked else {}),
                     },
-                    images=self._reference_images.model_images(
-                        request.project_id, plot_request.request.reference_image_ids or []
+                    images=(
+                        self._reference_images.model_images(
+                            request.project_id, plot_request.request.reference_image_ids or []
+                        )
+                        if self._reference_images
+                        else ()
                     )
-                    if self._reference_images
-                    else (),
+                    + ((marked.image,) if marked else ()),
                 )
             )
             self.runtime.activity(
@@ -977,6 +987,32 @@ class AssistantTurnService:
             analysis_results=tuple(result.get("analysis_results", [])),
             reference_images=tuple(result.get("reference_images", [])),
         )
+
+    def _marked_plot(
+        self, turn_id: str, request: AssistantTurnRequest, pass_id: str
+    ) -> MarkedPlot | None:
+        """The plot as the user marked it, and where each mark falls in its data."""
+        if not request.plot_marks:
+            return None
+        assert request.base_version_id is not None
+        marked = self._plot_marks.prepare(
+            request.project_id, request.base_version_id, request.plot_marks
+        )
+        located = sum(1 for mark in marked.marks if mark.get("plot_regions"))
+        self.runtime.activity(
+            turn_id,
+            "plot-marks:" + pass_id,
+            "tool",
+            "Plot marks",
+            "Locate your marks",
+            "completed",
+            summary=(
+                f"{located} of {len(marked.marks)} marks fall inside a plotting region."
+                if "plot_regions" in marked.marks[0]
+                else "Your marks are shown on the plot image."
+            ),
+        )
+        return marked
 
     def _available_image_ids(
         self, request: AssistantTurnRequest, turn_id: str, active: ActivePlotContext | None

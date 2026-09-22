@@ -61,6 +61,10 @@ A workspace conversation groups assistant turns. `POST /api/v1/projects/{project
 
 `GET .../workspace-sessions/{session_id}` returns `WorkspaceSessionDocument`: the conversation's turns, oldest first, each with its `AssistantTurnSnapshot`, status links, answered questions, and the run it started; and `figure`, the current version of the latest figure the conversation made, including later parameter changes and restores.
 
+## Pointing at a plot
+
+`AssistantTurnRequest.plot_marks` lists up to nine numbered places on the image of `base_version_id`, which it requires. A `PlotMark` has a `number` (1–9, each used once), a `kind` (`point` or `area`), and `x` and `y` as fractions of the image from its top-left corner; an area adds `width` and `height` and stays inside the image. The request text can then refer to marks by number. Both planners receive the plot with the numbered marks drawn on it and, where the renderer recorded the plotting regions, each mark's data coordinates. Turns without marks are unchanged. See [the Pinpoint guide](../docs/PINPOINT_UI.md).
+
 ## Assistant activity and questions
 
 Clients can request asynchronous execution with `Prefer: respond-async` on the existing assistant-turn POST. HTTP 202 returns `AssistantTurnAccepted`; the returned links identify scoped status, events, and cancellation endpoints. The synchronous route remains supported.

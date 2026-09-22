@@ -22,10 +22,22 @@
 }
 @media (max-width: 540px) {
   .top-bar:has(.workspace-switcher) {
+    min-width: 0;
     gap: 10px;
     padding-inline: 12px;
   }
   .top-bar:has(.workspace-switcher) .project-title {
     display: none;
+  }
+  /* On a phone the links tighten and, if still too wide, scroll within the switcher. */
+  .workspace-switcher {
+    min-width: 0;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .workspace-switcher a {
+    flex: none;
+    padding: 6px 7px;
   }
 }

@@ -76,6 +76,28 @@ class BrowserIntentAgent:
                 )
                 * 10,
             }
+        elif input.workspace_context.get("plot_marks") and input.text.lower().startswith("where"):
+            places = []
+            for mark in input.workspace_context["plot_marks"]:
+                regions = mark.get("plot_regions") or []
+                if not regions:
+                    places.append(f"Mark {mark['number']} is outside the plotting region.")
+                elif "y" in regions[0]:
+                    places.append(f"Mark {mark['number']} is at y = {regions[0]['y']:g}.")
+                else:
+                    places.append(
+                        f"Mark {mark['number']} spans y = {regions[0]['y_from']:g} "
+                        f"to {regions[0]['y_to']:g}."
+                    )
+            decision = {
+                "kind": "plot_query",
+                "subtype": "marks",
+                "normalized_request": input.text,
+                "confidence": 1,
+                "next_action": "reply",
+                "decision_summary": "Read the marked places in data units.",
+                "user_reply": " ".join(places),
+            }
         elif input.has_active_plot and input.text.startswith("Refine the selected plot"):
             decision = {
                 "kind": "plot_refine",

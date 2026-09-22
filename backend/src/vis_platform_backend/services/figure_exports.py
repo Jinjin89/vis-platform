@@ -37,7 +37,7 @@ class FigureDownload:
     filename: str
 
 
-def _embedded_images_only(url: str, _resource_type: str) -> bytes:
+def embedded_images_only(url: str, _resource_type: str) -> bytes:
     """Only PNG data embedded by the backend may load; external resources never do."""
     prefix = "data:image/png;base64,"
     if not url.startswith(prefix):
@@ -152,7 +152,7 @@ class FigureExporter:
                                 bytestring=data,
                                 write_to=str(target),
                                 background_color="white",
-                                url_fetcher=_embedded_images_only,
+                                url_fetcher=embedded_images_only,
                             )
                         else:
                             png = PNGSurface.convert(
@@ -161,7 +161,7 @@ class FigureExporter:
                                 output_width=round(width_in * RASTER_DPI),
                                 output_height=round(height_in * RASTER_DPI),
                                 background_color="white",
-                                url_fetcher=_embedded_images_only,
+                                url_fetcher=embedded_images_only,
                             )
                             with Image.open(io.BytesIO(png)) as raster:
                                 if format is FigureExportFormat.TIFF:

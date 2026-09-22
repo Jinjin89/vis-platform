@@ -22,6 +22,8 @@ The [Slides MVP](docs/SLIDES_UI.md) adds an online presentation editor with shar
 
 The [Figure interface](docs/FIGURE_UI.md) builds multi-panel publication figures on an A4 or journal-width page. Like Report and Slides it stands on its own: describe a figure and its assistant lays out the page as slots, then creates each plot from the figure's data through the shared plot agent, one at a time; or compose saved plots and images yourself. It offers snapping, alignment, reading-order panel labels, a per-panel legend, update notices for newer plot versions, and PDF, SVG, PNG, and TIFF export. See its [design](docs/FIGURE_UI_DESIGN.md) for the contract and agent.
 
+[Pinpoint](docs/PINPOINT_UI.md) lets you mark numbered points and areas on any plot in the study and refer to them in a request, such as "label 1" or "why is 2 so high?". The assistant sees the marks on the plot image and, for plots drawn in R, their data coordinates.
+
 ## Current implementation
 
 The foundation slice is runnable and includes:

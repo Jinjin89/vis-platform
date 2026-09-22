@@ -96,10 +96,31 @@ tryCatch({
       grDevices::svg(file.path(output_dir, "preview.svg"), width = size$width, height = size$height, bg = "white")
       par(mar = c(4.1, 4.1, 2.1, 1.1))
       if (isTRUE(job$contains_demo_data)) par(oma = c(1.3, 0, 0, 0))
+      # Record each plotting region and its axis ranges, so a place on the image maps to data values.
+      # A region is complete when the next frame starts or drawing ends.
+      plot_map <- new.env()
+      plot_map$panels <- list()
+      plot_map$drawn <- FALSE
+      record_panel <- function() {
+        if (!plot_map$drawn) return(invisible(NULL))
+        plot_map$panels[[length(plot_map$panels) + 1L]] <- list(
+          x = graphics::grconvertX(c(0, 1), "npc", "ndc"),
+          y = graphics::grconvertY(c(0, 1), "npc", "ndc"),
+          usr = graphics::par("usr"),
+          xlog = graphics::par("xlog"),
+          ylog = graphics::par("ylog")
+        )
+      }
+      setHook("before.plot.new", record_panel)
+      setHook("plot.new", function() plot_map$drawn <- TRUE)
       eval(parse(text = job$code), envir = list2env(list(results = inputs, params = params)))
+      record_panel()
+      setHook("before.plot.new", NULL, "replace")
+      setHook("plot.new", NULL, "replace")
       if (isTRUE(job$contains_demo_data)) mtext("Contains synthetic demonstration data", side = 1, outer = TRUE, line = 0.25, cex = 0.65, col = "#7b6d77")
       grDevices::dev.off()
-      response <- list(preview = "preview.svg")
+      jsonlite::write_json(list(panels = plot_map$panels), file.path(output_dir, "plot-map.json"), auto_unbox = TRUE, digits = NA)
+      response <- list(preview = "preview.svg", plot_map = "plot-map.json")
     } else stop("Unknown worker operation")
   }
   jsonlite::write_json(response, file.path(output_dir, "response.json"), auto_unbox = TRUE, null = "null", digits = 15)

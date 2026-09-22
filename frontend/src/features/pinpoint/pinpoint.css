@@ -1,0 +1,265 @@
+.pinpoint-shell {
+  background: var(--color-workbench);
+}
+.pinpoint-loading {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  color: var(--color-muted);
+}
+.pinpoint-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  min-height: 0;
+  overflow: hidden;
+}
+.pinpoint-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow: auto;
+}
+.pinpoint-canvas-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+.pinpoint-canvas-head h1 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 17px;
+  font-weight: 600;
+}
+.pinpoint-note {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.pinpoint-stage {
+  --pinpoint-stage-height: calc(100dvh - 210px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  min-height: 0;
+}
+.pinpoint-stage figcaption {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+/* The surface is exactly the image's box, so marks are fractions of the image. */
+.pinpoint-surface {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: white;
+  box-shadow: var(--shadow-paper);
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+.pinpoint-surface[data-disabled="true"] {
+  cursor: default;
+}
+.pinpoint-surface img {
+  display: block;
+  width: 100%;
+  max-height: var(--pinpoint-stage-height);
+  border-radius: inherit;
+}
+.pinpoint-surface[data-sized="true"] img {
+  height: 100%;
+  max-height: none;
+}
+.pinpoint-mark {
+  position: absolute;
+  pointer-events: none;
+}
+.pinpoint-mark[data-kind="point"] {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 2.5px solid #d6006f;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px white,
+    inset 0 0 0 1px white;
+}
+.pinpoint-mark[data-kind="area"] {
+  border: 2px solid #d6006f;
+  border-radius: 2px;
+  background: rgb(214 0 111 / 7%);
+  box-shadow: 0 0 0 1.5px white;
+}
+.pinpoint-mark-draft {
+  border-style: dashed;
+}
+.pinpoint-mark-number {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  display: grid;
+  place-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid white;
+  border-radius: 50%;
+  background: #d6006f;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pinpoint-mark[data-kind="area"] .pinpoint-mark-number {
+  top: -11px;
+  right: auto;
+  left: -11px;
+}
+.pinpoint-empty-stage {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  height: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  color: var(--color-muted);
+  text-align: center;
+}
+.pinpoint-empty-stage strong {
+  color: var(--color-ink);
+  font-size: 16px;
+}
+.pinpoint-conversation {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface-raised);
+}
+.pinpoint-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+}
+.pinpoint-empty {
+  margin: 0;
+  color: var(--color-muted);
+}
+.pinpoint-message {
+  max-width: 92%;
+  padding: 8px 12px;
+  border-radius: var(--radius-medium);
+  background: var(--color-surface-soft);
+}
+.pinpoint-message p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.pinpoint-message[data-role="user"] {
+  align-self: flex-end;
+  background: var(--color-primary-soft);
+}
+.pinpoint-message[data-tone="error"] {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.pinpoint-message-marks,
+.pinpoint-composer-marks ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.pinpoint-message-marks li,
+.pinpoint-composer-marks li {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #d6006f;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pinpoint-composer-marks li button {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pinpoint-composer {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--color-border);
+}
+.pinpoint-composer-marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pinpoint-composer-marks ul {
+  margin: 0;
+}
+.pinpoint-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pinpoint-composer textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  font: inherit;
+  resize: vertical;
+}
+.pinpoint-composer > button[type="submit"] {
+  justify-self: end;
+  padding: 7px 16px;
+  border: 0;
+  border-radius: var(--radius-small);
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pinpoint-composer > button[type="submit"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.pinpoint-error {
+  margin: 0;
+  color: var(--color-danger);
+}
+@media (max-width: 959px) {
+  .pinpoint-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(260px, 45%);
+  }
+  .pinpoint-conversation {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
+}

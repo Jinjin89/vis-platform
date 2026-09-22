@@ -1390,6 +1390,11 @@ export interface components {
              * @description The workspace conversation this turn belongs to. The assistant's conversation context is limited to earlier turns of the same conversation.
              */
             session_id?: string | null;
+            /**
+             * Plot Marks
+             * @description Numbered places the user marked on the base version's image; the request can refer to them by number.
+             */
+            plot_marks?: components["schemas"]["PlotMark"][];
         };
         /** AssistantTurnResponse */
         AssistantTurnResponse: {
@@ -2921,6 +2926,41 @@ export interface components {
             statistics?: string[];
             /** Appearance */
             appearance?: string[];
+        };
+        /**
+         * PlotMark
+         * @description A place the user marked on a plot image, so a request can refer to it by number.
+         */
+        PlotMark: {
+            /** Number */
+            number: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "point" | "area";
+            /**
+             * X
+             * @description The point, or the area's left edge, as a fraction of the width.
+             */
+            x: number;
+            /**
+             * Y
+             * @description The point, or the area's top edge, as a fraction of the height from the top.
+             */
+            y: number;
+            /**
+             * Width
+             * @description An area's width; 0 for a point.
+             * @default 0
+             */
+            width: number;
+            /**
+             * Height
+             * @description An area's height; 0 for a point.
+             * @default 0
+             */
+            height: number;
         };
         /** PlotPanelContent */
         PlotPanelContent: {

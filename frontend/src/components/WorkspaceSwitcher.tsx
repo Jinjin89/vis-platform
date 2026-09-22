@@ -9,6 +9,7 @@ export function WorkspaceSwitcher() {
       <NavLink to="/report">Report</NavLink>
       <NavLink to="/slides">Slides</NavLink>
       <NavLink to="/figure">Figure</NavLink>
+      <NavLink to="/pinpoint">Pinpoint</NavLink>
     </nav>
   );
 }

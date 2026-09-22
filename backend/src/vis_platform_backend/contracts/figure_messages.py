@@ -12,6 +12,7 @@ from .common import Identifier, StrictModel
 from .figure_arrangement import ArrangedPanel, ArrangementNode
 from .figure_composition_content import MAX_PANELS
 from .figure_composition_operations import FigureOperation
+from .parameters import ParameterValue
 from .plot_runs import PlotRunAccepted, PlotRunSnapshot
 from .questions import ClarificationAnswer, ClarificationQuestion, PlannerQuestions
 
@@ -24,6 +25,20 @@ class FigureSelection(StrictModel):
     panel_ids: list[Identifier] = Field(default_factory=list, max_length=MAX_PANELS)
 
 
+class FigureRefinement(StrictModel):
+    """A plot panel to refine directly, like refining a figure in a report."""
+
+    panel_id: Identifier
+    instructions: str = Field(default="", max_length=8000)
+    parameter_changes: dict[str, ParameterValue] = Field(default_factory=dict, max_length=100)
+
+    @model_validator(mode="after")
+    def some_change(self) -> FigureRefinement:
+        if not self.instructions.strip() and not self.parameter_changes:
+            raise ValueError("Describe the change or edit a parameter.")
+        return self
+
+
 class FigureMessageRequest(StrictModel):
     request_id: Identifier
     message: str = Field(min_length=1, max_length=8000)
@@ -33,6 +48,9 @@ class FigureMessageRequest(StrictModel):
         max_length=MAX_PANELS,
         description="Slots to fill from their descriptions without planning, in this order.",
     )
+    refine: FigureRefinement | None = Field(
+        default=None, description="A plot panel to refine without planning."
+    )
 
     @model_validator(mode="after")
     def nonempty_message(self) -> FigureMessageRequest:
@@ -40,6 +58,8 @@ class FigureMessageRequest(StrictModel):
             raise ValueError("Enter a request for the figure.")
         if len(self.fill) != len(set(self.fill)):
             raise ValueError("List each slot to fill once.")
+        if self.fill and self.refine:
+            raise ValueError("Fill slots or refine a panel, not both.")
         return self
 
 

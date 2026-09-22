@@ -115,6 +115,7 @@ Preserve synthetic-data provenance in descriptions and captions.
 Generate a compact, useful set of typed controls for this particular plot, with descriptive groups,
 initial values, bounds, steps and choices appropriate to its content and output size. Every control
 must be consumed by render_code; avoid a boilerplate list of unused settings. Use rerun strategy.
+A control's initial value must be one its own range and step can select.
 Rendering only changes presentation of the saved result.
 Do not expose internal paths, hidden reasoning, raw rows or identifiers in summaries or metadata.
 """,

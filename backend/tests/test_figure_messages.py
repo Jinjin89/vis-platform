@@ -472,3 +472,56 @@ def test_create_plot_fills_a_slot_without_planning(figure_app):
     # Repeating the request returns the same message instead of rejecting the filled slot.
     again = send(client, document, "Create the plot for panel A", "fill", fill=["growth"])
     assert len(again["messages"]) == 1
+
+
+def test_refine_updates_a_plot_panel_without_planning(figure_app):
+    planner = ScriptedPlanner(lambda context: {"action": "reply", "message": "Unused."})
+    client = figure_app(planner)
+    document, plots = figure_with_plots(client, count=1)
+    document = client.post(
+        base(document) + "/operations",
+        json={
+            "request_id": "slot",
+            "base_revision": document["revision"],
+            "operations": [{"op": "add_panel", "panel": slot("growth", 100, 5)}],
+        },
+    ).json()
+    url = base(document) + "/messages"
+    for refine in (
+        {"panel_id": "growth", "instructions": "Larger labels"},
+        {"panel_id": "missing", "instructions": "Larger labels"},
+        {"panel_id": "p0"},
+        {"panel_id": "p0", "parameter_changes": {"figure_width": "wide"}},
+    ):
+        rejected = client.post(url, json={"request_id": "x", "message": "Refine", "refine": refine})
+        assert rejected.status_code == 422, rejected.text
+    both = {"panel_id": "p0", "instructions": "Larger labels"}
+    rejected = client.post(
+        url, json={"request_id": "x", "message": "Refine", "refine": both, "fill": ["growth"]}
+    )
+    assert rejected.status_code == 422
+
+    original = document["content"]["panels"][0]
+    width = document["panels"]["p0"]["frame"]["width_mm"]
+    refine = {"panel_id": "p0", "parameter_changes": {"figure_width": 6, "figure_height": 4}}
+    send(client, document, "Update the parameters of panel A", "params", refine=refine)
+    finished = settle(client, document)
+    assert planner.contexts == []
+    assert finished["messages"][-1]["completed_actions"] == ["Refined panel “p0”."]
+    refined = next(panel for panel in finished["content"]["panels"] if panel["id"] == "p0")
+    version = refined["content"]["version_id"]
+    assert version != original["content"]["version_id"]
+    assert finished["figures"][version]["plot_id"] == plots[0]["result"]["plot_id"]
+    # The refined plot keeps the panel's place and width on the page.
+    assert (refined["x_mm"], refined["y_mm"]) == (original["x_mm"], original["y_mm"])
+    assert abs(finished["panels"]["p0"]["frame"]["width_mm"] - width) < 0.2
+
+    refine = {"panel_id": "p0", "instructions": DEMO + "a violin plot with individual points"}
+    send(client, finished, "Refine panel A", "prompt", refine=refine)
+    again = settle(client, finished)
+    assert planner.contexts == []
+    assert again["messages"][-1]["completed_actions"] == ["Refined panel “p0”."]
+    assert (
+        next(p for p in again["content"]["panels"] if p["id"] == "p0")["content"]["version_id"]
+        != version
+    )

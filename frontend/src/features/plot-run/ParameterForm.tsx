@@ -130,6 +130,9 @@ export function ParameterForm({
       className="parameter-form"
       onSubmit={(event) => void apply(event)}
       aria-label="Plot parameters"
+      // Values are checked by validValue and the backend. The browser's own check would also
+      // reject an unchanged saved value that is off its step, and block every submission.
+      noValidate
     >
       {!available ? (
         <p className="inspector-empty">
@@ -323,6 +326,8 @@ export function validValue(
   control: ControlDefinition,
   value: ParameterValues[string],
 ): boolean {
+  // The saved value is never sent back; only changed values are checked, as on the backend.
+  if (value === control.value) return true;
   if (control.type === "boolean") return typeof value === "boolean";
   if (control.type === "choice")
     return (

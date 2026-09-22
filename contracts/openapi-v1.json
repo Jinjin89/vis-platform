@@ -7723,6 +7723,17 @@
             "maxItems": 40,
             "title": "Fill",
             "description": "Slots to fill from their descriptions without planning, in this order."
+          },
+          "refine": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FigureRefinement"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A plot panel to refine without planning."
           }
         },
         "additionalProperties": false,
@@ -8088,6 +8099,50 @@
         ],
         "title": "FigurePlotStatus",
         "description": "The plot step in progress; questions and approvals come from the shared plot agent."
+      },
+      "FigureRefinement": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Panel Id"
+          },
+          "instructions": {
+            "type": "string",
+            "maxLength": 8000,
+            "title": "Instructions",
+            "default": ""
+          },
+          "parameter_changes": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "type": "object",
+            "maxProperties": 100,
+            "title": "Parameter Changes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id"
+        ],
+        "title": "FigureRefinement",
+        "description": "A plot panel to refine directly, like refining a figure in a report."
       },
       "FigureRenderJob": {
         "properties": {

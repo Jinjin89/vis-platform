@@ -1,4 +1,5 @@
 import type { PlannerAnswer } from "./schemas/planner";
+import type { ParameterValues } from "./schemas/plotRun";
 import {
   EXPORT_MEDIA_TYPES,
   downloadAttachment,
@@ -14,6 +15,12 @@ import {
   type FigureContent,
   type FigureOperation,
 } from "./schemas/figureCompositions";
+
+export type FigureRefinement = {
+  panel_id: string;
+  instructions: string;
+  parameter_changes: ParameterValues;
+};
 
 const base = (projectId: string) =>
   `/api/v1/projects/${encodeURIComponent(projectId)}/figure-compositions`;
@@ -113,6 +120,8 @@ export const sendFigureMessage = (
     selection?: { panel_ids: string[] };
     /** Slots to fill from their descriptions, without planning. */
     fill?: string[];
+    /** A plot panel to refine directly, without planning. */
+    refine?: FigureRefinement;
   },
 ) =>
   request(

@@ -515,3 +515,123 @@ test("a new figure with a description starts the assistant", async () => {
     await screen.findByRole("region", { name: "Figure page" }),
   ).toBeInTheDocument();
 });
+
+test("right-click refines a plot panel and keeps the other panel actions", async () => {
+  const user = userEvent.setup();
+  api.sendFigureMessage
+    .mockRejectedValueOnce(new Error("The service is unavailable."))
+    .mockImplementation(async () => makeDocument());
+  renderEditor();
+  fireEvent.contextMenu(
+    await screen.findByRole("button", { name: "Panel A: Cell clusters" }),
+  );
+  const menu = screen.getByRole("menu", { name: "Actions for Cell clusters" });
+  expect(
+    within(menu)
+      .getAllByRole("menuitem")
+      .map((item) => item.textContent),
+  ).toEqual(["Refine this plot", "Bring to front", "Lock position", "Remove"]);
+  await user.click(
+    within(menu).getByRole("menuitem", { name: "Refine this plot" }),
+  );
+  const dialog = screen.getByRole("dialog", { name: "Refine plot" });
+  const update = within(dialog)
+    .getAllByRole("button", { name: "Update plot" })
+    .at(-1)!;
+  expect(update).toBeDisabled();
+  await user.type(
+    within(dialog).getByRole("textbox", {
+      name: "What would you like to change?",
+    }),
+    "Use a softer palette",
+  );
+  fireEvent.change(
+    within(dialog).getByRole("slider", { name: /Figure width/ }),
+    { target: { value: "6" } },
+  );
+  await user.click(update);
+  // A failure stays in the dialog; the retry reuses the request ID.
+  expect(within(dialog).getByRole("alert")).toHaveTextContent(
+    "The service is unavailable.",
+  );
+  await user.click(update);
+  const calls = api.sendFigureMessage.mock.calls;
+  expect(calls).toHaveLength(2);
+  expect(calls[1]![2]).toEqual({
+    request_id: calls[0]![2].request_id,
+    message: "Refine panel A: Use a softer palette",
+    refine: {
+      panel_id: "umap",
+      instructions: "Use a softer palette",
+      parameter_changes: { figure_width: 6 },
+    },
+  });
+  expect(
+    screen.queryByRole("dialog", { name: "Refine plot" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "Assistant" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+});
+
+test("a panel being refined is marked and cannot be refined again", async () => {
+  const running = {
+    ...makeDocument(),
+    messages: [
+      {
+        message_id: "m1",
+        prompt: "Refine panel A: Use a softer palette",
+        status: "running" as const,
+        phase: "plotting" as const,
+        response_text: null,
+        error: null,
+        question: null,
+        selection: null,
+        active_step: {
+          kind: "figure" as const,
+          panel_id: "umap",
+          block_id: "umap",
+          prompt: "Use a softer palette",
+          status: "running" as const,
+          error: null,
+          assistant: null,
+          assistant_state: null,
+          run: null,
+          run_state: null,
+        },
+        panels: [],
+        completed_actions: [],
+        created_at: "2026-09-21T00:00:00Z",
+      },
+    ],
+  };
+  api.getFigure.mockResolvedValue(running);
+  renderEditor();
+  const panel = await screen.findByRole("button", {
+    name: "Panel A: Cell clusters",
+  });
+  expect(within(panel).getByRole("status")).toHaveTextContent(
+    "Refining the plot…",
+  );
+  fireEvent.contextMenu(
+    screen.getByRole("button", { name: "Panel B: Expression by group" }),
+  );
+  expect(
+    screen.getByRole("menuitem", { name: "Refine this plot" }),
+  ).toBeDisabled();
+});
+
+test("slots and images are not offered a plot refinement", async () => {
+  api.getFigure.mockResolvedValue(slotDocument());
+  renderEditor();
+  fireEvent.contextMenu(
+    await screen.findByRole("button", { name: /^Panel C: Slot/ }),
+  );
+  expect(
+    screen.queryByRole("menuitem", { name: "Refine this plot" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("menuitem", { name: "Bring to front" }),
+  ).toBeInTheDocument();
+});

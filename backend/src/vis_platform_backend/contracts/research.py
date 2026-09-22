@@ -7,7 +7,7 @@ from pydantic import Field, JsonValue, model_validator
 from .common import StrictModel
 from .datasets import ObjectReference, ObjectRelationship
 from .figures import FigureSize
-from .parameters import ControlGroup
+from .parameters import ControlGroup, NumberControl
 from .questions import ClarificationQuestion
 from .render_controls import RenderControl
 
@@ -78,6 +78,14 @@ class ResearchDecision(StrictModel):
             raise ValueError("Execution requires a plan and no unresolved questions.")
         if self.action == "ask_user" and (not self.questions or self.plan is not None):
             raise ValueError("Clarification requires questions and no executable plan.")
+        # Checked on new plans only: versions saved earlier stay readable and editable.
+        for control in self.plan.controls if self.plan else []:
+            if isinstance(control, NumberControl) and not control.on_scale(control.value):
+                raise ValueError(
+                    f"Control “{control.id}” starts at {control.value}, which it cannot "
+                    f"select: its values are {control.minimum} plus whole steps of "
+                    f"{control.step}. Choose an initial value, minimum and step that agree."
+                )
         return self
 
 

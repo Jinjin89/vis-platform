@@ -6,11 +6,14 @@ from xml.etree import ElementTree as ET
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from vis_platform_backend.agents.intent import IntentAgentExecution, IntentAgentInput
 from vis_platform_backend.app import create_app
 from vis_platform_backend.config import Settings
 from vis_platform_backend.contracts.intent import IntentDecision
+from vis_platform_backend.contracts.research import ResearchDecision, ResearchPlan
+from vis_platform_backend.domain.parameters import InvalidParameterError, resolve_parameters
 
 
 def project(client: TestClient) -> str:
@@ -302,3 +305,47 @@ def test_language_changes_use_the_same_parameter_contract(tmp_path: Path, reuse_
         else:
             assert turn["outcome"] == "message"
             assert len(history(client, base)["versions"]) == 1
+
+
+def off_scale_plan() -> dict:
+    return {
+        "title": "Expression",
+        "description": "Expression by group.",
+        "reuse_result_id": "result_1",
+        "render_code": "plot(results$summary$value, col=adjustcolor(1, params$alpha))",
+        "figure_size": {"width": 6, "height": 4},
+        "controls": [
+            {"type": "text", "id": "title", "label": "Title", "value": "Expression"},
+            # 0.75 lies within the bounds but the 0.1 steps from 0.1 cannot reach it.
+            {
+                "type": "number",
+                "id": "alpha",
+                "label": "Point opacity",
+                "value": 0.75,
+                "minimum": 0.1,
+                "maximum": 1,
+                "step": 0.1,
+            },
+        ],
+    }
+
+
+def test_new_plans_start_every_number_control_on_its_scale() -> None:
+    with pytest.raises(ValidationError, match="“alpha” starts at 0.75"):
+        ResearchDecision.model_validate(
+            {"action": "execute", "summary": "Plot", "plan": off_scale_plan()}
+        )
+    on_scale = off_scale_plan()
+    on_scale["controls"][1]["value"] = 0.8
+    ResearchDecision.model_validate({"action": "execute", "summary": "Plot", "plan": on_scale})
+
+
+def test_saved_off_scale_values_stay_readable_and_only_changes_are_checked() -> None:
+    # Versions planned before the rule was enforced still load and accept edits.
+    plan = ResearchPlan.model_validate(off_scale_plan())
+    values = resolve_parameters(plan.controls, {"title": "Treated"})
+    assert values == {"title": "Treated", "alpha": 0.75}
+    assert resolve_parameters(plan.controls, {"alpha": 0.8})["alpha"] == 0.8
+    # Sending the saved value as a change is checked like any new value.
+    with pytest.raises(InvalidParameterError, match="Point opacity"):
+        resolve_parameters(plan.controls, {"alpha": 0.75}, require_change=False)

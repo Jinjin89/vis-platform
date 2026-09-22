@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Annotated, Literal
 
 from pydantic import Field, StrictBool, StrictInt, StrictStr, model_validator
@@ -45,6 +46,11 @@ class NumberControl(ControlBase):
         if not self.minimum <= self.value <= self.maximum:
             raise ValueError("control value must lie within its bounds")
         return self
+
+    def on_scale(self, value: float) -> bool:
+        """Whether the control can select this value: its minimum plus whole steps."""
+        steps = (value - self.minimum) / self.step
+        return math.isclose(steps, round(steps), abs_tol=1e-7)
 
 
 class ChoiceOption(StrictModel):

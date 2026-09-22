@@ -42,11 +42,7 @@ def resolve_parameters(
                 and not isinstance(value, bool)
                 and math.isfinite(value)
                 and control.minimum <= value <= control.maximum
-                and math.isclose(
-                    (value - control.minimum) / control.step,
-                    round((value - control.minimum) / control.step),
-                    abs_tol=1e-7,
-                )
+                and control.on_scale(value)
             )
         elif isinstance(control, ChoiceControl):
             valid = isinstance(value, str) and value in {option.value for option in control.options}

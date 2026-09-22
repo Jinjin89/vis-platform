@@ -356,6 +356,12 @@ is visible from the start and each plot is made at the size it will print.
 - **Filling without planning:** `FigureMessageRequest.fill` lists slots to fill
   directly from their prompts. The editor uses it for **Create plot** and **Retry**.
   Each listed panel must be a slot with a description.
+- **Refining without planning:** `FigureMessageRequest.refine` names one plot panel
+  with `instructions`, `parameter_changes`, or both. The editor uses it for
+  **Refine this plot** in the panel menu. Parameter changes alone update the plot
+  version directly; with instructions, the shared plot agent refines the plot and
+  receives the changes as parameter drafts. `fill` and `refine` cannot be combined,
+  and a direct refinement has no review round.
 - **Progress:** `FigureMessage.panels` lists each queued slot as `waiting`,
   `plotting`, `completed`, or `failed`, with the failure message. Questions and
   approvals from the plot agent appear in `active_step` as before.

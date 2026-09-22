@@ -2147,6 +2147,8 @@ export interface components {
              * @description Slots to fill from their descriptions without planning, in this order.
              */
             fill?: string[];
+            /** @description A plot panel to refine without planning. */
+            refine?: components["schemas"]["FigureRefinement"] | null;
         };
         /** FigureOperationsRequest */
         FigureOperationsRequest: {
@@ -2264,6 +2266,23 @@ export interface components {
             assistant_state?: components["schemas"]["AssistantTurnSnapshot"] | null;
             run?: components["schemas"]["PlotRunAccepted"] | null;
             run_state?: components["schemas"]["PlotRunSnapshot"] | null;
+        };
+        /**
+         * FigureRefinement
+         * @description A plot panel to refine directly, like refining a figure in a report.
+         */
+        FigureRefinement: {
+            /** Panel Id */
+            panel_id: string;
+            /**
+             * Instructions
+             * @default
+             */
+            instructions: string;
+            /** Parameter Changes */
+            parameter_changes?: {
+                [key: string]: boolean | number | string;
+            };
         };
         /** FigureRenderJob */
         FigureRenderJob: {

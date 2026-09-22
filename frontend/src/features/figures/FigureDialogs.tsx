@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createMutationId, resolveArtifactUrl } from "../../api/client";
 import {
   getFigureRevision,
   listFigureHistory,
+  type FigureRefinement,
 } from "../../api/figureCompositions";
 import { uploadReferenceImage } from "../../api/referenceImages";
 import { listReportFigures } from "../../api/reports";
@@ -11,9 +12,11 @@ import type {
   FigureContent,
   FigureDocument,
 } from "../../api/schemas/figureCompositions";
-import type { PlotResult } from "../../api/schemas/plotRun";
+import type { ParameterValues, PlotResult } from "../../api/schemas/plotRun";
 import type { ReferenceImage } from "../../api/schemas/referenceImages";
 import { DatasetSelector } from "../datasets/DatasetSelector";
+import { FigureInspector as PlotInspector } from "../plot-run/FigureInspector";
+import { validValue } from "../plot-run/ParameterForm";
 import { ReportDialog } from "../reports/ReportDialog";
 import { PAGE_PRESETS } from "./figureGeometry";
 
@@ -220,6 +223,143 @@ export function AddPlotDialog({
             onClick={() => setOffset(offset + 30)}
           >
             Next
+          </button>
+        </footer>
+      </div>
+    </ReportDialog>
+  );
+}
+
+/** Refine a plot panel with the plot agent, as a figure is refined in a report. */
+export function RefinePanelDialog({
+  document,
+  panelId,
+  versionId,
+  onRefine,
+  onClose,
+}: {
+  document: FigureDocument;
+  panelId: string;
+  versionId: string;
+  onRefine: (requestId: string, refine: FigureRefinement) => Promise<boolean>;
+  onClose: () => void;
+}) {
+  const figure = document.figures[versionId];
+  const label = document.panels[panelId]?.label;
+  const [instructions, setInstructions] = useState("");
+  const [parameters, setParameters] = useState<ParameterValues>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const request = useRef({ key: "", id: "" });
+  const valid = (figure?.controls ?? []).every((control) =>
+    validValue(control, parameters[control.id] ?? control.value),
+  );
+  async function refine(changes = parameters) {
+    if (
+      busy ||
+      !valid ||
+      (!instructions.trim() && !Object.keys(changes).length)
+    )
+      return false;
+    const input: FigureRefinement = {
+      panel_id: panelId,
+      instructions: instructions.trim(),
+      parameter_changes: changes,
+    };
+    // A retried refinement keeps its request ID, so it cannot run twice.
+    const key = JSON.stringify(input);
+    if (request.current.key !== key)
+      request.current = { key, id: createMutationId() };
+    setBusy(true);
+    setError(null);
+    try {
+      const ok = await onRefine(request.current.id, input);
+      if (ok) onClose();
+      return ok;
+    } catch (reason) {
+      setError(message(reason, "The refinement could not be started."));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <ReportDialog
+      title="Refine plot"
+      wide
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+    >
+      <div className="report-editor-context">
+        <span>PANEL {label ?? ""}</span>
+        <strong>
+          {figure?.title ?? figure?.preview.description ?? "Plot"}
+        </strong>
+        <small>Uses this plot's saved data</small>
+      </div>
+      <div className="report-figure-editor">
+        <div className="report-editor-preview">
+          {figure ? (
+            <img
+              src={resolveArtifactUrl(figure.preview.href)}
+              alt={figure.title ?? "Current plot"}
+            />
+          ) : null}
+        </div>
+        {figure ? (
+          <PlotInspector
+            projectId={document.project_id}
+            result={figure}
+            disabled={busy}
+            parameterDraft={parameters}
+            onParameterDraftChange={setParameters}
+            parameterApplyLabel="Update plot"
+            onApply={(changes) => refine(changes)}
+          />
+        ) : null}
+      </div>
+      <div className="report-editor-instructions">
+        <label htmlFor="composition-refine-prompt">
+          What would you like to change?
+        </label>
+        <textarea
+          id="composition-refine-prompt"
+          autoFocus
+          value={instructions}
+          onChange={(event) => setInstructions(event.target.value)}
+          maxLength={7000}
+          rows={3}
+          placeholder="e.g. Show individual points and use a softer palette…"
+          disabled={busy}
+        />
+        <small>
+          {Object.keys(parameters).length
+            ? `${Object.keys(parameters).length} parameter drafts. `
+            : ""}
+          The panel keeps its place and width; follow the progress in the
+          Assistant tab.
+        </small>
+        {error ? (
+          <p className="report-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <footer>
+          <button type="button" disabled={busy} onClick={onClose}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="report-primary"
+            disabled={
+              busy ||
+              !valid ||
+              (!instructions.trim() && !Object.keys(parameters).length)
+            }
+            onClick={() => void refine()}
+          >
+            {busy ? "Starting…" : "Update plot"}
           </button>
         </footer>
       </div>

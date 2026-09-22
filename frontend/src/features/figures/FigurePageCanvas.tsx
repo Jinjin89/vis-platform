@@ -453,6 +453,11 @@ export function FigurePageCanvas({
       .filter((job) => job.status === "running")
       .map((job) => job.panel_id),
   );
+  const refining = new Set(
+    document.messages
+      .filter(reportEditActive)
+      .map((message) => message.active_step?.block_id),
+  );
   const flagged = new Set(
     document.checks
       .filter((check) => check.severity === "warning")
@@ -593,6 +598,10 @@ export function FigurePageCanvas({
                   {rendering.has(panel.id) ? (
                     <span className="composition-panel-rendering" role="status">
                       Rendering at panel size…
+                    </span>
+                  ) : refining.has(panel.id) ? (
+                    <span className="composition-panel-rendering" role="status">
+                      Refining the plot…
                     </span>
                   ) : null}
                   {panel.locked ? (

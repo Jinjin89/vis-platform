@@ -13,6 +13,7 @@ import {
   renderFigurePanels,
   saveFigure,
   sendFigureMessage,
+  type FigureRefinement,
 } from "../../api/figureCompositions";
 import {
   figureContentSchema,
@@ -32,6 +33,7 @@ import {
   FigureHistoryDialog,
   FigurePreviewDialog,
   NewFigureDialog,
+  RefinePanelDialog,
   figureExportUrl,
 } from "./FigureDialogs";
 import { FigureAssistantPanel } from "./FigureAssistantPanel";
@@ -285,6 +287,7 @@ function FigureEditor({
     y: number;
     panelId: string;
   } | null>(null);
+  const [refining, setRefining] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(() =>
@@ -444,6 +447,21 @@ function FigureEditor({
           }),
         )
       : Promise.resolve(false);
+  async function refine(requestId: string, input: FigureRefinement) {
+    const label = document?.panels[input.panel_id]?.label ?? input.panel_id;
+    // Errors stay in the refine dialog, next to the instructions.
+    show(
+      await sendFigureMessage(projectId, figureId, {
+        request_id: requestId,
+        message: input.instructions
+          ? `Refine panel ${label}: ${input.instructions}`
+          : `Update the parameters of panel ${label}.`,
+        refine: input,
+      }),
+    );
+    setTab("assistant");
+    return true;
+  }
   const addImage = (image: ReferenceImage) =>
     addPanel(
       { type: "image", image_id: image.image_id },
@@ -519,6 +537,10 @@ function FigureEditor({
   const menuPanel = document.content.panels.find(
     (panel) => panel.id === menu?.panelId,
   );
+  const refinedPanel = document.content.panels.find(
+    (panel) => panel.id === refining,
+  );
+  const working = document.messages.some(reportEditActive);
   const updates = Object.keys(document.updates).length;
   // Render problems from this session stay visible until dismissed.
   const failures = document.jobs.filter(
@@ -728,9 +750,10 @@ function FigureEditor({
             }}
           />
           <p className="composition-hint">
-            Double-click a panel for its properties · drag to move · drag the
-            corner to scale (slots: to reshape) · Shift-click to select several
-            · arrow keys nudge 0.5 mm (Shift: 5 mm) · hold Alt to skip snapping
+            Double-click a panel for its properties · right-click a plot to
+            refine it · drag to move · drag the corner to scale (slots: to
+            reshape) · Shift-click to select several · arrow keys nudge 0.5 mm
+            (Shift: 5 mm) · hold Alt to skip snapping
           </p>
         </div>
         <aside className="composition-sidebar" aria-label="Figure details">
@@ -778,7 +801,7 @@ function FigureEditor({
               document={document}
               selected={selected}
               busy={busy}
-              working={document.messages.some(reportEditActive)}
+              working={working}
               onApply={apply}
               onRender={render}
               onFill={fill}
@@ -801,6 +824,24 @@ function FigureEditor({
           style={{ left: menu.x, top: menu.y }}
           onPointerDown={(event) => event.stopPropagation()}
         >
+          {menuPanel.content.type === "plot" ? (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={busy || working}
+              title={
+                working
+                  ? "Wait for the assistant to finish its current request."
+                  : undefined
+              }
+              onClick={() => {
+                setMenu(null);
+                setRefining(menuPanel.id);
+              }}
+            >
+              Refine this plot
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"
@@ -843,6 +884,15 @@ function FigureEditor({
             Remove
           </button>
         </div>
+      ) : null}
+      {refinedPanel?.content.type === "plot" ? (
+        <RefinePanelDialog
+          document={document}
+          panelId={refinedPanel.id}
+          versionId={refinedPanel.content.version_id}
+          onRefine={refine}
+          onClose={() => setRefining(null)}
+        />
       ) : null}
       {dialog === "plot" ? (
         <AddPlotDialog

@@ -39,6 +39,7 @@ from vis_platform_backend.contracts.figure_messages import (
     FigurePlotStep,
     FigureSlotsStep,
 )
+from vis_platform_backend.contracts.parameters import ParameterUpdateRequest
 from vis_platform_backend.contracts.plot_runs import PlotResultSummary, PlotRunAccepted, RunStatus
 from vis_platform_backend.contracts.questions import PlannerAnswerRequest, PlannerQuestions
 from vis_platform_backend.data.errors import DataError
@@ -50,6 +51,7 @@ from vis_platform_backend.domain.figure_compositions import (
     reading_order,
 )
 from vis_platform_backend.domain.figure_layout import append_below
+from vis_platform_backend.domain.parameters import InvalidParameterError, resolve_parameters
 from vis_platform_backend.domain.questions import validate_answers
 from vis_platform_backend.infrastructure.database import utc_now
 from vis_platform_backend.infrastructure.figure_messages import ACTIVE, FigureMessageStore
@@ -109,6 +111,8 @@ class FigureMessageRuntime:
                     "INVALID_FIGURE_OPERATION",
                     422,
                 )
+        if request.refine and not self.store.submitted(composition_id, request.request_id):
+            self._check_refinement(project_id, panels.get(request.refine.panel_id), request)
         state = FigureMessage(
             message_id="figure_message_" + uuid4().hex,
             prompt=request.message,
@@ -125,6 +129,28 @@ class FigureMessageRuntime:
         if self.store.get(message_id)["state"]["status"] == "running":
             self.start(message_id)
         return self.compositions.get(project_id, composition_id)
+
+    def _check_refinement(
+        self, project_id: str, panel: FigurePanel | None, request: FigureMessageRequest
+    ) -> None:
+        assert request.refine is not None
+        if panel is None or not isinstance(panel.content, PlotPanelContent):
+            raise DataError(
+                f"Panel “{request.refine.panel_id}” is not a plot to refine.",
+                "INVALID_FIGURE_OPERATION",
+                422,
+            )
+        if not request.refine.parameter_changes:
+            return
+        figure = self.compositions.figure(project_id, panel.content.version_id)
+        if not figure.parameter_updates_available:
+            raise DataError("This plot has no editable parameters.", "INVALID_PARAMETERS", 422)
+        try:
+            resolve_parameters(
+                figure.controls, request.refine.parameter_changes, require_change=False
+            )
+        except InvalidParameterError as error:
+            raise DataError(str(error), "INVALID_PARAMETERS", 422) from error
 
     def answer(
         self,
@@ -184,7 +210,12 @@ class FigureMessageRuntime:
             message = FigureMessage.model_validate(record["state"])
             plot = record["execution"].get("plot")
             if plot and message.status in ACTIVE:
-                assistant = AssistantTurnAccepted.model_validate(plot["assistant"])
+                # A parameter-only refinement runs without an assistant turn.
+                assistant = (
+                    AssistantTurnAccepted.model_validate(plot["assistant"])
+                    if plot.get("assistant")
+                    else None
+                )
                 run = PlotRunAccepted.model_validate(plot["run"]) if plot.get("run") else None
                 message.active_step = FigurePlotStatus(
                     panel_id=plot["panel_id"],
@@ -192,7 +223,11 @@ class FigureMessageRuntime:
                     prompt=plot["prompt"],
                     status=message.status,
                     assistant=assistant,
-                    assistant_state=self.assistant.runtime.snapshot(assistant.turn_id, project_id),
+                    assistant_state=(
+                        self.assistant.runtime.snapshot(assistant.turn_id, project_id)
+                        if assistant
+                        else None
+                    ),
                     run=run,
                     run_state=self.coordinator.get_run(run.run_id) if run else None,
                 )
@@ -321,6 +356,30 @@ class FigureMessageRuntime:
 
     async def _prepare(self, record: dict[str, Any]) -> bool:
         message_id = record["message_id"]
+        if refine := record["request"].get("refine"):
+            # Refining a named panel is a direct instruction, like filling a slot.
+            content = self.figures.get(record["project_id"], record["composition_id"])["content"]
+            panel = next((p for p in content.panels if p.id == refine["panel_id"]), None)
+            if panel is None or not isinstance(panel.content, PlotPanelContent):
+                self.store.update(
+                    message_id,
+                    {
+                        "status": "failed",
+                        "phase": "finished",
+                        "error": "The panel was removed or replaced before it could be refined.",
+                    },
+                )
+                return False
+            step = FigurePlotStep(
+                kind="plot",
+                panel_id=panel.id,
+                instructions=refine["instructions"].strip() or "Apply the parameter changes.",
+            )
+            self.store.update(
+                message_id,
+                execution={"steps": STEPS.dump_python([step], mode="json"), "step": 0},
+            )
+            return True
         if fill := record["request"].get("fill"):
             # Filling named slots is a direct instruction; no planning is needed.
             content = self.figures.get(record["project_id"], record["composition_id"])["content"]
@@ -376,6 +435,7 @@ class FigureMessageRuntime:
         if (
             execution["reviews"] >= MAX_REVIEWS
             or record["request"].get("fill")
+            or record["request"].get("refine")
             or not any(
                 isinstance(
                     step, FigurePlotStep | FigureAddStep | FigureArrangeStep | FigureSlotsStep
@@ -733,12 +793,37 @@ class FigureMessageRuntime:
                 f"{size[1] * factor / MM_PER_INCH:.2f} inches for its figure panel."
             )
         text += f"\nFigure: {content.title}."
+        refine = record["request"].get("refine") or {}
+        changes = (
+            refine["parameter_changes"] if base and refine.get("panel_id") == step.panel_id else {}
+        )
+        plot = {
+            "panel_id": step.panel_id,
+            "prompt": step.instructions,
+            "refine": panel is not None and not slot,
+            "slot": slot,
+            "size_mm": list(size) if slot and size else None,
+            "assistant": None,
+            "run": None,
+        }
         dataset_ids = [dataset.dataset_id for dataset in content.datasets]
         if base:
             source = self.compositions.figure(project_id, base)
             dataset_ids = sorted(
                 self.data.dataset_ids_for_objects(project_id, source.input_objects)
             )
+            if changes and not refine["instructions"].strip():
+                # Parameter edits alone re-render the plot without the assistant.
+                run = self.coordinator.update_parameters(
+                    source.plot_id,
+                    ParameterUpdateRequest(
+                        project_id=project_id, base_version_id=base, changes=changes
+                    ),
+                    idempotency_key=key,
+                )
+                plot["run"] = run.model_dump(mode="json")
+                self.store.update(message_id, {"phase": "plotting"}, {"plot": plot})
+                return plot
         turn = self.assistant.start_turn(
             AssistantTurnRequest.model_validate(
                 {
@@ -753,19 +838,12 @@ class FigureMessageRuntime:
                         else {"mode": "auto"}
                     ),
                     "base_version_id": base,
+                    "parameter_changes": changes,
                 }
             ),
             idempotency_key=key,
         )
-        plot = {
-            "panel_id": step.panel_id,
-            "prompt": step.instructions,
-            "refine": panel is not None and not slot,
-            "slot": slot,
-            "size_mm": list(size) if slot and size else None,
-            "assistant": turn.model_dump(mode="json"),
-            "run": None,
-        }
+        plot["assistant"] = turn.model_dump(mode="json")
         self.store.update(message_id, {"phase": "plotting"}, {"plot": plot})
         if slot:
             self._progress(message_id, step.panel_id, "plotting")

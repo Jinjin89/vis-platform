@@ -91,7 +91,13 @@ project. Its plot versions and images must belong to that project.
   keys on the corner handle change its scale by 1%, or 5% with Shift. A burst of
   key presses is saved as one revision. Delete removes the selection, and
   Escape clears it.
-- Right-click a panel to bring it to the front, lock it, or remove it.
+- Right-click a panel to bring it to the front, lock it, or remove it. A plot
+  panel also offers **Refine this plot**, which works like refining a figure in
+  Report or Slides: describe the change, edit its parameters, or both, then
+  choose **Update plot**. The panel shows "Refining the plot…" while the plot
+  agent works; its questions and approvals appear in the Assistant tab. The new
+  version takes the panel's place and width. Refining waits until the assistant
+  finishes its current request.
 - Zoom with − / + at the bottom right. The percentage button fits the page to
   the window; at 100% a millimetre on the page is a physical millimetre.
 

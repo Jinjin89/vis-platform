@@ -425,6 +425,7 @@ export const plotResultSchema = z
     plot_id: z.string(),
     version_id: z.string(),
     execution_mode: z.enum(["demo", "r"]),
+    interactive_view: z.enum(["points"]).nullable().optional(),
     reference_images: z.array(referenceImageSchema).optional(),
     figure_size: z
       .object({ width: z.number(), height: z.number(), unit: z.literal("in") })

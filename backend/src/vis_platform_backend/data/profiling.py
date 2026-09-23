@@ -5,6 +5,7 @@ import hashlib
 import io
 import json
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,8 @@ from vis_platform_backend.contracts.datasets import (
     NumericProfile,
     ObjectDescription,
 )
+from vis_platform_backend.data import columnar
+from vis_platform_backend.data.images import IMAGE_SUFFIXES, store_image
 
 
 @dataclass(frozen=True)
@@ -85,6 +88,19 @@ def read_table(path: Path) -> tuple[list[str], list[dict[str, str]]]:
         return names, rows
 
 
+def _parsed(
+    name: str,
+    source: Path,
+    target: Path,
+    owner_id: str,
+    revision_id: str,
+    store: Callable[[Path, Path, str, str, str], ObjectDescription],
+) -> ParsedObject:
+    description = store(source, target, name, owner_id, revision_id)
+    description.content_hash = content_hash(target)
+    return ParsedObject(selector=name, path=target, description=description)
+
+
 def parse_file(
     path: Path,
     name: str,
@@ -97,11 +113,32 @@ def parse_file(
     tables: dict[str, tuple[list[str], list[dict[str, Any]]]] = {}
     if object_path and suffix not in {".json", ".jsonl", ".ndjson"}:
         raise ValueError("This format does not support nested object selectors.")
-    if suffix in {".csv", ".tsv", ".txt"}:
+    if suffix in IMAGE_SUFFIXES:
+        return [_parsed(name, path, output_dir / "image.png", owner_id, revision_id, store_image)]
+    large = suffix == ".parquet" or (
+        suffix in {".csv", ".tsv"} and path.stat().st_size > columnar.SMALL_TABLE_BYTES
+    )
+    if suffix in {".csv", ".tsv", ".txt"} and not large:
         raw = path.read_text(encoding="utf-8-sig")
         reader = csv.DictReader(io.StringIO(raw), delimiter="\t" if suffix == ".tsv" else ",")
         names = list(reader.fieldnames or [])
         rows = list(reader)
+        # Beyond the row-by-row limit, a delimited table is read by column instead.
+        large = len(rows) > 250_000 and suffix != ".txt"
+    if large:
+        return [
+            _parsed(
+                Path(name).stem,
+                path,
+                output_dir / "table-0.parquet",
+                owner_id,
+                revision_id,
+                lambda source, target, *args: columnar.store_table(
+                    columnar.read_table(source, suffix), target, *args
+                ),
+            )
+        ]
+    if suffix in {".csv", ".tsv", ".txt"}:
         if (
             len(rows) > 250_000
             or not names

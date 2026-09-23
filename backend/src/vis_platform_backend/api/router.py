@@ -10,6 +10,7 @@ from .routes import (
     health,
     plot_runs,
     plot_versions,
+    point_views,
     projects,
     reference_images,
     reports,
@@ -26,6 +27,7 @@ api_router.include_router(assistant_turns.router)
 api_router.include_router(workspace_sessions.router)
 api_router.include_router(plot_runs.router)
 api_router.include_router(plot_versions.router)
+api_router.include_router(point_views.router)
 api_router.include_router(artifacts.router)
 api_router.include_router(figure_exports.router)
 api_router.include_router(reports.router)

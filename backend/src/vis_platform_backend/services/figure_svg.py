@@ -5,6 +5,8 @@ from xml.etree import ElementTree
 from vis_platform_backend.contracts.figures import FigureSize
 from vis_platform_backend.execution.runner import RExecutionError
 
+EMBEDDED_PNG = "data:image/png;base64,"
+
 
 def read_svg(path: Path) -> ElementTree.Element:
     if path.stat().st_size > 10 * 1024 * 1024:
@@ -30,7 +32,10 @@ def read_svg(path: Path) -> ElementTree.Element:
                     "The figure contains an unsupported external style reference."
                 )
             if key.lower().startswith("on") or (
-                key.split("}")[-1] == "href" and not value.startswith("#")
+                key.split("}")[-1] == "href"
+                and not value.startswith("#")
+                # Embedded PNG data, as in point maps' raster layers, loads nothing external.
+                and not value.startswith(EMBEDDED_PNG)
             ):
                 raise RExecutionError("The figure contains an unsupported external reference.")
     return root

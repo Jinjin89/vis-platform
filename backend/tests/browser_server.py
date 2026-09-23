@@ -80,7 +80,12 @@ class BrowserIntentAgent:
             places = []
             for mark in input.workspace_context["plot_marks"]:
                 regions = mark.get("plot_regions") or []
-                if not regions:
+                data = mark.get("data") or {}
+                if mark["kind"] == "element":
+                    places.append(f"Mark {mark['number']} is {data['values']['cell_id']}.")
+                elif mark["kind"] == "selection":
+                    places.append(f"Mark {mark['number']} holds {data['count']} points.")
+                elif not regions:
                     places.append(f"Mark {mark['number']} is outside the plotting region.")
                 elif "y" in regions[0]:
                     places.append(f"Mark {mark['number']} is at y = {regions[0]['y']:g}.")

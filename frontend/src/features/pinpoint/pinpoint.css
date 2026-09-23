@@ -122,6 +122,197 @@
   right: auto;
   left: -11px;
 }
+/* The interactive point view: a GPU canvas, with axes, marks, and legend drawn around it. */
+.pinpoint-map {
+  display: grid;
+  flex: 1;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 8px;
+  min-height: 420px;
+  margin: 0;
+}
+.pinpoint-map-loading {
+  margin: auto;
+  color: var(--color-muted);
+}
+.pinpoint-map-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.pinpoint-map-tools {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: var(--color-workbench);
+}
+.pinpoint-map-tools button {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pinpoint-map-tools button[aria-checked="true"] {
+  background: white;
+  color: var(--color-primary);
+  box-shadow: 0 1px 4px #342b3212;
+  font-weight: 600;
+}
+.pinpoint-map-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+.pinpoint-map-frame {
+  position: relative;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: white;
+  box-shadow: var(--shadow-paper);
+  overflow: hidden;
+}
+.pinpoint-map-area {
+  position: absolute;
+  overflow: hidden;
+}
+.pinpoint-map-canvas,
+.pinpoint-map-drag,
+.pinpoint-map-overlay,
+.pinpoint-map-axes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pinpoint-map-drag {
+  cursor: crosshair;
+  touch-action: none;
+}
+.pinpoint-map-drag[data-disabled="true"] {
+  cursor: default;
+}
+.pinpoint-map-overlay,
+.pinpoint-map-axes {
+  pointer-events: none;
+  overflow: visible;
+}
+.pinpoint-map-axes text {
+  fill: var(--color-text);
+  font-size: 11px;
+}
+.pinpoint-map-axis {
+  stroke: #4a4046;
+  stroke-width: 1;
+}
+.pinpoint-map-title {
+  font-weight: 600;
+}
+.pinpoint-map-ring {
+  fill: none;
+  stroke: #d6006f;
+  stroke-width: 2.5;
+  paint-order: stroke;
+  filter: drop-shadow(0 0 1.5px white);
+}
+.pinpoint-map-hover {
+  fill: none;
+  stroke: #d6006f;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 2;
+}
+.pinpoint-map-tooltip {
+  position: absolute;
+  z-index: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: rgb(40 32 38 / 92%);
+  color: white;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  pointer-events: none;
+}
+.pinpoint-map-box,
+.pinpoint-map-draft {
+  fill: rgb(214 0 111 / 8%);
+  stroke: #d6006f;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 1.5px white);
+}
+.pinpoint-map-draft {
+  stroke-dasharray: 5 4;
+}
+.pinpoint-map-badge {
+  fill: #d6006f;
+  stroke: white;
+  stroke-width: 1.5;
+}
+.pinpoint-map-mark g {
+  cursor: pointer;
+  pointer-events: auto;
+}
+.pinpoint-map-mark text {
+  fill: white;
+  font-size: 11px;
+  font-weight: 700;
+}
+.pinpoint-map-mark .pinpoint-map-count {
+  fill: #9b004f;
+  paint-order: stroke;
+  stroke: white;
+  stroke-width: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pinpoint-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 12px;
+}
+.pinpoint-map-legend ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-height: 64px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.pinpoint-map-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pinpoint-map-legend li span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.pinpoint-map-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pinpoint-map-ramp {
+  width: 140px;
+  height: 10px;
+  border-radius: 2px;
+}
+.pinpoint-map figcaption {
+  color: var(--color-muted);
+  font-size: 12px;
+  text-align: center;
+}
 .pinpoint-empty-stage {
   display: grid;
   place-content: center;

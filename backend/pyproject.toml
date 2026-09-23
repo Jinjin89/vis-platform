@@ -8,7 +8,9 @@ dependencies = [
     "cairosvg>=2.8,<3",
     "fastapi>=0.115,<1",
     "httpx[socks]>=0.27,<1",
+    "numpy>=2.2,<3",
     "pillow>=12,<13",
+    "pyarrow>=21,<25",
     "uvicorn[standard]>=0.34,<1",
 ]
 
@@ -43,3 +45,10 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 python_version = "3.12"
 strict = true
 packages = ["vis_platform_backend"]
+
+# pyarrow's bundled type information is partial (compute and CSV functions are generated at
+# import time), so it is treated as untyped.
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+follow_imports = "skip"
+follow_untyped_imports = true

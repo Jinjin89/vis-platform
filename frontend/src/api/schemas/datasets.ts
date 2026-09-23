@@ -36,7 +36,7 @@ export const objectDescriptionSchema: z.ZodType<ObjectDescription> = z
     name: z.string(),
     description: z.string().default(""),
     kind: z
-      .enum(["table", "matrix", "model", "scalar", "unknown"])
+      .enum(["table", "matrix", "model", "scalar", "image", "unknown"])
       .default("table"),
     format: z.string(),
     dimensions: z.array(z.number().int()).optional(),

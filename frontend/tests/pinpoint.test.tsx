@@ -4,7 +4,46 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { afterEach, expect, test, vi } from "vitest";
 
+import type { PlotMark } from "../src/api/pinpoint";
 import { PinpointPage } from "../src/pages/PinpointPage";
+
+// jsdom has no WebGL; the stand-in marks points and areas as the real view would.
+vi.mock("../src/features/pinpoint/PointMapStage", () => ({
+  PointMapStage: ({
+    onMark,
+    onUnavailable,
+  }: {
+    onMark: (mark: PlotMark) => void;
+    onUnavailable: (reason: string) => void;
+  }) => (
+    <div role="img" aria-label="Interactive point view">
+      <button
+        type="button"
+        onClick={() => onMark({ number: 1, kind: "element", index: 42 })}
+      >
+        Click point 42
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onMark({
+            number: 2,
+            kind: "selection",
+            x_from: 10,
+            x_to: 20,
+            y_from: 30,
+            y_to: 40,
+          })
+        }
+      >
+        Drag an area
+      </button>
+      <button type="button" onClick={() => onUnavailable("no WebGL")}>
+        Lose WebGL
+      </button>
+    </div>
+  ),
+}));
 
 function plot(version: number) {
   return {
@@ -58,7 +97,7 @@ function json(body: object, status = 200): Response {
   });
 }
 
-function serve(sent: object[]) {
+function serve(sent: object[], extra: object = {}) {
   let version = 1;
   vi.stubGlobal(
     "fetch",
@@ -74,7 +113,7 @@ function serve(sent: object[]) {
       if (path.startsWith("/api/v1/projects/project_1/reports/figures"))
         return json({
           schema_version: "1.0",
-          figures: [plot(version)],
+          figures: [{ ...plot(version), ...extra }],
           total: 1,
           offset: 0,
         });
@@ -118,7 +157,7 @@ function serve(sent: object[]) {
           stage: "committing_version",
           created_at: "2026-09-22T00:00:00Z",
           updated_at: "2026-09-22T00:00:01Z",
-          result: plot(2),
+          result: { ...plot(2), ...extra },
         });
       }
       return json({ error: { code: "NOT_FOUND", message: "Not found." } }, 404);
@@ -242,4 +281,59 @@ test("a request without marks sends no marks", async () => {
   await screen.findByText("Labelled point 1 and shaded area 2.");
   expect(sent[0]).not.toHaveProperty("plot_marks");
   expect(sent[0]).toHaveProperty("base_version_id", "version_1");
+});
+
+test("a point map's clicked points and dragged areas are sent as data marks", async () => {
+  const user = userEvent.setup();
+  const sent: object[] = [];
+  window.localStorage.setItem("vis-platform.project-id", "project_1");
+  serve(sent, { interactive_view: "points" });
+  renderPage();
+  await user.click(
+    await screen.findByRole("button", { name: "Click point 42" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Drag an area" }));
+  const toSend = screen.getByRole("list", { name: "Marks to send" });
+  expect(within(toSend).getByText("Point 1")).toBeInTheDocument();
+  expect(within(toSend).getByText("Area 2")).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("textbox", { name: "Your request" }),
+    "Compare 1 with 2",
+  );
+  await user.click(screen.getByRole("button", { name: "Send" }));
+  await screen.findByText("Labelled point 1 and shaded area 2.");
+  expect(sent[0]).toMatchObject({
+    request: { text: "Compare 1 with 2", interactive: true },
+    base_version_id: "version_1",
+    plot_marks: [
+      { number: 1, kind: "element", index: 42 },
+      {
+        number: 2,
+        kind: "selection",
+        x_from: 10,
+        x_to: 20,
+        y_from: 30,
+        y_to: 40,
+      },
+    ],
+  });
+});
+
+test("without WebGL, a point map falls back to its saved figure", async () => {
+  const user = userEvent.setup();
+  window.localStorage.setItem("vis-platform.project-id", "project_1");
+  serve([], { interactive_view: "points" });
+  renderPage();
+  await user.click(
+    await screen.findByRole("button", { name: "Click point 42" }),
+  );
+  await user.click(screen.getByRole("button", { name: "Lose WebGL" }));
+  expect(
+    await screen.findByRole("img", { name: "Dose response, version 1." }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("no WebGL");
+  // A clicked point means nothing on the image, so it is dropped.
+  expect(
+    screen.queryByRole("list", { name: "Marks to send" }),
+  ).not.toBeInTheDocument();
 });

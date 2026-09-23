@@ -6,9 +6,11 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-from vis_platform_backend.contracts.plot_marks import PlotMark
+from vis_platform_backend.contracts.plot_marks import ImageMark
 
 MAX_PANELS = 100
+# Saved beside a drawing: its plotting regions and their axis ranges.
+PLOT_MAP = "plot-map.json"
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,7 +86,7 @@ def parse_plot_map(data: Any) -> tuple[PlotPanel, ...]:
 
 
 def describe_marks(
-    marks: list[PlotMark], panels: tuple[PlotPanel, ...] | None
+    marks: list[ImageMark], panels: tuple[PlotPanel, ...] | None
 ) -> list[dict[str, Any]]:
     """Each mark's place on the image and, where the drawing was recorded, in data units.
 
@@ -131,3 +133,13 @@ def describe_marks(
                 item["plot_regions"] = regions
         described.append(item)
     return described
+
+
+def image_fraction(panel: PlotPanel, x: float, y: float) -> tuple[float, float]:
+    """Where a data value appears on the image, from its top-left corner (linear axes)."""
+    across = (x - panel.x_range[0]) / (panel.x_range[1] - panel.x_range[0])
+    up = (y - panel.y_range[0]) / (panel.y_range[1] - panel.y_range[0])
+    return (
+        min(1.0, max(0.0, panel.left + across * (panel.right - panel.left))),
+        min(1.0, max(0.0, 1 - (panel.bottom + up * (panel.top - panel.bottom)))),
+    )

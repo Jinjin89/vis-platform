@@ -14,11 +14,12 @@ from vis_platform_backend.contracts.datasets import AnalysisResult, ObjectDescri
 from vis_platform_backend.contracts.research import ResearchPlan
 from vis_platform_backend.data.profiling import content_hash
 from vis_platform_backend.data.service import DataError, DatasetService
+from vis_platform_backend.domain.plot_marks import PLOT_MAP
 from vis_platform_backend.execution.runner import RExecutionError, RWorker, output_file
 from vis_platform_backend.infrastructure.database import Repository, utc_now
 from vis_platform_backend.services.figure_controls import figure_controls, resolve_figure_size
 from vis_platform_backend.services.figure_svg import validate_svg as validate_svg
-from vis_platform_backend.services.plot_marks import PLOT_MAP
+from vis_platform_backend.services.point_maps import PointMapService
 from vis_platform_backend.services.r_repair import RepairingRExecution
 
 
@@ -41,11 +42,12 @@ class ResearchExecutor:
         self.data, self.worker, self.repository = data, worker, repository
         self.artifact_root = artifact_root.resolve()
         self.execution = RepairingRExecution(worker, repository, repair_agent)
+        self.points = PointMapService(data, repository, artifact_root)
 
     def validate_plan(
         self, project_id: str, plan: ResearchPlan, selected_ids: list[str] | None = None
     ) -> None:
-        if not self.worker.available:
+        if not self.worker.available and plan.point_map is None:
             raise DataError("The restricted R runtime is unavailable.")
         if plan.reuse_result_id:
             result = self.data.store.get_result(project_id, plan.reuse_result_id)
@@ -59,6 +61,16 @@ class ResearchExecutor:
                 descriptor = self.data.inspect(project_id, item.reference)
                 if descriptor.readiness != "ready" or "materialize" not in descriptor.capabilities:
                     raise DataError("The plan requires an object that is not ready for execution.")
+                # R reads CSV and RDS objects; large tables and images are for point maps.
+                if plan.point_map is None and (
+                    descriptor.kind == "image" or descriptor.format == "parquet"
+                ):
+                    raise DataError(
+                        f"“{descriptor.name}” is too large for R analysis in this workspace. "
+                        "Show it as a point map in Pinpoint.",
+                        "INPUT_NOT_SUPPORTED",
+                        422,
+                    )
             source_dataset_ids = self.data.dataset_ids_for_objects(
                 project_id, [item.reference for item in plan.inputs]
             )
@@ -125,6 +137,10 @@ class ResearchExecutor:
         plan: ResearchPlan,
         parameters: dict[str, Any] | None = None,
     ) -> ResearchExecution:
+        if plan.point_map is not None:
+            self.validate_plan(project_id, plan)
+            drawn = await self.points.execute(project_id, run_id, plan, parameters)
+            return ResearchExecution(result=drawn.result, preview=drawn.preview, spec=drawn.spec)
         if plan.render_code is not None:
             assert plan.figure_size is not None
             controls, groups = figure_controls(plan.controls, plan.control_groups, plan.figure_size)

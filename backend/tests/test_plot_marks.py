@@ -14,7 +14,7 @@ from test_reference_images import ReferenceDataAgent, project
 from vis_platform_backend.app import create_app
 from vis_platform_backend.config import Settings
 from vis_platform_backend.contracts.assistant_turns import AssistantTurnRequest
-from vis_platform_backend.contracts.plot_marks import PlotMark
+from vis_platform_backend.contracts.plot_marks import ImageMark
 from vis_platform_backend.domain.plot_marks import PlotPanel, describe_marks, parse_plot_map
 from vis_platform_backend.services.plot_marks import MARK, MARKED_IMAGE_ID, draw_marks
 
@@ -43,13 +43,13 @@ def test_marks_belong_to_the_version_they_were_placed_on():
             turn("p", base_version_id="v", plot_marks=[point, point])
         )
     with pytest.raises(ValidationError, match="no width"):
-        PlotMark.model_validate({**point, "width": 0.1})
+        ImageMark.model_validate({**point, "width": 0.1})
     with pytest.raises(ValidationError, match="inside"):
-        PlotMark.model_validate(
+        ImageMark.model_validate(
             {"number": 2, "kind": "area", "x": 0.8, "y": 0, "width": 0.3, "height": 0.1}
         )
     with pytest.raises(ValidationError, match="width and a height"):
-        PlotMark.model_validate({"number": 2, "kind": "area", "x": 0.1, "y": 0.1})
+        ImageMark.model_validate({"number": 2, "kind": "area", "x": 0.1, "y": 0.1})
     request = AssistantTurnRequest.model_validate(turn("p", base_version_id="v"))
     assert request.plot_marks == []
 
@@ -60,10 +60,10 @@ def test_marks_are_read_in_each_regions_data_units():
         PlotPanel(0.6, 0.9, 0.2, 0.9, (0, 1), (0, 3), x_log=False, y_log=True),
     )
     marks = [
-        PlotMark(number=1, kind="point", x=0.3, y=1 - 0.55),
-        PlotMark(number=2, kind="point", x=0.75, y=1 - 0.55),
-        PlotMark(number=3, kind="point", x=0.02, y=0.02),
-        PlotMark(number=4, kind="area", x=0.4, y=0.1, width=0.3, height=0.3),
+        ImageMark(number=1, kind="point", x=0.3, y=1 - 0.55),
+        ImageMark(number=2, kind="point", x=0.75, y=1 - 0.55),
+        ImageMark(number=3, kind="point", x=0.02, y=0.02),
+        ImageMark(number=4, kind="area", x=0.4, y=0.1, width=0.3, height=0.3),
     ]
     described = describe_marks(marks, panels)
     assert described[0] == {
@@ -113,8 +113,8 @@ def test_marks_are_numbered_on_the_image():
     marked = draw_marks(
         image,
         [
-            PlotMark(number=1, kind="point", x=0.25, y=0.5),
-            PlotMark(number=2, kind="area", x=0.6, y=0.3, width=0.3, height=0.4),
+            ImageMark(number=1, kind="point", x=0.25, y=0.5),
+            ImageMark(number=2, kind="area", x=0.6, y=0.3, width=0.3, height=0.4),
         ],
     )
     pixels = marked.load()

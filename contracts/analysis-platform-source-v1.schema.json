@@ -408,6 +408,7 @@
             "matrix",
             "model",
             "scalar",
+            "image",
             "unknown"
           ],
           "title": "Kind",

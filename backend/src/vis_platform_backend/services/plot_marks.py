@@ -9,20 +9,32 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 
+import numpy as np
 from cairosvg.surface import PNGSurface  # type: ignore[import-untyped]
 from PIL import Image, ImageDraw, ImageFont
 
 from vis_platform_backend.agents.messages import ModelImage
-from vis_platform_backend.contracts.plot_marks import PlotMark
+from vis_platform_backend.contracts.plot_marks import (
+    ElementMark,
+    ImageMark,
+    PlotMark,
+    SelectionMark,
+)
 from vis_platform_backend.data.errors import DataError
-from vis_platform_backend.domain.plot_marks import PlotPanel, describe_marks, parse_plot_map
+from vis_platform_backend.domain.plot_marks import (
+    PLOT_MAP,
+    PlotPanel,
+    describe_marks,
+    image_fraction,
+    parse_plot_map,
+)
 from vis_platform_backend.execution.runner import RExecutionError
 from vis_platform_backend.infrastructure.database import Repository
 from vis_platform_backend.services.figure_exports import embedded_images_only
 from vis_platform_backend.services.figure_svg import read_svg
+from vis_platform_backend.services.point_maps import PointMapService
 
 MARKED_IMAGE_ID = "current-plot-marks"
-PLOT_MAP = "plot-map.json"
 LONG_SIDE = 1600
 MARK = (214, 0, 111)
 WHITE = (255, 255, 255)
@@ -35,12 +47,20 @@ class MarkedPlot:
 
 
 class PlotMarkService:
-    def __init__(self, repository: Repository, artifact_root: Path) -> None:
+    def __init__(
+        self, repository: Repository, artifact_root: Path, points: PointMapService | None = None
+    ) -> None:
         self.repository = repository
         self.artifact_root = artifact_root.resolve()
+        self.points = points
 
-    def prepare(self, project_id: str, version_id: str, marks: list[PlotMark]) -> MarkedPlot:
-        """Draw the marks on the version's image and place them in its data coordinates."""
+    async def prepare(self, project_id: str, version_id: str, marks: list[PlotMark]) -> MarkedPlot:
+        """Draw the marks on the version's image and place them in its data coordinates.
+
+        Marks from an interactive point view are drawn where their points are, and also say
+        what the clicked point or dragged area holds in the source table.
+        """
+        placed, found = self._place(project_id, version_id, marks)
         result = self.repository.result_for_version(version_id, project_id)
         artifact = (
             self.repository.get_artifact(result["preview"]["artifact_id"]) if result else None
@@ -58,21 +78,97 @@ class PlotMarkService:
                 url_fetcher=embedded_images_only,
             )
             with Image.open(io.BytesIO(png)) as raster:
-                marked = draw_marks(raster.convert("RGB"), marks)
+                marked = draw_marks(raster.convert("RGB"), placed)
         except (RExecutionError, ValueError, KeyError, OSError) as error:
             raise DataError(
                 "The marks could not be drawn on this plot.", "PLOT_MARKS_FAILED", 422
             ) from error
         buffer = io.BytesIO()
         marked.save(buffer, format="PNG")
+        described = describe_marks(placed, _plot_map(source.with_name(PLOT_MAP)))
+        for item, mark in zip(described, marks, strict=True):
+            if isinstance(mark, ElementMark | SelectionMark):
+                assert self.points is not None
+                item["kind"] = mark.kind
+                item["data"] = await self.points.summarize(
+                    project_id, version_id, found[mark.number], single=mark.kind == "element"
+                )
         return MarkedPlot(
             image=ModelImage(
                 image_id=MARKED_IMAGE_ID,
                 data=buffer.getvalue(),
                 label="Current plot with the user's numbered marks",
             ),
-            marks=describe_marks(marks, _plot_map(source.with_name(PLOT_MAP))),
+            marks=described,
         )
+
+    def check(self, project_id: str, version_id: str, marks: list[PlotMark]) -> None:
+        """Refuse point-view marks the version cannot resolve, before any planning starts."""
+        clicked = [mark for mark in marks if isinstance(mark, ElementMark)]
+        if not any(isinstance(mark, ElementMark | SelectionMark) for mark in marks):
+            return
+        if self.points is None:
+            raise DataError("Point views are unavailable.", "NOT_FOUND", 404)
+        count = int(self.points.view(project_id, version_id)["count"])
+        for mark in clicked:
+            if mark.index >= count:
+                raise DataError(
+                    f"Mark {mark.number} names a point this view does not have.",
+                    "INVALID_PLOT_MARK",
+                    422,
+                )
+
+    def _place(
+        self, project_id: str, version_id: str, marks: list[PlotMark]
+    ) -> tuple[list[ImageMark], dict[int, np.ndarray]]:
+        """Every mark as a place on the image, and the points each point-view mark covers."""
+        if all(isinstance(mark, ImageMark) for mark in marks):
+            return [mark for mark in marks if isinstance(mark, ImageMark)], {}
+        if self.points is None:
+            raise DataError("Point views are unavailable.", "NOT_FOUND", 404)
+        directory = self.points.version_directory(project_id, version_id)
+        panels = _plot_map(directory / PLOT_MAP)
+        if not panels:
+            raise DataError("This point view has no recorded plotting area.", "NOT_FOUND", 404)
+        x, y = self.points.positions(directory)
+        placed: list[ImageMark] = []
+        found: dict[int, np.ndarray] = {}
+        for mark in marks:
+            if isinstance(mark, ImageMark):
+                placed.append(mark)
+            elif isinstance(mark, ElementMark):
+                if mark.index >= len(x):
+                    raise DataError(
+                        f"Mark {mark.number} names a point this view does not have.",
+                        "INVALID_PLOT_MARK",
+                        422,
+                    )
+                found[mark.number] = np.array([mark.index])
+                left, top = image_fraction(panels[0], float(x[mark.index]), float(y[mark.index]))
+                placed.append(ImageMark(number=mark.number, kind="point", x=left, y=top))
+            else:
+                found[mark.number] = np.flatnonzero(
+                    (x >= mark.x_from) & (x <= mark.x_to) & (y >= mark.y_from) & (y <= mark.y_to)
+                )
+                corners = [
+                    image_fraction(panels[0], mark.x_from, mark.y_from),
+                    image_fraction(panels[0], mark.x_to, mark.y_to),
+                ]
+                left, right = sorted(corner[0] for corner in corners)
+                top, bottom = sorted(corner[1] for corner in corners)
+                placed.append(
+                    ImageMark(
+                        number=mark.number,
+                        kind="area",
+                        x=left,
+                        y=top,
+                        width=max(right - left, 0.002),
+                        height=max(bottom - top, 0.002),
+                    )
+                    if right - left > 0 and bottom - top > 0
+                    else ImageMark(number=mark.number, kind="point", x=left, y=top)
+                )
+        return placed, found
 
 
 def _raster_size(root: ET.Element) -> tuple[int, int]:
@@ -96,7 +192,7 @@ def _plot_map(path: Path) -> tuple[PlotPanel, ...] | None:
         return None
 
 
-def draw_marks(image: Image.Image, marks: list[PlotMark]) -> Image.Image:
+def draw_marks(image: Image.Image, marks: list[ImageMark]) -> Image.Image:
     """Numbered rings for points and outlines for areas, each with a badge beside the place."""
     draw = ImageDraw.Draw(image)
     unit = max(image.size) / 100

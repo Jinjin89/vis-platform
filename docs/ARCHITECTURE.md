@@ -621,7 +621,12 @@ and areas on a plot and refer to them in a request. Marks are fractions of the s
 image and travel on the ordinary assistant turn as `plot_marks`. The backend draws
 them on a PNG of the plot for both planners and, from the plotting regions the R
 worker records while drawing, adds each mark's data coordinates. Requests without
-marks are unchanged. See [PINPOINT_UI.md](PINPOINT_UI.md).
+marks are unchanged. For embeddings and spatial data of any size, Pinpoint requests may
+produce point maps: the platform reads the named columns of a large (Parquet) table
+without R, saves a figure with vector axes around a print-resolution raster of the
+points and any tissue image, and serves binary positions for a deck.gl view in which a
+clicked cell or a dragged box becomes a mark resolved over the full table. See
+[PINPOINT_UI.md](PINPOINT_UI.md).
 
 ### Saved work and sessions
 

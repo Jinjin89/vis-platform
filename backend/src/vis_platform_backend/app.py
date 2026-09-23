@@ -97,6 +97,7 @@ def create_app(
                 LlmRRepairAgent(resolved_settings.llm) if resolved_settings.llm.configured else None
             ),
         )
+        app.state.point_maps = research.points
         coordinator = DeterministicPlotRunCoordinator(
             repository,
             resolved_settings,
@@ -114,6 +115,7 @@ def create_app(
             data=dataset_service,
             data_agent=resolved_data_agent,
             reference_images=reference_images,
+            point_maps=research.points,
         )
         assistant_turn_service.runtime.recover()
         session_store = WorkspaceSessionRepository(resolved_settings.database_path)

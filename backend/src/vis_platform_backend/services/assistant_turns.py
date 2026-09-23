@@ -57,6 +57,7 @@ from vis_platform_backend.services.plot_runs import (
     PlotRunCoordinator,
     ResourceNotFoundError,
 )
+from vis_platform_backend.services.point_maps import PointMapService
 from vis_platform_backend.services.reference_images import ReferenceImageService
 from vis_platform_backend.services.workspace_context import WorkspaceContextTools
 
@@ -83,6 +84,7 @@ class AssistantTurnService:
         data: DatasetService | None = None,
         data_agent: DataAgent | None = None,
         reference_images: ReferenceImageService | None = None,
+        point_maps: PointMapService | None = None,
     ) -> None:
         self._repository = repository
         self._reference_images = reference_images
@@ -93,7 +95,7 @@ class AssistantTurnService:
         self._trace_enabled = settings.developer_trace_enabled
         self._trace_token = settings.developer_trace_token
         self.runtime = AssistantRuntime(repository, self._execute_turn, reference_images)
-        self._plot_marks = PlotMarkService(repository, settings.artifact_root)
+        self._plot_marks = PlotMarkService(repository, settings.artifact_root, point_maps)
         self._context_tools = WorkspaceContextTools(repository, data)
         self._secrets = tuple(
             secret for secret in (settings.llm.api_key,) if secret is not None and secret.strip()
@@ -148,6 +150,9 @@ class AssistantTurnService:
                 resolve_parameters(result.controls, request.parameter_changes, require_change=False)
             except InvalidParameterError as error:
                 raise DataError(str(error), "INVALID_PARAMETERS", 422) from error
+        if request.plot_marks:
+            assert request.base_version_id is not None
+            self._plot_marks.check(request.project_id, request.base_version_id, request.plot_marks)
         if request.request.reference_image_ids:
             if self._reference_images is None:
                 raise DataError("Reference images are unavailable.", "IMAGES_UNAVAILABLE", 409)
@@ -227,7 +232,7 @@ class AssistantTurnService:
                 "completed",
                 summary="Reference images are included in planning.",
             )
-        marked = self._marked_plot(turn_id, request, pass_id)
+        marked = await self._marked_plot(turn_id, request, pass_id)
         if marked:
             context["plot_marks"] = marked.marks
         intent_step = "intent:" + pass_id
@@ -632,6 +637,9 @@ class AssistantTurnService:
                 turn_id, created_at, decision, "Data access is not connected.", blocked=True
             )
         plot_request = self._plot_request(request, decision)
+        active_point_map = self._active_render_plan(request).get("point_map")
+        # A point map stays one when refined, whichever interface asks.
+        interactive = request.request.interactive or active_point_map is not None
         render_only = bool(
             active_plot
             and decision.refinement
@@ -697,6 +705,7 @@ class AssistantTurnService:
                 ModelContext(
                     {
                         "render_only": render_only,
+                        "interactive_view": interactive,
                         "reference_images": [
                             image.model_dump(mode="json")
                             for image in self._reference_images.resolve(
@@ -724,6 +733,7 @@ class AssistantTurnService:
                         "previous_answers": answers,
                         "active_figure": {
                             "render_code": self._active_render_code(request),
+                            "point_map": active_point_map,
                             "figure_size": active_plot.figure_size,
                             "controls": active_plot.controls,
                             "control_groups": active_plot.control_groups,
@@ -760,7 +770,19 @@ class AssistantTurnService:
                     turn_id, created_at, clarified, planning.summary, blocked=True, ask_user=True
                 )
             assert planning.plan is not None
-            if render_only:
+            if planning.plan.point_map is not None and not interactive:
+                raise DataError(
+                    "Point maps are drawn in Pinpoint; plan an R figure here.",
+                    "INVALID_POINT_MAP",
+                    422,
+                )
+            if planning.plan.point_map is not None and planning.plan.reuse_result_id:
+                raise DataError(
+                    "A point map names its table, and any image, as plan inputs.",
+                    "INVALID_POINT_MAP",
+                    422,
+                )
+            if render_only and planning.plan.point_map is None:
                 assert active_plot is not None
                 result_ids = {item["result_id"] for item in active_plot.analysis_results}
                 if (
@@ -988,14 +1010,14 @@ class AssistantTurnService:
             reference_images=tuple(result.get("reference_images", [])),
         )
 
-    def _marked_plot(
+    async def _marked_plot(
         self, turn_id: str, request: AssistantTurnRequest, pass_id: str
     ) -> MarkedPlot | None:
         """The plot as the user marked it, and where each mark falls in its data."""
         if not request.plot_marks:
             return None
         assert request.base_version_id is not None
-        marked = self._plot_marks.prepare(
+        marked = await self._plot_marks.prepare(
             request.project_id, request.base_version_id, request.plot_marks
         )
         located = sum(1 for mark in marked.marks if mark.get("plot_regions"))
@@ -1027,19 +1049,20 @@ class AssistantTurnService:
                 return list(turn["reference_image_ids"])
         return []
 
-    def _active_render_code(self, request: AssistantTurnRequest) -> str | None:
+    def _active_render_plan(self, request: AssistantTurnRequest) -> dict[str, Any]:
+        """The saved research plan of the version being refined, if it has one."""
         if not request.base_version_id:
-            return None
+            return {}
         plot_id = self._repository.plot_id_for_version(request.base_version_id)
         run_id = self._repository.run_id_for_version(
             request.project_id, plot_id or "", request.base_version_id
         )
         record = self._repository.get_run(run_id) if run_id else None
-        return (
-            record["interaction"].get("render_spec", {}).get("plan", {}).get("render_code")
-            if record
-            else None
-        )
+        plan = record["interaction"].get("render_spec", {}).get("plan", {}) if record else {}
+        return plan if isinstance(plan, dict) else {}
+
+    def _active_render_code(self, request: AssistantTurnRequest) -> str | None:
+        return self._active_render_plan(request).get("render_code")
 
     def _conversation(self, project_id: str, turn_id: str) -> tuple[ConversationMessage, ...]:
         messages = []

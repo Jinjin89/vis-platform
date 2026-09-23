@@ -1822,6 +1822,208 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view": {
+      "get": {
+        "tags": [
+          "point views"
+        ],
+        "summary": "Get Point View",
+        "operationId": "get_point_view_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "plot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plot Id"
+            }
+          },
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointView"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view/columns": {
+      "get": {
+        "tags": [
+          "point views"
+        ],
+        "summary": "Get Point Columns",
+        "operationId": "get_point_columns_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_columns_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "plot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plot Id"
+            }
+          },
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view/image": {
+      "get": {
+        "tags": [
+          "point views"
+        ],
+        "summary": "Get Point Image",
+        "operationId": "get_point_image_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_image_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "plot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plot Id"
+            }
+          },
+          {
+            "name": "version_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Version Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "404": {
+            "description": "The requested resource was not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/artifacts/{artifact_id}": {
       "get": {
         "tags": [
@@ -5821,7 +6023,26 @@
           },
           "plot_marks": {
             "items": {
-              "$ref": "#/components/schemas/PlotMark"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ImageMark"
+                },
+                {
+                  "$ref": "#/components/schemas/ElementMark"
+                },
+                {
+                  "$ref": "#/components/schemas/SelectionMark"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "area": "#/components/schemas/ImageMark",
+                  "element": "#/components/schemas/ElementMark",
+                  "point": "#/components/schemas/ImageMark",
+                  "selection": "#/components/schemas/SelectionMark"
+                }
+              }
             },
             "type": "array",
             "maxItems": 9,
@@ -7157,6 +7378,36 @@
         ],
         "title": "DeveloperTraceResponse"
       },
+      "ElementMark": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "const": "element",
+            "title": "Kind"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Index",
+            "description": "The point's position in the point view's columns."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "kind",
+          "index"
+        ],
+        "title": "ElementMark",
+        "description": "A point the user clicked in a version's interactive point view."
+      },
       "FigureCheck": {
         "properties": {
           "code": {
@@ -8324,6 +8575,64 @@
         ],
         "title": "HealthResponse"
       },
+      "ImageMark": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "point",
+              "area"
+            ],
+            "title": "Kind"
+          },
+          "x": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X",
+            "description": "The point, or the area's left edge, as a fraction of the width."
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "description": "The point, or the area's top edge, as a fraction of the height from the top."
+          },
+          "width": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Width",
+            "description": "An area's width; 0 for a point.",
+            "default": 0
+          },
+          "height": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Height",
+            "description": "An area's height; 0 for a point.",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "kind",
+          "x",
+          "y"
+        ],
+        "title": "ImageMark",
+        "description": "A place the user marked on a plot image, so a request can refer to it by number."
+      },
       "ImagePanelContent": {
         "properties": {
           "type": {
@@ -9406,6 +9715,7 @@
               "matrix",
               "model",
               "scalar",
+              "image",
               "unknown"
             ],
             "title": "Kind",
@@ -10164,64 +10474,6 @@
         ],
         "title": "PlotIntent"
       },
-      "PlotMark": {
-        "properties": {
-          "number": {
-            "type": "integer",
-            "maximum": 9.0,
-            "minimum": 1.0,
-            "title": "Number"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "point",
-              "area"
-            ],
-            "title": "Kind"
-          },
-          "x": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "X",
-            "description": "The point, or the area's left edge, as a fraction of the width."
-          },
-          "y": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Y",
-            "description": "The point, or the area's top edge, as a fraction of the height from the top."
-          },
-          "width": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Width",
-            "description": "An area's width; 0 for a point.",
-            "default": 0
-          },
-          "height": {
-            "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "title": "Height",
-            "description": "An area's height; 0 for a point.",
-            "default": 0
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "number",
-          "kind",
-          "x",
-          "y"
-        ],
-        "title": "PlotMark",
-        "description": "A place the user marked on a plot image, so a request can refer to it by number."
-      },
       "PlotPanelContent": {
         "properties": {
           "type": {
@@ -10328,6 +10580,12 @@
           "controls_mode": {
             "$ref": "#/components/schemas/ControlsMode",
             "default": "hybrid"
+          },
+          "interactive": {
+            "type": "boolean",
+            "title": "Interactive",
+            "description": "Offer interactive views where the plot suits one, such as point maps of embeddings and spatial data. Pinpoint sets it.",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -10379,6 +10637,19 @@
               "r"
             ],
             "title": "Execution Mode"
+          },
+          "interactive_view": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "points"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interactive View",
+            "description": "points: the version also has an interactive point view, with binary positions and any image under them, at .../versions/{version_id}/point-view."
           },
           "preview": {
             "$ref": "#/components/schemas/ArtifactReference"
@@ -10805,6 +11076,517 @@
           "versions"
         ],
         "title": "PlotVersionList"
+      },
+      "PointAxis": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "domain": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Domain"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "title",
+          "domain"
+        ],
+        "title": "PointAxis"
+      },
+      "PointCategory": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "color": {
+            "type": "string",
+            "title": "Color"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "color"
+        ],
+        "title": "PointCategory"
+      },
+      "PointColorCategories": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "categorical",
+            "title": "Type"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/PointCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "missing_color": {
+            "type": "string",
+            "title": "Missing Color"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "field",
+          "title",
+          "categories",
+          "missing_color"
+        ],
+        "title": "PointColorCategories"
+      },
+      "PointColorScale": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "continuous",
+            "title": "Type"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "domain": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Domain"
+          },
+          "stops": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stops",
+            "description": "Evenly spaced colours from the low to the high end."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "field",
+          "title",
+          "domain",
+          "stops"
+        ],
+        "title": "PointColorScale"
+      },
+      "PointMapImage": {
+        "properties": {
+          "input": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+            "title": "Input",
+            "description": "Alias of an image object in the plan inputs."
+          },
+          "units_per_pixel": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Units Per Pixel",
+            "description": "Data units spanned by one pixel of the uploaded image. 1 when point coordinates are pixels of this image; for a downsampled image, the original pixels per image pixel (for Visium full-resolution coordinates and the high-resolution image, 1 / tissue_hires_scalef).",
+            "default": 1
+          },
+          "origin": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Origin",
+            "description": "Data coordinates of the image's top-left corner.",
+            "default": [
+              0,
+              0
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "input"
+        ],
+        "title": "PointMapImage",
+        "description": "An image under the points, such as a tissue section, placed in data units."
+      },
+      "PointMapPlan": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+            "title": "Table",
+            "description": "Alias of the table input to draw."
+          },
+          "x": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "X",
+            "description": "Numeric column for x."
+          },
+          "y": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Y",
+            "description": "Numeric column for y."
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color",
+            "description": "Column that colors."
+          },
+          "color_type": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "categorical",
+              "continuous"
+            ],
+            "title": "Color Type",
+            "description": "auto treats numeric columns with more than 30 distinct values as continuous.",
+            "default": "auto"
+          },
+          "y_axis": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Y Axis",
+            "description": "down for image and pixel coordinates, where y increases downward.",
+            "default": "up"
+          },
+          "equal_aspect": {
+            "type": "boolean",
+            "title": "Equal Aspect",
+            "description": "One data unit has the same length on both axes.",
+            "default": true
+          },
+          "x_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Title"
+          },
+          "y_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Title"
+          },
+          "color_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color Title"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PointMapImage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table",
+          "x",
+          "y"
+        ],
+        "title": "PointMapPlan",
+        "description": "Many observations drawn at two coordinates: an embedding or a spatial map.\n\nPixel (column, row) of the image covers data x = origin_x + column \u00d7 units_per_pixel and\ny = origin_y + row \u00d7 units_per_pixel; y_axis only chooses which way y increases on screen."
+      },
+      "PointView": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "dropped": {
+            "type": "integer",
+            "title": "Dropped",
+            "description": "Source rows without numeric positions, not drawn."
+          },
+          "x": {
+            "$ref": "#/components/schemas/PointAxis"
+          },
+          "y": {
+            "$ref": "#/components/schemas/PointYAxis"
+          },
+          "equal_aspect": {
+            "type": "boolean",
+            "title": "Equal Aspect"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/PointColorCategories"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PointColorScale"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "type",
+                  "mapping": {
+                    "categorical": "#/components/schemas/PointColorCategories",
+                    "continuous": "#/components/schemas/PointColorScale"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "columns": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "x",
+                "y",
+                "color"
+              ]
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "point_size": {
+            "type": "number",
+            "title": "Point Size",
+            "description": "Point diameter in printed points."
+          },
+          "opacity": {
+            "type": "number",
+            "title": "Opacity"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PointViewImage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "links": {
+            "$ref": "#/components/schemas/PointViewLinks"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "title",
+          "count",
+          "dropped",
+          "x",
+          "y",
+          "equal_aspect",
+          "color",
+          "columns",
+          "point_size",
+          "opacity",
+          "image",
+          "links"
+        ],
+        "title": "PointView",
+        "description": "An interactive view of a point map version."
+      },
+      "PointViewImage": {
+        "properties": {
+          "extent": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Extent",
+            "description": "Left, right, and the y of the image's first and last rows, in data units."
+          },
+          "visible": {
+            "type": "boolean",
+            "title": "Visible"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "extent",
+          "visible"
+        ],
+        "title": "PointViewImage"
+      },
+      "PointViewLinks": {
+        "properties": {
+          "columns": {
+            "type": "string",
+            "title": "Columns",
+            "description": "Little-endian float32 columns, one after another, `count` values each, in the order `columns` lists: x, y, and colour (category index, or value; NaN when missing). A point's index is its position in these columns."
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "columns"
+        ],
+        "title": "PointViewLinks"
+      },
+      "PointYAxis": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "domain": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Domain"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "field",
+          "title",
+          "domain",
+          "direction"
+        ],
+        "title": "PointYAxis"
       },
       "PresentationSettings": {
         "properties": {
@@ -12945,6 +13727,17 @@
             ],
             "title": "Render Code"
           },
+          "point_map": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PointMapPlan"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Draw a table's rows as points without R, for embeddings and spatial maps of any size; only when the context offers interactive_view. Replaces analysis_code, outputs, and render_code; the platform adds point size and opacity controls."
+          },
           "controls": {
             "items": {
               "oneOf": [
@@ -13241,6 +14034,49 @@
           "bundle_ids"
         ],
         "title": "SelectedDataScope"
+      },
+      "SelectionMark": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "maximum": 9.0,
+            "minimum": 1.0,
+            "title": "Number"
+          },
+          "kind": {
+            "type": "string",
+            "const": "selection",
+            "title": "Kind"
+          },
+          "x_from": {
+            "type": "number",
+            "title": "X From"
+          },
+          "x_to": {
+            "type": "number",
+            "title": "X To"
+          },
+          "y_from": {
+            "type": "number",
+            "title": "Y From"
+          },
+          "y_to": {
+            "type": "number",
+            "title": "Y To"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "number",
+          "kind",
+          "x_from",
+          "x_to",
+          "y_from",
+          "y_to"
+        ],
+        "title": "SelectionMark",
+        "description": "An area the user dragged in a version's interactive point view, in data units."
       },
       "SetFigureDatasets": {
         "properties": {

@@ -28,7 +28,9 @@ Open `/figure` or choose **Figure** in the header to build a publication figure 
 
 ## Pinpoint interface
 
-Open `/pinpoint` or choose **Pinpoint** in the header to mark points and areas on a plot and talk about them. `features/pinpoint/` holds the stage (click to mark a point, drag to mark an area; positions are fractions of the image), the conversation, the request tracker, and the browser-local conversation per plot. Requests are assistant turns with `plot_marks` (`api/pinpoint.ts`); the report status card shows plot-agent questions and approvals. See [the Pinpoint guide](../docs/PINPOINT_UI.md).
+Open `/pinpoint` or choose **Pinpoint** in the header to mark points and areas on a plot and talk about them. `features/pinpoint/` holds the stage (click to mark a point, drag to mark an area; positions are fractions of the image), the conversation, the request tracker, and the browser-local conversation per plot. Requests are assistant turns with `plot_marks` and `interactive: true` (`api/pinpoint.ts`); the report status card shows plot-agent questions and approvals. Point maps open in `PointMapStage`, which loads deck.gl on demand (a separate chunk), draws the binary positions over the section image, and draws axes, marks, and the hover tooltip itself; `pointMapModel.ts` holds colours, the camera maths, and the grid index used for hovering and clicking. Without WebGL2 the page falls back to the saved figure. See [the Pinpoint guide](../docs/PINPOINT_UI.md).
+
+`browser-tests/pinpoint-points.spec.ts` needs WebGL2 and skips itself without it. On a server with no display, run the browser tests under a virtual X server, for example `Xvfb :99 &` and then `DISPLAY=:99 npx playwright test`.
 
 ## Canvas interface
 

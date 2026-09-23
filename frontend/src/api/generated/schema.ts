@@ -431,6 +431,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Point View */
+        get: operations["get_point_view_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view/columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Point Columns */
+        get: operations["get_point_columns_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_columns_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Point Image */
+        get: operations["get_point_image_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/artifacts/{artifact_id}": {
         parameters: {
             query?: never;
@@ -1394,7 +1445,7 @@ export interface components {
              * Plot Marks
              * @description Numbered places the user marked on the base version's image; the request can refer to them by number.
              */
-            plot_marks?: components["schemas"]["PlotMark"][];
+            plot_marks?: (components["schemas"]["ImageMark"] | components["schemas"]["ElementMark"] | components["schemas"]["SelectionMark"])[];
         };
         /** AssistantTurnResponse */
         AssistantTurnResponse: {
@@ -1890,6 +1941,24 @@ export interface components {
              */
             reasoning_content_exposed: false;
         };
+        /**
+         * ElementMark
+         * @description A point the user clicked in a version's interactive point view.
+         */
+        ElementMark: {
+            /** Number */
+            number: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "element";
+            /**
+             * Index
+             * @description The point's position in the point view's columns.
+             */
+            index: number;
+        };
         /** FigureCheck */
         FigureCheck: {
             /**
@@ -2365,6 +2434,41 @@ export interface components {
             developer_trace_enabled: boolean;
             llm: components["schemas"]["LlmConfigurationResponse"];
         };
+        /**
+         * ImageMark
+         * @description A place the user marked on a plot image, so a request can refer to it by number.
+         */
+        ImageMark: {
+            /** Number */
+            number: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "area" | "point";
+            /**
+             * X
+             * @description The point, or the area's left edge, as a fraction of the width.
+             */
+            x: number;
+            /**
+             * Y
+             * @description The point, or the area's top edge, as a fraction of the height from the top.
+             */
+            y: number;
+            /**
+             * Width
+             * @description An area's width; 0 for a point.
+             * @default 0
+             */
+            width: number;
+            /**
+             * Height
+             * @description An area's height; 0 for a point.
+             * @default 0
+             */
+            height: number;
+        };
         /** ImagePanelContent */
         ImagePanelContent: {
             /**
@@ -2649,7 +2753,7 @@ export interface components {
              * @default table
              * @enum {string}
              */
-            kind: "table" | "matrix" | "model" | "scalar" | "unknown";
+            kind: "table" | "matrix" | "model" | "scalar" | "image" | "unknown";
             /** Format */
             format: string;
             /** Dimensions */
@@ -2927,41 +3031,6 @@ export interface components {
             /** Appearance */
             appearance?: string[];
         };
-        /**
-         * PlotMark
-         * @description A place the user marked on a plot image, so a request can refer to it by number.
-         */
-        PlotMark: {
-            /** Number */
-            number: number;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "point" | "area";
-            /**
-             * X
-             * @description The point, or the area's left edge, as a fraction of the width.
-             */
-            x: number;
-            /**
-             * Y
-             * @description The point, or the area's top edge, as a fraction of the height from the top.
-             */
-            y: number;
-            /**
-             * Width
-             * @description An area's width; 0 for a point.
-             * @default 0
-             */
-            width: number;
-            /**
-             * Height
-             * @description An area's height; 0 for a point.
-             * @default 0
-             */
-            height: number;
-        };
         /** PlotPanelContent */
         PlotPanelContent: {
             /**
@@ -3001,6 +3070,12 @@ export interface components {
             gallery_reference_id?: string | null;
             /** @default hybrid */
             controls_mode: components["schemas"]["ControlsMode"];
+            /**
+             * Interactive
+             * @description Offer interactive views where the plot suits one, such as point maps of embeddings and spatial data. Pinpoint sets it.
+             * @default false
+             */
+            interactive: boolean;
         };
         /** PlotResultSummary */
         PlotResultSummary: {
@@ -3018,6 +3093,11 @@ export interface components {
              * @enum {string}
              */
             execution_mode: "demo" | "r";
+            /**
+             * Interactive View
+             * @description points: the version also has an interactive point view, with binary positions and any image under them, at .../versions/{version_id}/point-view.
+             */
+            interactive_view?: "points" | null;
             preview: components["schemas"]["ArtifactReference"];
             controls_mode: components["schemas"]["ControlsMode"];
             /** Controls */
@@ -3162,6 +3242,222 @@ export interface components {
             current_version_id: string;
             /** Versions */
             versions: components["schemas"]["PlotVersion"][];
+        };
+        /** PointAxis */
+        PointAxis: {
+            /** Field */
+            field: string;
+            /** Title */
+            title: string;
+            /** Domain */
+            domain: [
+                number,
+                number
+            ];
+        };
+        /** PointCategory */
+        PointCategory: {
+            /** Value */
+            value: string;
+            /** Color */
+            color: string;
+        };
+        /** PointColorCategories */
+        PointColorCategories: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "categorical";
+            /** Field */
+            field: string;
+            /** Title */
+            title: string;
+            /** Categories */
+            categories: components["schemas"]["PointCategory"][];
+            /** Missing Color */
+            missing_color: string;
+        };
+        /** PointColorScale */
+        PointColorScale: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "continuous";
+            /** Field */
+            field: string;
+            /** Title */
+            title: string;
+            /** Domain */
+            domain: [
+                number,
+                number
+            ];
+            /**
+             * Stops
+             * @description Evenly spaced colours from the low to the high end.
+             */
+            stops: string[];
+        };
+        /**
+         * PointMapImage
+         * @description An image under the points, such as a tissue section, placed in data units.
+         */
+        PointMapImage: {
+            /**
+             * Input
+             * @description Alias of an image object in the plan inputs.
+             */
+            input: string;
+            /**
+             * Units Per Pixel
+             * @description Data units spanned by one pixel of the uploaded image. 1 when point coordinates are pixels of this image; for a downsampled image, the original pixels per image pixel (for Visium full-resolution coordinates and the high-resolution image, 1 / tissue_hires_scalef).
+             * @default 1
+             */
+            units_per_pixel: number;
+            /**
+             * Origin
+             * @description Data coordinates of the image's top-left corner.
+             * @default [
+             *       0,
+             *       0
+             *     ]
+             */
+            origin: [
+                number,
+                number
+            ];
+        };
+        /**
+         * PointMapPlan
+         * @description Many observations drawn at two coordinates: an embedding or a spatial map.
+         *
+         *     Pixel (column, row) of the image covers data x = origin_x + column × units_per_pixel and
+         *     y = origin_y + row × units_per_pixel; y_axis only chooses which way y increases on screen.
+         */
+        PointMapPlan: {
+            /**
+             * Table
+             * @description Alias of the table input to draw.
+             */
+            table: string;
+            /**
+             * X
+             * @description Numeric column for x.
+             */
+            x: string;
+            /**
+             * Y
+             * @description Numeric column for y.
+             */
+            y: string;
+            /**
+             * Color
+             * @description Column that colors.
+             */
+            color?: string | null;
+            /**
+             * Color Type
+             * @description auto treats numeric columns with more than 30 distinct values as continuous.
+             * @default auto
+             * @enum {string}
+             */
+            color_type: "auto" | "categorical" | "continuous";
+            /**
+             * Y Axis
+             * @description down for image and pixel coordinates, where y increases downward.
+             * @default up
+             * @enum {string}
+             */
+            y_axis: "up" | "down";
+            /**
+             * Equal Aspect
+             * @description One data unit has the same length on both axes.
+             * @default true
+             */
+            equal_aspect: boolean;
+            /** X Title */
+            x_title?: string | null;
+            /** Y Title */
+            y_title?: string | null;
+            /** Color Title */
+            color_title?: string | null;
+            image?: components["schemas"]["PointMapImage"] | null;
+        };
+        /**
+         * PointView
+         * @description An interactive view of a point map version.
+         */
+        PointView: {
+            /** Title */
+            title: string;
+            /** Count */
+            count: number;
+            /**
+             * Dropped
+             * @description Source rows without numeric positions, not drawn.
+             */
+            dropped: number;
+            x: components["schemas"]["PointAxis"];
+            y: components["schemas"]["PointYAxis"];
+            /** Equal Aspect */
+            equal_aspect: boolean;
+            /** Color */
+            color: (components["schemas"]["PointColorCategories"] | components["schemas"]["PointColorScale"]) | null;
+            /** Columns */
+            columns: ("x" | "y" | "color")[];
+            /**
+             * Point Size
+             * @description Point diameter in printed points.
+             */
+            point_size: number;
+            /** Opacity */
+            opacity: number;
+            image: components["schemas"]["PointViewImage"] | null;
+            links: components["schemas"]["PointViewLinks"];
+        };
+        /** PointViewImage */
+        PointViewImage: {
+            /**
+             * Extent
+             * @description Left, right, and the y of the image's first and last rows, in data units.
+             */
+            extent: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /** Visible */
+            visible: boolean;
+        };
+        /** PointViewLinks */
+        PointViewLinks: {
+            /**
+             * Columns
+             * @description Little-endian float32 columns, one after another, `count` values each, in the order `columns` lists: x, y, and colour (category index, or value; NaN when missing). A point's index is its position in these columns.
+             */
+            columns: string;
+            /** Image */
+            image?: string | null;
+        };
+        /** PointYAxis */
+        PointYAxis: {
+            /** Field */
+            field: string;
+            /** Title */
+            title: string;
+            /** Domain */
+            domain: [
+                number,
+                number
+            ];
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "up" | "down";
         };
         /** PresentationSettings */
         PresentationSettings: {
@@ -3931,6 +4227,8 @@ export interface components {
             reuse_result_id?: string | null;
             /** Render Code */
             render_code?: string | null;
+            /** @description Draw a table's rows as points without R, for embeddings and spatial maps of any size; only when the context offers interactive_view. Replaces analysis_code, outputs, and render_code; the platform adds point size and opacity controls. */
+            point_map?: components["schemas"]["PointMapPlan"] | null;
             /** Controls */
             controls?: (components["schemas"]["RenderNumberControl"] | components["schemas"]["RenderChoiceControl"] | components["schemas"]["RenderTextControl"] | components["schemas"]["RenderBooleanControl"])[];
             /** Control Groups */
@@ -4034,6 +4332,27 @@ export interface components {
             mode: "selected";
             /** Bundle Ids */
             bundle_ids: string[];
+        };
+        /**
+         * SelectionMark
+         * @description An area the user dragged in a version's interactive point view, in data units.
+         */
+        SelectionMark: {
+            /** Number */
+            number: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "selection";
+            /** X From */
+            x_from: number;
+            /** X To */
+            x_to: number;
+            /** Y From */
+            y_from: number;
+            /** Y To */
+            y_to: number;
         };
         /** SetFigureDatasets */
         SetFigureDatasets: {
@@ -5633,6 +5952,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    get_point_view_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                plot_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PointView"];
+                };
+            };
+            /** @description The requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_point_columns_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_columns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                plot_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": unknown;
+                };
+            };
+            /** @description The requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_point_image_api_v1_projects__project_id__plots__plot_id__versions__version_id__point_view_image_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                plot_id: string;
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": unknown;
+                };
+            };
+            /** @description The requested resource was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

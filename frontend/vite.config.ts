@@ -3,6 +3,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react()],
+  // Loaded on demand by Pinpoint; prebundled so the dev server does not reload mid-session.
+  optimizeDeps: { include: ["@deck.gl/core", "@deck.gl/layers"] },
   server: {
     host: "0.0.0.0",
     proxy: {

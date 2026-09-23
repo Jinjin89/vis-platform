@@ -8,6 +8,7 @@ from .common import StrictModel
 from .datasets import ObjectReference, ObjectRelationship
 from .figures import FigureSize
 from .parameters import ControlGroup, NumberControl
+from .point_maps import PointMapPlan
 from .questions import ClarificationQuestion
 from .render_controls import RenderControl
 
@@ -41,15 +42,32 @@ class ResearchPlan(StrictModel):
     outputs: list[ResearchOutput] = Field(default_factory=list, max_length=20)
     reuse_result_id: str | None = None
     render_code: str | None = Field(default=None, max_length=40_000)
+    point_map: PointMapPlan | None = Field(
+        default=None,
+        description=(
+            "Draw a table's rows as points without R, for embeddings and spatial maps of any "
+            "size; only when the context offers interactive_view. Replaces analysis_code, "
+            "outputs, and render_code; the platform adds point size and opacity controls."
+        ),
+    )
     controls: list[RenderControl] = Field(default_factory=list, max_length=42)
     control_groups: list[ControlGroup] = Field(default_factory=list)
     random_seed: int = Field(default=1, ge=0, le=2_147_483_647)
 
     @model_validator(mode="after")
     def executable(self) -> ResearchPlan:
-        if self.render_code is not None and self.figure_size is None:
+        if (self.render_code is not None or self.point_map) and self.figure_size is None:
             raise ValueError("Rendering requires explicit figure_size width and height in inches.")
-        if self.reuse_result_id is None and (
+        if self.point_map:
+            if self.render_code is not None or self.analysis_code is not None or self.outputs:
+                raise ValueError("A point map is drawn without R analysis or rendering code.")
+            aliases = {item.alias for item in self.inputs}
+            used = {self.point_map.table} | (
+                {self.point_map.image.input} if self.point_map.image else set()
+            )
+            if self.reuse_result_id is None and not used <= aliases:
+                raise ValueError("A point map's table and image must be plan inputs.")
+        elif self.reuse_result_id is None and (
             not self.inputs or not self.analysis_code or not self.outputs
         ):
             raise ValueError("New analysis requires inputs, code, and named outputs.")
@@ -61,7 +79,7 @@ class ResearchPlan(StrictModel):
             raise ValueError("Output keys must be unique.")
         if len({item.id for item in self.controls}) != len(self.controls):
             raise ValueError("Control identifiers must be unique.")
-        if self.controls and self.render_code is None:
+        if self.controls and self.render_code is None and self.point_map is None:
             raise ValueError("Figure controls require rendering code.")
         return self
 

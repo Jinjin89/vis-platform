@@ -96,6 +96,13 @@ class PlotRequest(StrictModel):
     gallery_mode: GalleryMode = GalleryMode.OFF
     gallery_reference_id: str | None = None
     controls_mode: ControlsMode = ControlsMode.HYBRID
+    interactive: bool = Field(
+        default=False,
+        description=(
+            "Offer interactive views where the plot suits one, such as point maps of "
+            "embeddings and spatial data. Pinpoint sets it."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_conditional_fields(self) -> PlotRequest:
@@ -171,6 +178,13 @@ class PlotResultSummary(StrictModel):
     plot_id: str
     version_id: str
     execution_mode: Literal["demo", "r"]
+    interactive_view: Literal["points"] | None = Field(
+        default=None,
+        description=(
+            "points: the version also has an interactive point view, with binary positions "
+            "and any image under them, at .../versions/{version_id}/point-view."
+        ),
+    )
     preview: ArtifactReference
     controls_mode: ControlsMode
     controls: list[ControlDefinition] = Field(default_factory=list)

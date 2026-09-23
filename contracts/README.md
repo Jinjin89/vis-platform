@@ -63,7 +63,19 @@ A workspace conversation groups assistant turns. `POST /api/v1/projects/{project
 
 ## Pointing at a plot
 
-`AssistantTurnRequest.plot_marks` lists up to nine numbered places on the image of `base_version_id`, which it requires. A `PlotMark` has a `number` (1–9, each used once), a `kind` (`point` or `area`), and `x` and `y` as fractions of the image from its top-left corner; an area adds `width` and `height` and stays inside the image. The request text can then refer to marks by number. Both planners receive the plot with the numbered marks drawn on it and, where the renderer recorded the plotting regions, each mark's data coordinates. Turns without marks are unchanged. See [the Pinpoint guide](../docs/PINPOINT_UI.md).
+`AssistantTurnRequest.plot_marks` lists up to nine numbered marks on `base_version_id`, which it requires; each number is used once. The request text can then refer to marks by number. Turns without marks are unchanged. Marks are one of:
+
+- `ImageMark` (`kind` `point` or `area`): `x` and `y` as fractions of the image from its top-left corner; an area adds `width` and `height` and stays inside the image.
+- `ElementMark` (`kind` `element`): `index`, a point's position in the version's point view columns.
+- `SelectionMark` (`kind` `selection`): `x_from` < `x_to` and `y_from` < `y_to`, a box in the point view's data units.
+
+Element and selection marks need a version with a point view; an index the view does not have returns 422 `INVALID_PLOT_MARK` before planning starts. Both planners receive the plot with the numbered marks drawn on it and, where the drawing's plotting regions are known, each mark's data coordinates. Element and selection marks also carry `data`: the clicked point's source row and values, or a box's count, share, make-up by colour, the numeric columns that differ most from the whole table, and five example rows, all read from the full source table.
+
+## Point maps
+
+`PlotRequest.interactive` offers interactive views; Pinpoint sets it. Only then, or when refining a version that is already a point map, may the data planner return `ResearchPlan.point_map` (otherwise 422 `INVALID_POINT_MAP`): `table` and optional `image` input aliases, `x`, `y`, optional `color` (`color_type` `auto`, `categorical`, or `continuous`), `y_axis` (`up`, or `down` for image and pixel coordinates), `equal_aspect`, titles, and for the image `units_per_pixel` and `origin`, the data coordinates of its top-left corner. A point map has no analysis code, outputs, render code, or model-written controls; it names its inputs rather than reusing a result. The platform reads the named columns (no generated code runs) and saves the positions, colours, and each point's source row as the analysis result. The saved figure is an SVG with vector axes, text, and legend around an embedded PNG of the points (and image) at up to 300 dpi. Controls are the figure size, `point_size` (pt), `point_opacity`, and `show_image`; parameter updates and restores re-render without the model or R. `PlotResultSummary.interactive_view` is `points` for these versions.
+
+`GET /api/v1/projects/{project_id}/plots/{plot_id}/versions/{version_id}/point-view` returns `PointView`: count, rows without positions, axes with data domains and y direction, colour categories or scale, point size and opacity, the image's extent, and links. `.../point-view/columns` returns little-endian float32 columns one after another (`count` values each, in `columns` order: x, y, and colour index or value, NaN when missing); `.../point-view/image` returns the image as PNG, at most 4,096 pixels on its long side. Both are immutable and cacheable. Saved SVGs may embed `data:image/png;base64` images; no other external reference is allowed.
 
 ## Assistant activity and questions
 

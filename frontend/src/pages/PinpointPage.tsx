@@ -10,6 +10,8 @@ import { SessionSidebar } from "../components/SessionSidebar";
 import { WorkspaceSwitcher } from "../components/WorkspaceSwitcher";
 import { PinpointConversation } from "../features/pinpoint/PinpointConversation";
 import { PinpointStage } from "../features/pinpoint/PinpointStage";
+import { PointMapStage } from "../features/pinpoint/PointMapStage";
+import { isImageMark } from "../features/pinpoint/marks";
 import {
   NEW_PLOT,
   readConversation,
@@ -146,6 +148,10 @@ function PinpointWorkspace({
   const latest = useRef(conversation);
   latest.current = conversation;
   const [marks, setMarks] = useState<PlotMark[]>([]);
+  const [staticView, setStaticView] = useState<string | null>(null);
+  const addMark = (mark: PlotMark) => setMarks((current) => [...current, mark]);
+  const removeMark = (number: number) =>
+    setMarks((current) => current.filter((mark) => mark.number !== number));
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,18 +228,39 @@ function PinpointWorkspace({
                 </span>
               ) : null}
             </header>
-            <PinpointStage
-              src={resolveArtifactUrl(plot.preview.href)}
-              alt={plot.preview.description}
-              marks={marks}
-              disabled={busy}
-              onMark={(mark) => setMarks((current) => [...current, mark])}
-              onRemove={(number) =>
-                setMarks((current) =>
-                  current.filter((mark) => mark.number !== number),
-                )
-              }
-            />
+            {plot.interactive_view === "points" && !staticView ? (
+              <PointMapStage
+                projectId={projectId}
+                plotId={plot.plot_id}
+                versionId={plot.version_id}
+                marks={marks}
+                disabled={busy}
+                onMark={addMark}
+                onRemove={removeMark}
+                onUnavailable={(reason) => {
+                  // Marks from the interactive view mean nothing on the image.
+                  setMarks([]);
+                  setStaticView(reason);
+                }}
+              />
+            ) : (
+              <>
+                {staticView ? (
+                  <p className="pinpoint-note" role="status">
+                    The interactive view is unavailable in this browser (
+                    {staticView}), so the saved figure is shown.
+                  </p>
+                ) : null}
+                <PinpointStage
+                  src={resolveArtifactUrl(plot.preview.href)}
+                  alt={plot.preview.description}
+                  marks={marks.filter(isImageMark)}
+                  disabled={busy}
+                  onMark={addMark}
+                  onRemove={removeMark}
+                />
+              </>
+            )}
           </>
         ) : (
           <div className="pinpoint-empty-stage">
@@ -252,11 +279,7 @@ function PinpointWorkspace({
         canMark={Boolean(plot)}
         draft={draft}
         onDraft={setDraft}
-        onRemoveMark={(number) =>
-          setMarks((current) =>
-            current.filter((mark) => mark.number !== number),
-          )
-        }
+        onRemoveMark={removeMark}
         onClearMarks={() => setMarks([])}
         onSend={(text) => void send(text)}
         status={

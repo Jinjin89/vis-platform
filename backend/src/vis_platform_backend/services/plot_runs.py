@@ -60,8 +60,9 @@ from vis_platform_backend.execution.runner import RExecutionError
 from vis_platform_backend.infrastructure.database import Repository, RequestConflictError, utc_now
 from vis_platform_backend.services.demo_figures import render_demo_figure
 from vis_platform_backend.services.demo_parameters import parameterize_demo
-from vis_platform_backend.services.plot_marks import PLOT_MAP
 from vis_platform_backend.services.plot_source import saved_plot_source
+from vis_platform_backend.services.point_maps import RENDERER as POINT_MAP_RENDERER
+from vis_platform_backend.services.point_maps import copy_view_files
 from vis_platform_backend.services.reference_images import ReferenceImageService
 from vis_platform_backend.services.research_execution import ResearchExecutor
 
@@ -297,7 +298,7 @@ class DeterministicPlotRunCoordinator:
         if (
             not result.parameter_updates_available
             or spec is None
-            or spec.get("renderer") not in {"demo-v1", "r-v1"}
+            or spec.get("renderer") not in {"demo-v1", "r-v1", POINT_MAP_RENDERER}
         ):
             raise PlotCapabilityError(
                 ("This saved version has no connected parameter execution support.",)
@@ -320,7 +321,7 @@ class DeterministicPlotRunCoordinator:
     ) -> PlotRunAccepted:
         base = self._version_record(request.project_id, plot_id, request.source_version_id)
         spec = base["interaction"].get("render_spec")
-        if spec is None or spec.get("renderer") not in {"demo-v1", "r-v1"}:
+        if spec is None or spec.get("renderer") not in {"demo-v1", "r-v1", POINT_MAP_RENDERER}:
             raise PlotCapabilityError(
                 ("Restoring this saved version is not supported by its renderer.",)
             )
@@ -544,10 +545,9 @@ class DeterministicPlotRunCoordinator:
     async def _execute(self, run_id: str, start_index: int = 0) -> None:
         try:
             request = self._get_record(run_id)["request"]
-            if (
-                request.get("research_plan") is not None
-                or request.get("render_spec", {}).get("renderer") == "r-v1"
-            ):
+            if request.get("research_plan") is not None or request.get("render_spec", {}).get(
+                "renderer"
+            ) in {"r-v1", POINT_MAP_RENDERER}:
                 await self._execute_research(run_id)
                 return
             for index in range(start_index, len(self._STEPS)):
@@ -699,9 +699,7 @@ class DeterministicPlotRunCoordinator:
             path = self._settings.artifact_root / run_id / "preview.svg"
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(original["storage_path"], path)
-            plot_map = Path(original["storage_path"]).with_name(PLOT_MAP)
-            if plot_map.is_file():
-                shutil.copyfile(plot_map, path.with_name(PLOT_MAP))
+            copy_view_files(Path(original["storage_path"]).parent, path.parent)
             result.version_id = f"version_{uuid4().hex}"
             result.preview = result.preview.model_copy(
                 update={"artifact_id": f"artifact_{uuid4().hex}"}
@@ -741,7 +739,9 @@ class DeterministicPlotRunCoordinator:
                     "status": "running",
                     "stage": "running_r",
                     "progress": 40,
-                    "message": "Reuse the saved result and render"
+                    "message": "Read the selected columns and draw the point map"
+                    if plan.point_map
+                    else "Reuse the saved result and render"
                     if plan.reuse_result_id
                     else "Analyze the selected data in R",
                 },
@@ -804,6 +804,9 @@ class DeterministicPlotRunCoordinator:
                 else f"plot_{uuid4().hex}",
                 version_id=f"version_{uuid4().hex}",
                 execution_mode="r",
+                interactive_view="points"
+                if execution.spec.get("renderer") == POINT_MAP_RENDERER
+                else None,
                 title=plan.title,
                 preview=ArtifactReference(
                     artifact_id=artifact_id,

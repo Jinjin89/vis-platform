@@ -40,6 +40,8 @@ class Settings:
     analysis_platform_url: str | None = None
     analysis_platform_token: str | None = field(default=None, repr=False)
     upload_limit_bytes: int = 32 * 1024 * 1024
+    # Large tables (read by column) and section images.
+    large_upload_limit_bytes: int = 2 * 1024 * 1024 * 1024
 
     @classmethod
     def from_environment(cls) -> Settings:

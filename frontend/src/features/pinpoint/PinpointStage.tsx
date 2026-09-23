@@ -1,5 +1,5 @@
 import { useRef, useState, type PointerEvent } from "react";
-import type { PlotMark } from "../../api/pinpoint";
+import type { ImageMark } from "../../api/pinpoint";
 import { MAX_MARKS, nextMarkNumber } from "./marks";
 
 type Point = { x: number; y: number };
@@ -20,9 +20,9 @@ export function PinpointStage({
 }: {
   src: string;
   alt: string;
-  marks: PlotMark[];
+  marks: ImageMark[];
   disabled: boolean;
-  onMark: (mark: PlotMark) => void;
+  onMark: (mark: ImageMark) => void;
   onRemove: (number: number) => void;
 }) {
   const surface = useRef<HTMLDivElement>(null);
@@ -144,7 +144,7 @@ function area(start: Point, end: Point) {
   };
 }
 
-function placement(mark: PlotMark) {
+function placement(mark: ImageMark) {
   return {
     left: `${mark.x * 100}%`,
     top: `${mark.y * 100}%`,

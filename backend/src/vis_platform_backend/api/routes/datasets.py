@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -14,7 +15,11 @@ from vis_platform_backend.contracts.datasets import (
     PlatformDatasetList,
     UploadReceipt,
 )
+from vis_platform_backend.data.images import IMAGE_SUFFIXES
 from vis_platform_backend.data.service import DataError, DatasetService
+
+# Formats read by column or as images, which may be much larger than other uploads.
+LARGE_UPLOAD_SUFFIXES = {".csv", ".tsv", ".parquet", *IMAGE_SUFFIXES}
 
 router = APIRouter(tags=["datasets"])
 
@@ -93,14 +98,22 @@ async def upload_file(
     dataset_id: str, project_id: str, name: str, request: Request, service: DataDependency
 ) -> UploadReceipt:
     file_id, path = service.upload_path(project_id, dataset_id, name)
+    limit = (
+        service.settings.large_upload_limit_bytes
+        if Path(name).suffix.lower() in LARGE_UPLOAD_SUFFIXES
+        else service.settings.upload_limit_bytes
+    )
     total = 0
     try:
         with path.open("xb") as destination:
             async for chunk in request.stream():
                 total += len(chunk)
-                if total > service.settings.upload_limit_bytes:
+                if total > limit:
                     raise DataError(
-                        "The file exceeds the current 32 MB upload limit.", "UPLOAD_TOO_LARGE", 413
+                        f"The file exceeds the current {limit // (1024 * 1024):,} MB upload "
+                        "limit for this format.",
+                        "UPLOAD_TOO_LARGE",
+                        413,
                     )
                 destination.write(chunk)
         if not total:

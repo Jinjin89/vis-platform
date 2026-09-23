@@ -38,7 +38,7 @@ class ObjectDescription(StrictModel):
     owner_kind: Literal["dataset", "analysis_result"] = "dataset"
     name: str
     description: str = ""
-    kind: Literal["table", "matrix", "model", "scalar", "unknown"] = "table"
+    kind: Literal["table", "matrix", "model", "scalar", "image", "unknown"] = "table"
     format: str = Field(pattern=r"^[A-Za-z0-9_+-]{1,32}$")
     dimensions: list[int] = Field(default_factory=list)
     scalar: float | bool | None = None

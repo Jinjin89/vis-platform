@@ -1,4 +1,4 @@
-import type { PlotMark } from "../../api/pinpoint";
+import type { ImageMark, PlotMark } from "../../api/pinpoint";
 
 export const MAX_MARKS = 9;
 
@@ -11,5 +11,9 @@ export function nextMarkNumber(marks: PlotMark[]): number | null {
 }
 
 export function describeMark(mark: PlotMark) {
-  return `${mark.kind === "point" ? "Point" : "Area"} ${mark.number}`;
+  return `${mark.kind === "point" || mark.kind === "element" ? "Point" : "Area"} ${mark.number}`;
+}
+
+export function isImageMark(mark: PlotMark): mark is ImageMark {
+  return mark.kind === "point" || mark.kind === "area";
 }

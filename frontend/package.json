@@ -21,6 +21,8 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.4.0",
+    "@deck.gl/layers": "^9.4.0",
     "@tanstack/react-query": "^5.102.8",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
